@@ -58,27 +58,42 @@ export function CustomersView() {
 
       <form
         onSubmit={handleSearch}
-        className={cn(
-          "mb-4 flex flex-col gap-3 sm:flex-row",
-          isRtl && "sm:flex-row-reverse",
-        )}
+        className={cn("mb-5 space-y-3", isRtl && "text-right")}
       >
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.customers.searchPlaceholder}
-          className="flex-1"
-        />
-        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
-          <Button type="submit" className="gap-2 sm:min-w-32">
-            <Search className="h-4 w-4" />
+        <div className="relative">
+          <Search
+            className={cn(
+              "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400",
+              isRtl ? "right-3" : "left-3",
+            )}
+          />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.customers.searchPlaceholder}
+            className={cn("w-full", isRtl ? "pr-10" : "pl-10")}
+          />
+        </div>
+        <div
+          className={cn(
+            "flex flex-col gap-2 sm:flex-row",
+            isRtl && "sm:flex-row-reverse",
+          )}
+        >
+          <Button type="submit" className="h-11 w-full gap-2 sm:min-w-32 sm:w-auto">
+            <Search className="h-4 w-4 shrink-0" />
             {t.search.button}
           </Button>
-          {submittedQuery && (
-            <Button type="button" variant="outline" onClick={clearSearch}>
+          {submittedQuery ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full sm:w-auto"
+              onClick={clearSearch}
+            >
               {t.customers.showAll}
             </Button>
-          )}
+          ) : null}
         </div>
       </form>
 

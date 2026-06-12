@@ -31,7 +31,11 @@ import {
   MonthlyTrendChart,
   PeriodCompareCards,
 } from "./analytics-charts";
-import { exportAnalyticsCsv, exportAnalyticsPdf } from "./export-analytics";
+import {
+  buildAnalyticsExportLabels,
+  exportAnalyticsCsv,
+  exportAnalyticsPdf,
+} from "./export-analytics";
 import { formatRs, formatTrend } from "./format";
 import { AnalyticsSkeleton } from "@/tailor/ui/skeletons";
 
@@ -236,6 +240,8 @@ export function AnalyticsView() {
     { label: t.analytics.statusDelivered, value: data.statusBreakdown.delivered, color: "bg-sky-400" },
   ];
 
+  const exportLabels = buildAnalyticsExportLabels(t, data.viewMode);
+
   const chartPoints = data.dailyBreakdown.map((d) => ({
     label: d.dayLabel,
     sub: d.dateLabel,
@@ -305,7 +311,7 @@ export function AnalyticsView() {
           >
             <button
               type="button"
-              onClick={() => exportAnalyticsCsv(data)}
+              onClick={() => exportAnalyticsCsv(data, exportLabels)}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               <Download className="h-4 w-4" />
@@ -313,23 +319,7 @@ export function AnalyticsView() {
             </button>
             <button
               type="button"
-              onClick={() =>
-                exportAnalyticsPdf(data, {
-                  reportTitle: t.analytics.exportReportTitle,
-                  revenue: t.analytics.revenue,
-                  orders: t.analytics.orders,
-                  advance: t.analytics.advance,
-                  outstanding: t.analytics.outstanding,
-                  periodComparison: t.analytics.periodComparison,
-                  revenueByGarment: t.analytics.revenueByGarment,
-                  monthlyTrend: t.analytics.revenueTrend,
-                  month: t.analytics.month,
-                  garment: t.analytics.garment,
-                  activeVsDelivered: t.analytics.activeVsDelivered,
-                  inProgress: t.analytics.statusInProgress,
-                  delivered: t.analytics.statusDelivered,
-                })
-              }
+              onClick={() => exportAnalyticsPdf(data, exportLabels)}
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100"
             >
               <FileText className="h-4 w-4" />

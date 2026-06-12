@@ -93,7 +93,7 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-4 pb-24 sm:items-center sm:pb-4"
       role="presentation"
       onClick={onClose}
     >
@@ -102,14 +102,14 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
         aria-modal="true"
         aria-labelledby="mark-ready-title"
         className={cn(
-          "w-full max-w-md rounded-2xl bg-white p-5 shadow-xl",
+          "flex max-h-[min(88vh,calc(100dvh-7rem))] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[85vh]",
           isRtl && "text-right",
         )}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className={cn(
-            "mb-4 flex items-start justify-between gap-3",
+            "flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4",
             isRtl && "flex-row-reverse",
           )}
         >
@@ -129,151 +129,160 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
           </button>
         </div>
 
-        {isLoading && <DialogContentSkeleton />}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {isLoading && <DialogContentSkeleton />}
 
-        {isError && (
-          <p className="py-8 text-center text-sm text-rose-600">{t.common.error}</p>
-        )}
+          {isError && (
+            <p className="py-8 text-center text-sm text-rose-600">{t.common.error}</p>
+          )}
 
-        {order && (
-          <div className="space-y-4">
-            <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm">
-              <p className="font-semibold text-slate-900">{order.customerName}</p>
-              <p className="text-slate-500">
-                #{order.orderNumber} · {order.garmentLabel}
-              </p>
-              <p className="mt-1 text-slate-500">{order.customerPhone}</p>
-              {order.customerEmail ? (
-                <p className="mt-1 text-slate-500">{order.customerEmail}</p>
-              ) : (
-                <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    {t.orders.noEmailOnFile}. {t.orders.addEmailInCustomers}{" "}
-                    <Link
-                      href={routes.customers}
-                      className="font-semibold underline hover:text-amber-900"
-                    >
-                      {t.nav.customers}
-                    </Link>
-                  </span>
+          {order && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                <p className="font-semibold text-slate-900">{order.customerName}</p>
+                <p className="text-slate-500">
+                  #{order.orderNumber} · {order.garmentLabel}
                 </p>
-              )}
-              {order.workflowStatus === "ready" && (
-                <p className="mt-2 text-xs text-emerald-700">{t.orders.alreadyReady}</p>
-              )}
-            </div>
-
-            <label
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={sendWhatsApp}
-                onChange={(e) => setSendWhatsApp(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300"
-              />
-              <div className="min-w-0 flex-1">
-                <div
-                  className={cn(
-                    "flex items-center gap-2 font-medium text-slate-900",
-                    isRtl && "flex-row-reverse",
-                  )}
-                >
-                  <MessageCircle className="h-4 w-4 text-emerald-600" />
-                  {t.orders.sendWhatsApp}
-                </div>
-                <p className="mt-0.5 text-xs text-slate-500">{t.orders.sendWhatsAppHint}</p>
+                <p className="mt-1 text-slate-500">{order.customerPhone}</p>
+                {order.customerEmail ? (
+                  <p className="mt-1 text-slate-500">{order.customerEmail}</p>
+                ) : (
+                  <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      {t.orders.noEmailOnFile}. {t.orders.addEmailInCustomers}{" "}
+                      <Link
+                        href={routes.customers}
+                        className="font-semibold underline hover:text-amber-900"
+                      >
+                        {t.nav.customers}
+                      </Link>
+                    </span>
+                  </p>
+                )}
+                {order.workflowStatus === "ready" && (
+                  <p className="mt-2 text-xs text-emerald-700">{t.orders.alreadyReady}</p>
+                )}
               </div>
-            </label>
 
-            <label
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3",
-                !hasCustomerEmail && "opacity-60",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={sendEmail}
-                disabled={!hasCustomerEmail}
-                onChange={(e) => setSendEmail(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300"
-              />
-              <div className="min-w-0 flex-1">
-                <div
-                  className={cn(
-                    "flex items-center gap-2 font-medium text-slate-900",
-                    isRtl && "flex-row-reverse",
-                  )}
-                >
-                  <Mail className="h-4 w-4 text-brand-700" />
-                  {t.orders.sendEmail}
-                </div>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {hasCustomerEmail
-                    ? `${t.orders.sendEmailHint} (${order.customerEmail})`
-                    : t.orders.emailNotFoundAddCustomer}
-                </p>
-              </div>
-            </label>
-
-            {sendEmail && hasCustomerEmail && (
-              <div>
-                <label
-                  htmlFor="email-notes"
-                  className="mb-1.5 block text-sm font-medium text-slate-700"
-                >
-                  {t.orders.emailNotes}
-                </label>
-                <textarea
-                  id="email-notes"
-                  value={emailNotes}
-                  onChange={(e) => setEmailNotes(e.target.value)}
-                  placeholder={t.orders.emailNotesPlaceholder}
-                  rows={3}
-                  maxLength={500}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </div>
-            )}
-
-            {feedback && (
-              <p
+              <label
                 className={cn(
-                  "rounded-xl px-3 py-2 text-sm",
-                  feedback.includes(t.orders.emailNotFoundAddCustomer) ||
-                    feedback.includes(t.orders.emailFailed) ||
-                    feedback.includes(t.orders.emailSkipped)
-                    ? "bg-amber-50 text-amber-900"
-                    : "bg-emerald-50 text-emerald-800",
+                  "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3",
+                  isRtl && "flex-row-reverse",
                 )}
               >
-                {feedback}
-              </p>
-            )}
+                <input
+                  type="checkbox"
+                  checked={sendWhatsApp}
+                  onChange={(e) => setSendWhatsApp(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 font-medium text-slate-900",
+                      isRtl && "flex-row-reverse",
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4 text-emerald-600" />
+                    {t.orders.sendWhatsApp}
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">{t.orders.sendWhatsAppHint}</p>
+                </div>
+              </label>
 
-            <div className={cn("flex gap-2 pt-1", isRtl && "flex-row-reverse")}>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={markReady.isPending}
+              <label
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3",
+                  !hasCustomerEmail && "opacity-60",
+                  isRtl && "flex-row-reverse",
+                )}
               >
-                {t.form.cancel}
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={markReady.isPending}
-              >
-                {markReady.isPending ? t.orders.notifying : t.orders.confirmMarkReady}
-              </Button>
+                <input
+                  type="checkbox"
+                  checked={sendEmail}
+                  disabled={!hasCustomerEmail}
+                  onChange={(e) => setSendEmail(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 font-medium text-slate-900",
+                      isRtl && "flex-row-reverse",
+                    )}
+                  >
+                    <Mail className="h-4 w-4 text-brand-700" />
+                    {t.orders.sendEmail}
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {hasCustomerEmail
+                      ? `${t.orders.sendEmailHint} (${order.customerEmail})`
+                      : t.orders.emailNotFoundAddCustomer}
+                  </p>
+                </div>
+              </label>
+
+              {sendEmail && hasCustomerEmail && (
+                <div>
+                  <label
+                    htmlFor="email-notes"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    {t.orders.emailNotes}
+                  </label>
+                  <textarea
+                    id="email-notes"
+                    value={emailNotes}
+                    onChange={(e) => setEmailNotes(e.target.value)}
+                    placeholder={t.orders.emailNotesPlaceholder}
+                    rows={3}
+                    maxLength={500}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+              )}
+
+              {feedback && (
+                <p
+                  className={cn(
+                    "rounded-xl px-3 py-2 text-sm",
+                    feedback.includes(t.orders.emailNotFoundAddCustomer) ||
+                      feedback.includes(t.orders.emailFailed) ||
+                      feedback.includes(t.orders.emailSkipped)
+                      ? "bg-amber-50 text-amber-900"
+                      : "bg-emerald-50 text-emerald-800",
+                  )}
+                >
+                  {feedback}
+                </p>
+              )}
             </div>
+          )}
+        </div>
+
+        {order && (
+          <div
+            className={cn(
+              "flex shrink-0 gap-2 border-t border-slate-100 bg-white px-5 py-4",
+              isRtl && "flex-row-reverse",
+            )}
+          >
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={markReady.isPending}
+            >
+              {t.form.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSubmit}
+              disabled={markReady.isPending}
+            >
+              {markReady.isPending ? t.orders.notifying : t.orders.confirmMarkReady}
+            </Button>
           </div>
         )}
       </div>

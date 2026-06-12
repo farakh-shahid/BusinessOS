@@ -68,7 +68,7 @@ export function DeliverDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-4 pb-24 sm:items-center sm:pb-4"
       role="presentation"
       onClick={onClose}
     >
@@ -76,14 +76,14 @@ export function DeliverDialog({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "w-full max-w-md rounded-2xl bg-white p-5 shadow-xl",
+          "flex max-h-[min(88vh,calc(100dvh-7rem))] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[85vh]",
           isRtl && "text-right",
         )}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className={cn(
-            "mb-4 flex items-start justify-between gap-3",
+            "flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4",
             isRtl && "flex-row-reverse",
           )}
         >
@@ -105,16 +105,17 @@ export function DeliverDialog({
           </button>
         </div>
 
-        {isLoading && <DialogContentSkeleton />}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {isLoading && <DialogContentSkeleton />}
 
-        {isError && (
-          <p className="py-8 text-center text-sm text-rose-600">
-            {t.common.error}
-          </p>
-        )}
+          {isError && (
+            <p className="py-8 text-center text-sm text-rose-600">
+              {t.common.error}
+            </p>
+          )}
 
-        {order && (
-          <div className="space-y-4">
+          {order && (
+            <div className="space-y-4">
             <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm">
               <p className="font-semibold text-slate-900">{order.customerName}</p>
               <p className="text-slate-500">
@@ -154,26 +155,34 @@ export function DeliverDialog({
                 {error}
               </p>
             )}
-
-            <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={updateStatus.isPending}
-              >
-                {t.form.cancel}
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleConfirm}
-                disabled={updateStatus.isPending}
-              >
-                {updateStatus.isPending
-                  ? t.orderDetail.confirming
-                  : t.orderDetail.confirmDelivered}
-              </Button>
             </div>
+          )}
+        </div>
+
+        {order && (
+          <div
+            className={cn(
+              "flex shrink-0 gap-2 border-t border-slate-100 bg-white px-5 py-4",
+              isRtl && "flex-row-reverse",
+            )}
+          >
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={updateStatus.isPending}
+            >
+              {t.form.cancel}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleConfirm}
+              disabled={updateStatus.isPending}
+            >
+              {updateStatus.isPending
+                ? t.orderDetail.confirming
+                : t.orderDetail.confirmDelivered}
+            </Button>
           </div>
         )}
       </div>
