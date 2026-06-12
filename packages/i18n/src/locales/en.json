@@ -89,6 +89,8 @@
     "existingCustomer": "Existing customer",
     "name": "Full name",
     "phone": "Phone",
+    "phonePlaceholder": "e.g. 03001234567",
+    "phoneHint": "Pakistani mobile number — 11 digits starting with 03",
     "email": "Email (optional)",
     "emailHint": "Required later to email measurement PDF",
     "measurements": "Body measurements",
@@ -226,7 +228,7 @@
   "validation": {
     "nameRequired": "Full name is required",
     "phoneRequired": "Phone number is required",
-    "phoneInvalid": "Enter a valid phone number (at least 7 digits)",
+    "phoneInvalid": "Enter a valid Pakistani mobile number (e.g. 03001234567)",
     "emailInvalid": "Enter a valid email address",
     "customerRequired": "Please select a customer",
     "orderDetailsRequired": "Delivery date and total price are required",

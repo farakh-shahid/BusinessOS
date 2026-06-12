@@ -1,3 +1,4 @@
+import { isValidPakistanPhone } from "@business-os/shared";
 import {
   getGarmentSchema,
   normalizeBookingGarmentType,
@@ -24,7 +25,7 @@ export function getNewOrderValidationError(
     if (!phone) {
       return t.validation.phoneRequired;
     }
-    if (phone.length < 7) {
+    if (!isValidPakistanPhone(phone)) {
       return t.validation.phoneInvalid;
     }
 

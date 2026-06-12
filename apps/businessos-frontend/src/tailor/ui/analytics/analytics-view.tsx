@@ -186,6 +186,7 @@ export function AnalyticsView() {
   const [selectedDay, setSelectedDay] = useState(() =>
     toDateInputValue(new Date()),
   );
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const { data, isLoading, isError } = useAnalyticsQuery({
     view,
@@ -241,8 +242,18 @@ export function AnalyticsView() {
   ];
 
   const exportLabels = buildAnalyticsExportLabels(t, data.viewMode);
+  const analyticsData = data;
 
-  const chartPoints = data.dailyBreakdown.map((d) => ({
+  async function handlePdfExport() {
+    setPdfExporting(true);
+    try {
+      await exportAnalyticsPdf(analyticsData, exportLabels);
+    } finally {
+      setPdfExporting(false);
+    }
+  }
+
+  const chartPoints = analyticsData.dailyBreakdown.map((d) => ({
     label: d.dayLabel,
     sub: d.dateLabel,
     orders: d.orders,
@@ -319,11 +330,12 @@ export function AnalyticsView() {
             </button>
             <button
               type="button"
-              onClick={() => exportAnalyticsPdf(data, exportLabels)}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100"
+              onClick={() => void handlePdfExport()}
+              disabled={pdfExporting}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-60"
             >
               <FileText className="h-4 w-4" />
-              {t.analytics.exportPdf}
+              {pdfExporting ? t.common.loading : t.analytics.exportPdf}
             </button>
           </div>
         </div>

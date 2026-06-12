@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { isValidPakistanPhone } from "@business-os/shared";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { Button } from "@/core/presentation/components/ui/button";
@@ -135,8 +136,12 @@ export function CustomerEditDialog({
       setError(t.validation.nameRequired);
       return;
     }
-    if (!phone.trim() || phone.trim().length < 7) {
+    if (!phone.trim()) {
       setError(t.validation.phoneRequired);
+      return;
+    }
+    if (!isValidPakistanPhone(phone)) {
+      setError(t.validation.phoneInvalid);
       return;
     }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -254,10 +259,13 @@ export function CustomerEditDialog({
                     <Label htmlFor="cust-phone">{t.form.phone}</Label>
                     <Input
                       id="cust-phone"
+                      type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      placeholder={t.form.phonePlaceholder}
                       dir="ltr"
                     />
+                    <p className="mt-1 text-xs text-slate-400">{t.form.phoneHint}</p>
                   </div>
                   <div>
                     <Label htmlFor="cust-email">{t.form.email}</Label>

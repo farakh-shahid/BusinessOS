@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import { requirePakistanPhone } from "./pakistan-phone.util";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -6,13 +7,9 @@ export function isEmailAddress(value: string): boolean {
   return EMAIL_PATTERN.test(value.trim());
 }
 
-/** Digits-only phone for lookup/storage (min 7 digits). */
+/** Pakistani mobile in local format, e.g. 03001234567 */
 export function normalizeUserPhone(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 7) {
-    throw new BadRequestException("Enter a valid phone number (at least 7 digits)");
-  }
-  return digits;
+  return requirePakistanPhone(value);
 }
 
 export function normalizeUserEmail(value: string): string {

@@ -170,9 +170,12 @@ export const CustomerSection = forwardRef<
             <Input
               id="customer-phone"
               type="tel"
+              placeholder={t.form.phonePlaceholder}
               aria-invalid={!!errors.customerPhone}
+              dir="ltr"
               {...register("customerPhone")}
             />
+            <p className="mt-1 text-xs text-slate-400">{t.form.phoneHint}</p>
             <FormFieldError message={errors.customerPhone?.message} />
           </div>
           <div>

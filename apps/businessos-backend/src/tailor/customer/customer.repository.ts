@@ -9,6 +9,7 @@ import {
   toLocalePreference,
 } from "../common/tailor.mapper";
 import { toMeasurementDto } from "../measurement/measurement.mapper";
+import { requirePakistanPhone } from "../../common/utils/pakistan-phone.util";
 import type { CreateCustomerDto } from "./dto/create-customer.dto";
 import type { UpdateCustomerDto } from "./dto/update-customer.dto";
 
@@ -124,7 +125,9 @@ export class CustomerRepository {
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-          ...(dto.phone !== undefined ? { phone: dto.phone.trim() } : {}),
+          ...(dto.phone !== undefined
+            ? { phone: requirePakistanPhone(dto.phone) }
+            : {}),
           ...(dto.email !== undefined
             ? { email: dto.email.trim() || null }
             : {}),
@@ -152,7 +155,7 @@ export class CustomerRepository {
       data: {
         tenantId,
         name: dto.name.trim(),
-        phone: dto.phone.trim(),
+        phone: requirePakistanPhone(dto.phone),
         email: dto.email?.trim() || null,
         preferredLocale: toLocalePreference(dto.preferredLocale),
       },

@@ -1,3 +1,4 @@
+import { isValidPakistanPhone } from "@business-os/shared";
 import { z } from "zod";
 
 export function createNewCustomerSchema(messages: {
@@ -16,7 +17,7 @@ export function createNewCustomerSchema(messages: {
       .string()
       .trim()
       .min(1, messages.phoneRequired)
-      .min(7, messages.phoneInvalid),
+      .refine((value) => isValidPakistanPhone(value), messages.phoneInvalid),
     customerEmail: z
       .string()
       .trim()

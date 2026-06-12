@@ -89,6 +89,8 @@
     "existingCustomer": "پurana گاہک",
     "name": "پورا نام",
     "phone": "فون",
+    "phonePlaceholder": "مثال: 03001234567",
+    "phoneHint": "پاکستانی موبائل — 03 سے شروع، 11 ہندسے",
     "email": "ای میل (اختیاری)",
     "emailHint": "پیمائش ای میل کے لیے بعد میں درکار",
     "measurements": "جسم کی پیمائش",
@@ -226,7 +228,7 @@
   "validation": {
     "nameRequired": "پورا نام ضروری ہے",
     "phoneRequired": "فون نمبر ضروری ہے",
-    "phoneInvalid": "درست فون نمبر درج کریں (کم از کم 7 ہندسے)",
+    "phoneInvalid": "درست پاکستانی موبائل نمبر درج کریں (مثال: 03001234567)",
     "emailInvalid": "درست ای میل درج کریں",
     "customerRequired": "گاہک منتخب کریں",
     "orderDetailsRequired": "ڈیلیوری تاریخ اور کل قیمت ضروری ہے",

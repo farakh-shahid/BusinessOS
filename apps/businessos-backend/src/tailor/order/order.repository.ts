@@ -9,6 +9,7 @@ import type {
 } from "@business-os/tailor";
 import type { UserRole } from "../../generated/prisma/client";
 import { PrismaService } from "../../core/database/prisma.service";
+import { requirePakistanPhone } from "../../common/utils/pakistan-phone.util";
 import {
   customerInitials,
   formatDueDate,
@@ -585,7 +586,7 @@ export class OrderRepository {
       data: {
         tenantId,
         name: dto.customerName.trim(),
-        phone: dto.customerPhone.trim(),
+        phone: requirePakistanPhone(dto.customerPhone),
         email: dto.customerEmail?.trim() || null,
         preferredLocale: toLocalePreference("en"),
       },

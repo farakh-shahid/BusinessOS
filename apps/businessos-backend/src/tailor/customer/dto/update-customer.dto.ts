@@ -1,4 +1,5 @@
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { IsPakistanPhone } from "../../../common/validators/is-pakistan-phone.validator";
 
 export class UpdateCustomerDto {
   @IsOptional()
@@ -8,7 +9,7 @@ export class UpdateCustomerDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(7)
+  @IsPakistanPhone()
   phone?: string;
 
   @IsOptional()
