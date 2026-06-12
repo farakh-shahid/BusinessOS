@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -8,6 +8,9 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Placeholder allows `prisma generate` on CI/Vercel before env vars are loaded.
+    url:
+      process.env.DATABASE_URL ??
+      "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });
