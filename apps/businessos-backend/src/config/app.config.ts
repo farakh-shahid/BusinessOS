@@ -1,13 +1,27 @@
+const PRODUCTION_CORS_ORIGINS = [
+  "https://getbusinessos.vercel.app",
+  "https://businessos-frontend.vercel.app",
+] as const;
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/, "");
+}
+
 function parseCorsOrigins(): string | string[] {
-  const raw = process.env.CORS_ORIGIN?.trim();
-  if (!raw) return "http://localhost:3000";
-  if (raw.includes(",")) {
-    return raw
-      .split(",")
-      .map((o) => o.trim())
-      .filter(Boolean);
+  const fromEnv = process.env.CORS_ORIGIN?.trim();
+  const origins = new Set<string>([
+    ...PRODUCTION_CORS_ORIGINS,
+    "http://localhost:3000",
+  ]);
+
+  if (fromEnv) {
+    for (const part of fromEnv.split(",")) {
+      const normalized = normalizeOrigin(part);
+      if (normalized) origins.add(normalized);
+    }
   }
-  return raw;
+
+  return [...origins];
 }
 
 export const appConfig = {
