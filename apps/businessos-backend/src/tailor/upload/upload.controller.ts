@@ -13,8 +13,17 @@ import { mkdirSync } from "fs";
 import { randomUUID } from "crypto";
 import { JwtAuthGuard } from "../../core/auth/jwt-auth.guard";
 
-const uploadRoot = join(process.cwd(), "uploads", "dress-images");
-mkdirSync(uploadRoot, { recursive: true });
+const uploadRoot = join(
+  process.env.VERCEL ? "/tmp" : process.cwd(),
+  "uploads",
+  "dress-images",
+);
+
+try {
+  mkdirSync(uploadRoot, { recursive: true });
+} catch {
+  // Vercel lambdas use a read-only filesystem outside /tmp
+}
 
 @Controller("tailor/uploads")
 @UseGuards(JwtAuthGuard)
