@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/*
+ * BusinessOS design tokens (Tailwind v4 @theme)
+ * Change colors here — components use semantic names, not raw hex.
+ *
+ * sidebar  → app shell (sidebar, mobile header, home accents)
+ * brand    → primary actions, links, buttons (#002347 family)
+ * accent   → orange CTAs (new order, highlights)
+ * analytics → analytics dashboard only (orange / coral)
+ */
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Sidebar & home shell — #002347 */
+  --sidebar: #002347;
+  --sidebar-dark: #001a2e;
+  --sidebar-light: #003a6b;
+  --sidebar-text: #e6f0fa;
+  --sidebar-text-muted: #8fb4d4;
+
+  /* Primary brand — same family as sidebar #002347 */
+  --brand-50: #e8f1f8;
+  --brand-100: #d1e3f1;
+  --brand-200: #a3c7e3;
+  --brand-500: #005299;
+  --brand-600: var(--sidebar-light);
+  --brand-700: var(--sidebar);
+  --brand-800: var(--sidebar-dark);
+  --brand-900: #00101f;
+
+  /* Accent orange — CTAs (#FF5003) */
+  --accent-50: #fff4ef;
+  --accent-100: #ffe5d9;
+  --accent-200: #ffc9b0;
+  --accent-400: #ff7a3d;
+  --accent-500: #ff5003;
+  --accent-600: #e04600;
+  --accent-700: #cc3d00;
+
+  /* Analytics dashboard — orange family matches accent */
+  --analytics-hero-from: #ff8a52;
+  --analytics-hero-via: #ff5003;
+  --analytics-hero-to: #ff6500;
+  --analytics-chart: #ff5003;
+  --analytics-chart-peak: #ff7a3d;
+  --analytics-select: #f43f5e;
+  --analytics-select-muted: #fff1f2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-dark: var(--sidebar-dark);
+  --color-sidebar-light: var(--sidebar-light);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-text-muted: var(--sidebar-text-muted);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+
+  --color-analytics-hero-from: var(--analytics-hero-from);
+  --color-analytics-hero-via: var(--analytics-hero-via);
+  --color-analytics-hero-to: var(--analytics-hero-to);
+  --color-analytics-chart: var(--analytics-chart);
+  --color-analytics-chart-peak: var(--analytics-chart-peak);
+  --color-analytics-select: var(--analytics-select);
+  --color-analytics-select-muted: var(--analytics-select-muted);
+
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
