@@ -104,7 +104,7 @@ export function OrderList({
         <Link
           href={routes.orders}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3.5 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:border-brand-200 hover:bg-brand-50",
+            "mb-16 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3.5 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:border-brand-200 hover:bg-brand-50 md:mb-0",
             isRtl && "flex-row-reverse",
           )}
         >

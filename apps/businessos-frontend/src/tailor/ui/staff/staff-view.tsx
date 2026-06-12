@@ -19,6 +19,7 @@ import {
   useStaffQuery,
   useUpdateStaffMutation,
 } from "@/tailor/infrastructure/api/hooks/use-staff";
+import { StaffListSkeleton } from "@/tailor/ui/skeletons";
 
 function staffContactLabel(member: {
   email?: string;
@@ -206,9 +207,7 @@ export function StaffView() {
       )}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          {t.common.loading}
-        </div>
+        <StaffListSkeleton />
       ) : isError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}

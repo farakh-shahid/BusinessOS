@@ -10,6 +10,7 @@ import { ShopHero } from "@/tailor/ui/shared/shop-hero";
 import { StatsRow } from "@/tailor/ui/dashboard/stats-row";
 import { CustomerSearchPanel } from "@/tailor/ui/dashboard/customer-search-panel";
 import { OrderList } from "@/tailor/ui/orders/order-list";
+import { DashboardSkeleton } from "@/tailor/ui/skeletons";
 
 export function DashboardView() {
   const { locale } = useLocale();
@@ -22,11 +23,7 @@ export function DashboardView() {
   const shopName = user?.tenantName ?? t.appName;
 
   if (isLoading) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-        {t.common.loading}
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (isError || !data) {

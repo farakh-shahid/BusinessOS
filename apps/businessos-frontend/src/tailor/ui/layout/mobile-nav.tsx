@@ -15,7 +15,7 @@ export function MobileNav() {
   const items = getVisibleNavItems(user?.role);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 md:hidden">
       <div className="mx-auto max-w-lg overflow-hidden rounded-[1.35rem] border border-sidebar/10 bg-white/95 shadow-xl shadow-sidebar/10 backdrop-blur-xl">
         <div className="scrollbar-hide flex items-stretch gap-0.5 overflow-x-auto px-1.5 py-1.5">
           {items.map(({ segment, icon, labelKey }) => (

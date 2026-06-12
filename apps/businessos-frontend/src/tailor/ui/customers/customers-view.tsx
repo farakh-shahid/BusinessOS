@@ -10,6 +10,7 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useCustomersQuery } from "@/tailor/infrastructure/api/hooks/use-customers";
 import { CustomerEditDialog } from "./customer-edit-dialog";
 import { CustomerListItem } from "./customer-list-item";
+import { CustomerListSkeleton } from "@/tailor/ui/skeletons";
 
 export function CustomersView() {
   const { locale } = useLocale();
@@ -82,9 +83,7 @@ export function CustomersView() {
       </form>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          {t.common.loading}
-        </div>
+        <CustomerListSkeleton />
       ) : isError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}

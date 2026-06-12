@@ -70,7 +70,7 @@ export function MobileNavLink({
     <Link
       href={href}
       className={cn(
-        "flex min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 transition-all duration-200",
+        "flex min-w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2.5 py-2 transition-all duration-200",
         active
           ? "bg-sidebar/5 text-sidebar shadow-sm"
           : "text-slate-400 hover:text-sidebar",
@@ -86,7 +86,7 @@ export function MobileNavLink({
       >
         <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.5 : 2} />
       </span>
-      <span className="max-w-full truncate text-[10px] font-bold leading-tight">
+      <span className="whitespace-nowrap text-[10px] font-bold leading-tight">
         {label}
       </span>
       {active && (

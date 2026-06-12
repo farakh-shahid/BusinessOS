@@ -13,6 +13,7 @@ import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { routes } from "@/core/config/routes";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useCustomerSearchQuery } from "@/tailor/infrastructure/api/hooks/use-customer-search";
+import { CustomerSearchResultsSkeleton } from "@/tailor/ui/skeletons";
 
 export function CustomerSearchPanel() {
   const { locale } = useLocale();
@@ -37,19 +38,16 @@ export function CustomerSearchPanel() {
 
       <form
         onSubmit={handleSearch}
-        className={cn(
-          "mt-4 flex flex-col gap-3 sm:flex-row",
-          isRtl && "sm:flex-row-reverse",
-        )}
+        className={cn("mt-4 space-y-3", isRtl && "text-right")}
       >
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t.search.placeholder}
-          className="flex-1"
+          className="w-full"
         />
-        <Button type="submit" className="gap-2 sm:min-w-32">
-          <Search className="h-4 w-4" />
+        <Button type="submit" className="h-11 w-full gap-2 sm:w-auto sm:min-w-32">
+          <Search className="h-4 w-4 shrink-0" />
           {t.search.button}
         </Button>
       </form>
@@ -57,7 +55,7 @@ export function CustomerSearchPanel() {
       {submittedQuery.length >= 2 && (
         <div className="mt-6 space-y-4">
           {(isLoading || isFetching) && (
-            <p className="text-sm text-slate-500">{t.common.loading}</p>
+            <CustomerSearchResultsSkeleton count={2} />
           )}
 
           {!isLoading && !isFetching && results.length === 0 && (

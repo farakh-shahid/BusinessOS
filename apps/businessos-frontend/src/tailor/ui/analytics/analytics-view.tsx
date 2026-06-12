@@ -33,6 +33,7 @@ import {
 } from "./analytics-charts";
 import { exportAnalyticsCsv, exportAnalyticsPdf } from "./export-analytics";
 import { formatRs, formatTrend } from "./format";
+import { AnalyticsSkeleton } from "@/tailor/ui/skeletons";
 
 const metricAccents = [
   { bg: "bg-accent-100", icon: "text-accent-600", ring: "ring-accent-200" },
@@ -210,11 +211,7 @@ export function AnalyticsView() {
   const firstName = user?.name?.split(" ")[0] ?? "";
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white px-4 py-16 text-center text-sm text-slate-500 shadow-sm">
-        {t.common.loading}
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (isError || !data) {

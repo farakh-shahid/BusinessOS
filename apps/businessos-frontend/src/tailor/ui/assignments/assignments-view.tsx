@@ -8,6 +8,7 @@ import { cn } from "@/core/presentation/lib/utils";
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useAssignmentsQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { AssignmentsSkeleton } from "@/tailor/ui/skeletons";
 
 export function AssignmentsView() {
   const { locale } = useLocale();
@@ -31,9 +32,7 @@ export function AssignmentsView() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          {t.common.loading}
-        </div>
+        <AssignmentsSkeleton />
       ) : isError || !data ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}

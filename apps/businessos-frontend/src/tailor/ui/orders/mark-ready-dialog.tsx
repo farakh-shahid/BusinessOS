@@ -8,6 +8,7 @@ import { Button } from "@/core/presentation/components/ui/button";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { routes } from "@/core/config/routes";
+import { DialogContentSkeleton } from "@/tailor/ui/skeletons";
 import {
   useMarkOrderReadyMutation,
   useOrderDetailQuery,
@@ -128,9 +129,7 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
           </button>
         </div>
 
-        {isLoading && (
-          <p className="py-8 text-center text-sm text-slate-500">{t.common.loading}</p>
-        )}
+        {isLoading && <DialogContentSkeleton />}
 
         {isError && (
           <p className="py-8 text-center text-sm text-rose-600">{t.common.error}</p>

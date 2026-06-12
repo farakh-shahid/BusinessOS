@@ -55,16 +55,40 @@ export const CustomerSection = forwardRef<
     mode: "onTouched",
   });
 
-  const watched = watch();
+  const customerName = watch("customerName");
+  const customerPhone = watch("customerPhone");
+  const customerEmail = watch("customerEmail");
 
   useEffect(() => {
     if (draft.customerMode !== "new") return;
+
+    const nextName = customerName ?? "";
+    const nextPhone = customerPhone ?? "";
+    const nextEmail = customerEmail ?? "";
+
+    if (
+      nextName === draft.customerName &&
+      nextPhone === draft.customerPhone &&
+      nextEmail === draft.customerEmail
+    ) {
+      return;
+    }
+
     onChange({
-      customerName: watched.customerName ?? "",
-      customerPhone: watched.customerPhone ?? "",
-      customerEmail: watched.customerEmail ?? "",
+      customerName: nextName,
+      customerPhone: nextPhone,
+      customerEmail: nextEmail,
     });
-  }, [watched, draft.customerMode, onChange]);
+  }, [
+    customerName,
+    customerPhone,
+    customerEmail,
+    draft.customerMode,
+    draft.customerName,
+    draft.customerPhone,
+    draft.customerEmail,
+    onChange,
+  ]);
 
   useImperativeHandle(ref, () => ({
     validateNewCustomer: async () => {
@@ -115,6 +139,7 @@ export const CustomerSection = forwardRef<
             emptyMessage={t.form.noCustomersFound}
             isRtl={isRtl}
             aria-label={t.form.selectCustomer}
+            searchMinOptions={1}
             options={customers.map((c) => ({
               value: c.id,
               label: c.name,

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   emptyStyleForGarment,
-  getGarmentSchema,
   mergeMeasurementsForGarmentChange,
   normalizeBookingGarmentType,
   type BookingGarmentType,
@@ -15,7 +14,6 @@ import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
 import { routes } from "@/core/config/routes";
 import { resolveApiErrorMessage } from "@/core/presentation/lib/resolve-api-error";
-import { findInvalidMeasurement } from "@/core/presentation/lib/validate-measurements";
 import { useToast } from "@/core/presentation/components/ui/toast";
 import { useLocale } from "@/core/i18n/locale-context";
 import {
@@ -34,6 +32,7 @@ import {
   emptyNewOrderDraft,
   type NewOrderDraft,
 } from "@/tailor/infrastructure/data/new-order.mock";
+import { getNewOrderValidationError } from "@/tailor/infrastructure/data/new-order-validation";
 import {
   CustomerSection,
   type CustomerSectionHandle,
@@ -42,6 +41,7 @@ import { MeasurementFieldsForm } from "@/tailor/ui/measurements/measurement-fiel
 import { StyleSpecsForm } from "@/tailor/ui/measurements/style-specs-form";
 import { GarmentTypeSection } from "@/tailor/ui/orders/garment-type-section";
 import { OrderDetailsSection } from "@/tailor/ui/orders/order-details-section";
+import { NewOrderFormSkeleton } from "@/tailor/ui/skeletons";
 
 export function NewOrderForm() {
   const router = useRouter();
@@ -55,9 +55,27 @@ export function NewOrderForm() {
   const createOrder = useCreateOrderMutation();
   const { data: assignments } = useAssignmentsQuery();
   const [draft, setDraft] = useState<NewOrderDraft>(emptyNewOrderDraft);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastHydratedCustomerId = useRef<string | null>(null);
+
+  const validationError = useMemo(
+    () => getNewOrderValidationError(draft, t),
+    [draft, t],
+  );
+  const canSave = !validationError && !createOrder.isPending;
+
+  const patch = useCallback((update: Partial<NewOrderDraft>) => {
+    setDraft((prev) => {
+      if (update.customerId && update.customerId !== prev.customerId) {
+        lastHydratedCustomerId.current = null;
+      }
+      if (update.customerMode === "new") {
+        lastHydratedCustomerId.current = null;
+      }
+      return { ...prev, ...update };
+    });
+    setError(null);
+  }, []);
 
   const customerDetailQuery = useCustomerDetailQuery(
     draft.customerMode === "existing" && draft.customerId
@@ -106,17 +124,6 @@ export function NewOrderForm() {
     setError(null);
   }, [draft.customerMode, draft.customerId, customerDetailQuery.data]);
 
-  function patch(update: Partial<NewOrderDraft>) {
-    if (update.customerId && update.customerId !== draft.customerId) {
-      lastHydratedCustomerId.current = null;
-    }
-    if (update.customerMode === "new") {
-      lastHydratedCustomerId.current = null;
-    }
-    setDraft((prev) => ({ ...prev, ...update }));
-    setError(null);
-  }
-
   function handleGarmentChange(garmentType: BookingGarmentType) {
     if (garmentType === draft.garmentType) return;
 
@@ -132,69 +139,26 @@ export function NewOrderForm() {
     setError(null);
   }
 
-  async function validate(): Promise<boolean> {
-    if (draft.customerMode === "new") {
-      const valid = await customerSectionRef.current?.validateNewCustomer();
-      if (!valid) return false;
-    } else if (!draft.customerId) {
-      setError(t.validation.customerRequired);
-      return false;
-    }
-
-    if (!draft.bookingDate || !draft.deliveryDate || !draft.totalPrice) {
-      setError(t.validation.orderDetailsRequired);
-      return false;
-    }
-
-    const suitCount = Number.parseInt(draft.suitCount, 10);
-    if (!Number.isFinite(suitCount) || suitCount < 1) {
-      setError(t.validation.suitCountInvalid);
-      return false;
-    }
-
-    const schema = getGarmentSchema(
-      normalizeBookingGarmentType(draft.garmentType),
-    );
-    const hasRequired = schema.measurementFields
-      .filter((f) => f.required)
-      .every((f) => draft.measurements[f.key]?.trim());
-
-    const hasAny = Object.values(draft.measurements).some((v) => v.trim() !== "");
-
-    if (!hasAny) {
-      setError(t.validation.measurementsRequired);
-      return false;
-    }
-
-    if (!hasRequired) {
-      setError(t.validation.requiredMeasurementsMissing);
-      return false;
-    }
-
-    const invalidKey = findInvalidMeasurement(draft.measurements);
-    if (invalidKey) {
-      const field = schema.measurementFields.find((f) => f.key === invalidKey);
-      const label = field
-        ? (t.measurements as Record<string, string>)[field.labelKey] ?? invalidKey
-        : invalidKey;
-      const msg = t.errors.measurementFieldInvalid.replace("{field}", label);
-      setError(msg);
-      showError(msg);
-      return false;
-    }
-
-    return true;
-  }
-
   async function handleSave() {
     setError(null);
-    if (!(await validate())) return;
+
+    if (draft.customerMode === "new") {
+      const valid = await customerSectionRef.current?.validateNewCustomer();
+      if (!valid) return;
+    }
+
+    const validationMessage = getNewOrderValidationError(draft, t);
+    if (validationMessage) {
+      setError(validationMessage);
+      showError(validationMessage);
+      return;
+    }
 
     try {
       await createOrder.mutateAsync(draft);
-      setMessage(t.common.saved);
       showSuccess(t.common.saved);
-      setTimeout(() => router.push(routes.dashboard), 900);
+      router.replace(routes.orders);
+      router.refresh();
     } catch (err) {
       const msg = resolveApiErrorMessage(err, t);
       setError(msg);
@@ -203,11 +167,7 @@ export function NewOrderForm() {
   }
 
   if (customersLoading) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-        {t.common.loading}
-      </div>
-    );
+    return <NewOrderFormSkeleton />;
   }
 
   return (
@@ -228,11 +188,6 @@ export function NewOrderForm() {
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
-        </div>
-      )}
-      {message && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {message}
         </div>
       )}
 
@@ -289,7 +244,7 @@ export function NewOrderForm() {
         )}
       >
         <Link
-          href={routes.dashboard}
+          href={routes.orders}
           className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
         >
           {t.form.cancel}
@@ -297,7 +252,7 @@ export function NewOrderForm() {
         <Button
           className="w-full sm:w-auto"
           onClick={handleSave}
-          disabled={createOrder.isPending}
+          disabled={!canSave}
         >
           {createOrder.isPending ? t.common.loading : t.form.save}
         </Button>

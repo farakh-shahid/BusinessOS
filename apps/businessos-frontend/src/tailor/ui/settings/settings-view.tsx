@@ -17,6 +17,7 @@ import {
   useSettingsQuery,
   useUpdateSettingsMutation,
 } from "@/tailor/infrastructure/api/hooks/use-settings";
+import { SettingsFormSkeleton } from "@/tailor/ui/skeletons";
 
 export function SettingsView() {
   const { locale } = useLocale();
@@ -78,9 +79,7 @@ export function SettingsView() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          {t.common.loading}
-        </div>
+        <SettingsFormSkeleton />
       ) : isError || !data ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}

@@ -39,6 +39,7 @@ import { DeliverDialog } from "./deliver-dialog";
 import { MarkReadyDialog } from "./mark-ready-dialog";
 import { OrderStatusSelect } from "./order-status-select";
 import { printMeasurementCard, printOrderReceipt } from "./print-order";
+import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
 
 interface OrderDetailViewProps {
   orderId: string;
@@ -93,11 +94,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   }
 
   if (isLoading) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-        {t.common.loading}
-      </div>
-    );
+    return <OrderDetailSkeleton />;
   }
 
   if (isError || !order) {

@@ -23,6 +23,7 @@ import {
 import { OrderFilterChips } from "@/tailor/ui/orders/order-filter-chips";
 import { OrderListControls } from "@/tailor/ui/orders/order-list-controls";
 import { OrderList } from "@/tailor/ui/orders/order-list";
+import { OrderListSkeleton } from "@/tailor/ui/skeletons";
 
 export function OrdersView() {
   const router = useRouter();
@@ -177,9 +178,7 @@ export function OrdersView() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          {t.common.loading}
-        </div>
+        <OrderListSkeleton count={5} />
       ) : isError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}

@@ -156,7 +156,7 @@ export function SearchableCombobox({
           role="listbox"
           aria-labelledby={listboxId}
           className={cn(
-            "absolute z-[100] mt-1.5 min-w-full w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60",
+            "absolute z-[100] mt-1.5 w-full min-w-0 max-w-[min(100vw-2rem,24rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60",
             isRtl ? "right-0" : "left-0",
             isRtl && "text-right",
             menuClassName,

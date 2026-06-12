@@ -29,6 +29,7 @@ import {
 import { GarmentTypeSection } from "@/tailor/ui/orders/garment-type-section";
 import { MeasurementFieldsForm } from "@/tailor/ui/measurements/measurement-fields-form";
 import { StyleSpecsForm } from "@/tailor/ui/measurements/style-specs-form";
+import { DialogContentSkeleton } from "@/tailor/ui/skeletons";
 
 interface CustomerEditDialogProps {
   customerId: string | null;
@@ -226,11 +227,7 @@ export function CustomerEditDialog({
         </div>
 
         <div className="overflow-y-auto px-5 py-4">
-          {isLoading && (
-            <p className="py-8 text-center text-sm text-slate-500">
-              {t.common.loading}
-            </p>
-          )}
+          {isLoading && <DialogContentSkeleton />}
 
           {isError && (
             <p className="py-8 text-center text-sm text-rose-600">

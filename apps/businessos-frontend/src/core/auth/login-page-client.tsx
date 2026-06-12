@@ -2,17 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getDictionary } from "@business-os/i18n";
 import { getAccessToken } from "@/core/auth/auth-storage";
 import { routes } from "@/core/config/routes";
-import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { LoginForm } from "@/core/auth/login-form";
+import { Skeleton } from "@/core/presentation/components/ui/skeleton";
 
 export function LoginPageClient() {
   const router = useRouter();
-  const { locale } = useLocale();
-  const t = getDictionary(locale);
   const hasToken = typeof window !== "undefined" && !!getAccessToken();
   const { data: user, isLoading } = useMeQuery(hasToken);
 
@@ -24,9 +21,13 @@ export function LoginPageClient() {
 
   if (hasToken && isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-slate-200">
-          {t.common.loading}
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
+        <div className="w-full max-w-sm space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
+          <Skeleton className="mx-auto h-12 w-12 rounded-2xl bg-white/20" />
+          <Skeleton className="mx-auto h-4 w-32 rounded-md bg-white/20" />
+          <Skeleton className="h-11 w-full rounded-xl bg-white/15" />
+          <Skeleton className="h-11 w-full rounded-xl bg-white/15" />
+          <Skeleton className="h-11 w-full rounded-xl bg-white/25" />
         </div>
       </div>
     );
