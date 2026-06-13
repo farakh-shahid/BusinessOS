@@ -9,7 +9,7 @@
     "start:prod": "node dist/main.js",
     "prisma:generate": "prisma generate",
     "prisma:deploy": "prisma migrate deploy",
-    "vercel-build": "prisma generate && prisma migrate deploy && nest build",
+    "vercel-build": "npm run build -w @business-os/shared -w @business-os/tailor && prisma generate && prisma migrate deploy && nest build",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio"
