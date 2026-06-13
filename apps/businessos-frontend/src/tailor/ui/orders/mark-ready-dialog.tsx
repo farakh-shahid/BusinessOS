@@ -52,6 +52,8 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
   const handleSubmit = async () => {
     setFeedback(null);
 
+    if (!order) return;
+
     if (sendEmail && !hasCustomerEmail) {
       setFeedback(t.orders.emailNotFoundAddCustomer);
       return;
