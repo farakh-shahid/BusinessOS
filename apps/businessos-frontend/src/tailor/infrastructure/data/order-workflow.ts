@@ -21,6 +21,7 @@ export function canEditOrderStatus(
   workflowStatus: OrderWorkflowStatus,
   isAdmin: boolean,
 ): boolean {
-  if (isAdmin) return workflowStatus !== "cancelled";
-  return !["delivered", "cancelled"].includes(workflowStatus);
+  if (workflowStatus === "cancelled") return isAdmin;
+  if (isAdmin) return true;
+  return workflowStatus !== "delivered";
 }

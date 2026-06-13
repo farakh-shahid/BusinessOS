@@ -6,6 +6,7 @@ import type { Dictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { Input } from "@/core/presentation/components/ui/input";
 import { Label } from "@/core/presentation/components/ui/label";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 interface AssignedToInputProps {
   t: Dictionary;
@@ -84,30 +85,56 @@ export function AssignedToInput({
       {variant === "tagged" ? (
         <div
           className={cn(
-            "flex h-9 w-full items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white",
+            "flex h-9 w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white",
             isRtl && "flex-row-reverse",
           )}
         >
           <div
             className={cn(
-              "flex shrink-0 items-center gap-1 bg-slate-50 px-2 text-[10px] font-medium text-slate-500",
+              "flex shrink-0 items-center gap-1 bg-slate-50 text-[10px] font-medium text-slate-500",
+              compact ? "px-1.5" : "px-2",
               isRtl
                 ? "border-l border-slate-100"
                 : "border-r border-slate-100",
             )}
+            title={t.form.assignedTo}
           >
             <User className="h-3 w-3 shrink-0 text-brand-600" />
-            <span className="whitespace-nowrap">
-              {t.form.assignedTo.split("(")[0]?.trim() ?? t.form.assignedTo}
-            </span>
+            {!compact ? (
+              <span className="whitespace-nowrap">
+                {t.form.assignedTo.split("(")[0]?.trim() ?? t.form.assignedTo}
+              </span>
+            ) : null}
           </div>
-          <input
-            {...inputProps}
-            className={cn(
-              "min-w-0 flex-1 bg-transparent px-2 text-xs text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50",
-              isRtl && "text-right",
-            )}
-          />
+          <div className="relative min-w-0 flex-1">
+            {draft.trim() ? (
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-0 flex items-center px-2",
+                  isRtl && "justify-end",
+                )}
+                aria-hidden
+              >
+                <PersonNameText
+                  name={draft}
+                  className={cn(
+                    "text-[11px] text-slate-700",
+                    isRtl && "flex-row-reverse",
+                  )}
+                />
+              </div>
+            ) : null}
+            <input
+              {...inputProps}
+              title={draft.trim() || t.form.assignedTo}
+              className={cn(
+                "h-full w-full min-w-0 bg-transparent px-2 text-[11px] text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50",
+                draft.trim() && "text-transparent",
+                !disabled && draft.trim() && "caret-slate-700",
+                isRtl && "text-right",
+              )}
+            />
+          </div>
         </div>
       ) : (
         <Input

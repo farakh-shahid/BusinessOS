@@ -25,6 +25,23 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    if (exception.code === "P2002") {
+      const target = Array.isArray(exception.meta?.target)
+        ? exception.meta.target.join(", ")
+        : "record";
+      const message =
+        target.includes("phone")
+          ? "A customer with this phone number already exists. Switch to Existing customer or use a different number."
+          : "This record already exists. Please check your details and try again.";
+
+      response.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message,
+        error: "Bad Request",
+      });
+      return;
+    }
+
     this.logger.error(exception.message, exception.stack);
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

@@ -7,6 +7,10 @@ import { cn } from "@/core/presentation/lib/utils";
 import { routes } from "@/core/config/routes";
 import { useLocale } from "@/core/i18n/locale-context";
 
+/** Height of mobile bottom nav + gap — keeps FAB above tab bar */
+const FAB_BOTTOM =
+  "calc(5.5rem + max(0.65rem, env(safe-area-inset-bottom)) + 0.75rem)";
+
 export function FabButton() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
@@ -16,8 +20,13 @@ export function FabButton() {
     <Link
       href={routes.newOrder}
       aria-label={t.nav.newOrder}
+      style={{ bottom: FAB_BOTTOM }}
       className={cn(
-        "fixed bottom-[6.75rem] z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-500 to-accent-400 text-white shadow-xl shadow-accent-500/35 transition active:scale-95 md:hidden",
+        "fixed z-[60] flex h-14 w-14 items-center justify-center rounded-full",
+        "bg-gradient-to-br from-accent-500 to-accent-600 text-white",
+        "shadow-lg shadow-accent-500/40 ring-4 ring-white/90",
+        "transition hover:from-accent-600 hover:to-accent-700 active:scale-95",
+        "md:hidden",
         isRtl ? "left-5" : "right-5",
       )}
     >

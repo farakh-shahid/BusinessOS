@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, MessageCircle, Mail, X } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
+import type { OrderWorkflowStatus } from "@business-os/tailor";
 import { Button } from "@/core/presentation/components/ui/button";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
@@ -17,9 +18,13 @@ import {
 interface MarkReadyDialogProps {
   orderId: string | null;
   onClose: () => void;
+  onMarked?: (payload: {
+    orderId: string;
+    previousStatus: OrderWorkflowStatus;
+  }) => void;
 }
 
-export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
+export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogProps) {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
@@ -53,6 +58,7 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
     }
 
     try {
+      const previousStatus = order.workflowStatus;
       const result = await markReady.mutateAsync({
         orderId,
         payload: {
@@ -86,6 +92,8 @@ export function MarkReadyDialog({ orderId, onClose }: MarkReadyDialogProps) {
       }
 
       setFeedback(messages.join(" · "));
+      onMarked?.({ orderId, previousStatus });
+      window.setTimeout(() => onClose(), 1200);
     } catch {
       setFeedback(t.common.error);
     }

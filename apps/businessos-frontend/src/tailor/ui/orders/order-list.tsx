@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Order, OrderWorkflowStatus } from "@business-os/tailor";
@@ -15,7 +15,9 @@ import {
   useUpdateOrderMutation,
   useUpdateOrderStatusMutation,
 } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { useToast } from "@/core/presentation/components/ui/toast";
 import { DeliverDialog } from "./deliver-dialog";
+import { MarkReadyConfirmSheet } from "./mark-ready-confirm-sheet";
 import { MarkReadyDialog } from "./mark-ready-dialog";
 import { OrderCard } from "./order-card";
 
@@ -24,6 +26,11 @@ interface OrderListProps {
   showViewAll?: boolean;
   enableMarkReady?: boolean;
   enableStatusChange?: boolean;
+}
+
+interface UndoMarkReadyState {
+  orderId: string;
+  previousStatus: OrderWorkflowStatus;
 }
 
 export function OrderList({
@@ -40,10 +47,24 @@ export function OrderList({
   const updateStatus = useUpdateOrderStatusMutation();
   const updateOrder = useUpdateOrderMutation();
   const { data: assignments } = useAssignmentsQuery();
+  const { showSuccess, showError } = useToast();
+  const [markReadyConfirmOrder, setMarkReadyConfirmOrder] = useState<Order | null>(
+    null,
+  );
   const [markReadyOrderId, setMarkReadyOrderId] = useState<string | null>(null);
+  const [undoMarkReady, setUndoMarkReady] = useState<UndoMarkReadyState | null>(
+    null,
+  );
+  const [undoPending, setUndoPending] = useState(false);
   const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!undoMarkReady) return;
+    const timer = window.setTimeout(() => setUndoMarkReady(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undoMarkReady]);
 
   async function handleStatusChange(
     orderId: string,
@@ -77,6 +98,24 @@ export function OrderList({
     }
   }
 
+  async function handleUndoMarkReady() {
+    if (!undoMarkReady || undoPending) return;
+
+    setUndoPending(true);
+    try {
+      await updateStatus.mutateAsync({
+        orderId: undoMarkReady.orderId,
+        payload: { status: undoMarkReady.previousStatus },
+      });
+      setUndoMarkReady(null);
+      showSuccess(t.orders.markReadyUndone);
+    } catch {
+      showError(t.common.error);
+    } finally {
+      setUndoPending(false);
+    }
+  }
+
   return (
     <section className="space-y-3">
       {orders.map((order) => (
@@ -87,7 +126,12 @@ export function OrderList({
           statusUpdating={updatingOrderId === order.id}
           href={routes.orderDetail(order.id)}
           onMarkReady={
-            enableMarkReady ? (id) => setMarkReadyOrderId(id) : undefined
+            enableMarkReady
+              ? (id) => {
+                  const target = orders.find((o) => o.id === id);
+                  if (target) setMarkReadyConfirmOrder(target);
+                }
+              : undefined
           }
           onStatusChange={
             enableStatusChange ? handleStatusChange : undefined
@@ -115,14 +159,54 @@ export function OrderList({
         </Link>
       )}
 
+      <MarkReadyConfirmSheet
+        order={markReadyConfirmOrder}
+        t={t}
+        isRtl={isRtl}
+        onCancel={() => setMarkReadyConfirmOrder(null)}
+        onConfirm={() => {
+          if (markReadyConfirmOrder) {
+            setMarkReadyOrderId(markReadyConfirmOrder.id);
+          }
+          setMarkReadyConfirmOrder(null);
+        }}
+      />
+
       <MarkReadyDialog
         orderId={markReadyOrderId}
         onClose={() => setMarkReadyOrderId(null)}
+        onMarked={({ orderId, previousStatus }) => {
+          setMarkReadyOrderId(null);
+          if (previousStatus !== "ready") {
+            setUndoMarkReady({ orderId, previousStatus });
+          }
+        }}
       />
+
       <DeliverDialog
         orderId={deliverOrderId}
         onClose={() => setDeliverOrderId(null)}
       />
+
+      {undoMarkReady ? (
+        <div
+          className={cn(
+            "fixed inset-x-4 bottom-20 z-[100] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-lg sm:bottom-6",
+            isRtl && "flex-row-reverse",
+          )}
+          role="status"
+        >
+          <p className="min-w-0 flex-1 font-medium">{t.orders.markReadyUndoPrompt}</p>
+          <button
+            type="button"
+            onClick={() => void handleUndoMarkReady()}
+            disabled={undoPending}
+            className="shrink-0 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
+          >
+            {undoPending ? t.common.loading : t.orders.markReadyUndo}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

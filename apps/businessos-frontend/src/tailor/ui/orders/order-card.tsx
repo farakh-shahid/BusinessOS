@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Calendar,
   CalendarClock,
   CheckCircle2,
   MessageCircle,
@@ -18,6 +17,10 @@ import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { AssignedToInput } from "./assigned-to-input";
 import { OrderStatusSelect } from "./order-status-select";
+import { OrderDueChip } from "./order-due-chip";
+import { statusStripeClass } from "@/tailor/infrastructure/data/order-status-colors";
+import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 interface OrderCardProps {
   order: Order;
@@ -45,7 +48,7 @@ function MarkReadyButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-[4.75rem] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 transition-colors",
+        "pointer-events-auto relative z-10 flex w-[4.75rem] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 transition-colors",
         canMarkReady
           ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
           : "bg-brand-50 text-brand-700 hover:bg-brand-100",
@@ -91,7 +94,7 @@ export function OrderCard({
     onMarkReady?.(order.id);
   }
 
-  const customerInfo = (
+  const customerNameBlock = (
     <>
       <div
         className={cn(
@@ -114,19 +117,26 @@ export function OrderCard({
           </span>
         ) : null}
       </div>
-
       <p className="text-xs text-slate-400">#{order.orderNumber}</p>
+    </>
+  );
 
-      <p
-        className={cn(
-          "flex items-center gap-1.5 text-sm text-slate-600",
-          isRtl && "flex-row-reverse justify-end",
-        )}
-      >
-        <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-        <span dir="ltr">{order.customerPhone}</span>
-      </p>
+  const customerPhoneLink = (
+    <a
+      href={phoneTelHref(order.customerPhone)}
+      className={cn(
+        "pointer-events-auto relative z-10 flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-2 hover:underline",
+        isRtl && "flex-row-reverse justify-end",
+      )}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Phone className="h-3.5 w-3.5 shrink-0" />
+      <span dir="ltr">{order.customerPhone}</span>
+    </a>
+  );
 
+  const customerDetailsBlock = (
+    <>
       <p
         className={cn(
           "flex items-center gap-1.5 text-sm text-slate-600",
@@ -152,21 +162,32 @@ export function OrderCard({
           )}
         >
           <Scissors className="h-3 w-3 shrink-0 text-slate-400" />
-          <span>
-            <span className="font-medium text-slate-600">
+          <span className="inline-flex min-w-0 items-baseline gap-1">
+            <span className="shrink-0 font-medium text-slate-600">
               {t.form.assignedTo}:
-            </span>{" "}
-            {order.assignedToName}
+            </span>
+            <PersonNameText
+              name={order.assignedToName}
+              className="min-w-0 font-medium text-slate-600"
+            />
           </span>
         </p>
       ) : null}
     </>
   );
 
+  const customerInfoColumn = (
+    <div className={cn("min-w-0 flex-1 space-y-1.5", isRtl && "text-right")}>
+      <div className="space-y-1.5">{customerNameBlock}</div>
+      {customerPhoneLink}
+      <div className="space-y-1.5">{customerDetailsBlock}</div>
+    </div>
+  );
+
   const dateLines = (
     <div
       className={cn(
-        "space-y-0.5 text-xs text-slate-500",
+        "space-y-1.5 text-xs text-slate-500",
         isRtl ? "text-left md:text-left" : "text-left md:text-right",
       )}
     >
@@ -182,47 +203,54 @@ export function OrderCard({
           <span className="font-medium text-slate-600">{order.bookingDate}</span>
         </span>
       </p>
-      <p
+      <div
         className={cn(
-          "flex items-center gap-1",
+          "flex flex-wrap items-center gap-2",
           isRtl && "flex-row-reverse justify-start md:justify-end",
         )}
       >
-        <Calendar className="h-3 w-3 shrink-0 text-slate-400" />
-        <span>
-          <span className="text-slate-400">{t.form.dueDate}:</span>{" "}
-          <span className="font-medium text-slate-600">{order.dueDate}</span>
-        </span>
-      </p>
+        <OrderDueChip order={order} t={t} isRtl={isRtl} />
+      </div>
     </div>
   );
 
   return (
     <div
       className={cn(
-        "w-full rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md",
+        "relative w-full rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md",
+        statusStripeClass(
+          {
+            workflowStatus: order.workflowStatus,
+            displayStatus: order.status,
+          },
+          isRtl,
+        ),
         isRtl && "text-right",
       )}
     >
+      <Link
+        href={href}
+        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        aria-label={`${order.customerName}, ${order.orderNumber}`}
+      />
+
+      <div className="relative z-[1] pointer-events-none">
       {/* Mobile: stacked layout */}
       <div className="flex flex-col gap-3 md:hidden">
-        <Link
-          href={href}
+        <div
           className={cn(
             "flex min-w-0 items-start gap-3",
             isRtl && "flex-row-reverse",
           )}
         >
-          <UserAvatar name={order.customerName} />
-          <div className={cn("min-w-0 flex-1 space-y-1.5", isRtl && "text-right")}>
-            {customerInfo}
-          </div>
-        </Link>
+          <UserAvatar name={order.customerName} className="shrink-0" />
+          {customerInfoColumn}
+        </div>
 
         {(onAssignChange || onStatusChange || onMarkReady) && (
           <div className="space-y-3 border-t border-slate-100 pt-3">
             {(onAssignChange || onStatusChange) && (
-              <div className="flex flex-col gap-2">
+              <div className="pointer-events-auto relative z-10 flex flex-col gap-2">
                 {onStatusChange ? (
                   <OrderStatusSelect
                     orderId={order.id}
@@ -281,18 +309,15 @@ export function OrderCard({
           isRtl && "flex-row-reverse",
         )}
       >
-        <Link
-          href={href}
+        <div
           className={cn(
             "flex min-w-0 flex-1 items-center gap-3",
             isRtl && "flex-row-reverse",
           )}
         >
-          <UserAvatar name={order.customerName} />
-          <div className={cn("min-w-0 flex-1 space-y-1.5", isRtl && "text-right")}>
-            {customerInfo}
-          </div>
-        </Link>
+          <UserAvatar name={order.customerName} className="shrink-0" />
+          {customerInfoColumn}
+        </div>
 
         {(onAssignChange || onStatusChange || onMarkReady) && (
           <div
@@ -303,7 +328,7 @@ export function OrderCard({
           >
             <div
               className={cn(
-                "flex flex-col items-end justify-center gap-2",
+                "pointer-events-auto relative z-10 flex flex-col items-end justify-center gap-2",
                 isRtl && "items-start",
               )}
             >
@@ -350,6 +375,7 @@ export function OrderCard({
             ) : null}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

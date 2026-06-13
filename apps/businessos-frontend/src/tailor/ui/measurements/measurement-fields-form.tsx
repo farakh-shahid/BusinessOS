@@ -9,7 +9,9 @@ import {
 import { Label } from "@/core/presentation/components/ui/label";
 import { Input } from "@/core/presentation/components/ui/input";
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
+import { FormFieldError } from "@/core/presentation/components/ui/form-field-error";
 import { sanitizeMeasurementInput } from "@/core/presentation/lib/validate-measurements";
+import type { NewOrderFieldErrors } from "@/tailor/infrastructure/data/new-order-validation";
 import { useLocale } from "@/core/i18n/locale-context";
 
 interface MeasurementFieldsFormProps {
@@ -17,6 +19,7 @@ interface MeasurementFieldsFormProps {
   garmentType: BookingGarmentType;
   measurements: Record<string, string>;
   onChange: (measurements: Record<string, string>) => void;
+  fieldErrors?: NewOrderFieldErrors;
 }
 
 const groupLabels: Record<string, keyof Dictionary["form"]> = {
@@ -30,6 +33,7 @@ export function MeasurementFieldsForm({
   garmentType,
   measurements,
   onChange,
+  fieldErrors = {},
 }: MeasurementFieldsFormProps) {
   const { locale } = useLocale();
   const suitType = normalizeBookingGarmentType(garmentType);
@@ -53,6 +57,9 @@ export function MeasurementFieldsForm({
         {t.garments[suitType]} · {t.form.unitInches}
       </p>
       <p className="mt-0.5 text-xs text-slate-400">{t.form.unitInchesHint}</p>
+      {fieldErrors.measurements ? (
+        <FormFieldError message={fieldErrors.measurements} />
+      ) : null}
 
       <div className="mt-4 space-y-5">
         {groups.map((group) => {
@@ -85,12 +92,19 @@ export function MeasurementFieldsForm({
                           isNumeric ? t.form.measurementPlaceholder : ""
                         }
                         value={measurements[field.key] ?? ""}
+                        aria-invalid={!!fieldErrors[field.key]}
+                        className={
+                          fieldErrors[field.key]
+                            ? "border-rose-300 focus-visible:ring-rose-400"
+                            : undefined
+                        }
                         onChange={(e) =>
                           updateField(field.key, e.target.value, isNumeric)
                         }
                         dir={locale === "ur" ? "ltr" : undefined}
                         autoComplete="off"
                       />
+                      <FormFieldError message={fieldErrors[field.key]} />
                     </div>
                   );
                 })}

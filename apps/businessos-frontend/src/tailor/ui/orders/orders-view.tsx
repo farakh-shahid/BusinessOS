@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
@@ -18,12 +18,12 @@ import {
   parseOrderListParams,
   persistOrderListParams,
   type OrderListParams,
-  type OrderListSort,
 } from "@/tailor/infrastructure/data/order-list-params";
-import { OrderFilterChips } from "@/tailor/ui/orders/order-filter-chips";
-import { OrderListControls } from "@/tailor/ui/orders/order-list-controls";
+import { OrderQuickFilters } from "@/tailor/ui/orders/order-quick-filters";
+import { OrderFiltersSheet } from "@/tailor/ui/orders/order-filters-sheet";
 import { OrderList } from "@/tailor/ui/orders/order-list";
 import { OrderListSkeleton } from "@/tailor/ui/skeletons";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 export function OrdersView() {
   const router = useRouter();
@@ -32,6 +32,7 @@ export function OrdersView() {
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const hydrated = useRef(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const [params, setParams] = useState<OrderListParams>(() =>
     parseOrderListParams(searchParams),
@@ -84,108 +85,97 @@ export function OrdersView() {
     });
   }
 
-  function handleSortChange(sort: OrderListSort) {
-    patchParams({ sort });
-  }
-
   function handleSearchSubmit(event: React.FormEvent) {
     event.preventDefault();
     patchParams({ search: searchInput.trim() });
   }
 
-  function handleDueFromChange(dueFrom: string) {
-    patchParams({
-      filter: params.filter === "due_this_week" ? "" : params.filter,
-      dueFrom,
-    });
-  }
-
-  function handleDueToChange(dueTo: string) {
-    patchParams({
-      filter: params.filter === "due_this_week" ? "" : params.filter,
-      dueTo,
-    });
-  }
-
-  function handleClearDateRange() {
-    patchParams({ dueFrom: "", dueTo: "" });
-  }
-
   return (
     <>
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <div>
-          <Link
-            href={routes.dashboard}
-            className="text-sm font-medium text-brand-700 hover:text-brand-800"
-          >
-            ← {t.nav.dashboard}
-          </Link>
-          <h2 className="mt-2 text-lg font-bold text-slate-900 md:text-2xl">
-            {t.orders.allOrders}
-          </h2>
-          {params.assignedTo ? (
-            <p className="mt-1 text-sm text-slate-500">
-              {t.form.assignedTo}:{" "}
-              <span className="font-medium text-slate-700">
-                {params.assignedTo}
-              </span>
-            </p>
-          ) : null}
-        </div>
+      <div className="mb-2">
         <Link
-          href={routes.newOrder}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800"
+          href={routes.dashboard}
+          className="text-sm font-medium text-brand-700 hover:text-brand-800"
         >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">{t.nav.newOrder}</span>
+          ← {t.nav.dashboard}
         </Link>
+        <h2 className="mt-2 text-lg font-bold text-slate-900 md:text-2xl">
+          {t.orders.allOrders}
+        </h2>
+        {params.assignedTo ? (
+          <p className="mt-1 inline-flex max-w-full min-w-0 items-baseline gap-1 text-sm text-slate-500">
+            <span className="shrink-0">{t.form.assignedTo}:</span>
+            <PersonNameText
+              name={params.assignedTo}
+              className="min-w-0 font-medium text-slate-700"
+            />
+          </p>
+        ) : null}
       </div>
 
-      <div className="mb-4 space-y-3">
+      <div
+        className={cn(
+          "sticky top-0 z-20 -mx-4 space-y-3 border-b border-slate-200/80 bg-slate-50/95 px-4 py-3 backdrop-blur-md",
+          "sm:-mx-6 sm:px-6",
+          "lg:-mx-10 lg:px-10",
+        )}
+      >
         <form
           onSubmit={handleSearchSubmit}
           className={cn("flex gap-2", isRtl && "flex-row-reverse")}
         >
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t.orderFilters.searchPlaceholder}
-            className="flex-1"
-          />
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className={cn(
+                "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400",
+                isRtl ? "right-3" : "left-3",
+              )}
+            />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t.orderList.searchOrdersPlaceholder}
+              className={cn("w-full", isRtl ? "pr-10" : "pl-10")}
+            />
+          </div>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <Search className="h-4 w-4" />
-            {t.search.button}
+            <span className="hidden sm:inline">{t.search.button}</span>
           </button>
         </form>
 
-        <OrderFilterChips value={params.filter} onChange={handleFilterChange} />
-
-        <OrderListControls
+        <OrderQuickFilters
+          params={params}
           t={t}
-          sort={params.sort}
-          dueFrom={params.dueFrom}
-          dueTo={params.dueTo}
           isRtl={isRtl}
-          onSortChange={handleSortChange}
-          onDueFromChange={handleDueFromChange}
-          onDueToChange={handleDueToChange}
-          onClearDateRange={handleClearDateRange}
+          onFilterChange={handleFilterChange}
+          onOpenSheet={() => setSheetOpen(true)}
         />
       </div>
 
-      {isLoading ? (
-        <OrderListSkeleton count={5} />
-      ) : isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
-          {t.common.error}
-        </div>
-      ) : (
-        <OrderList orders={orders} showViewAll={false} />
-      )}
+      <OrderFiltersSheet
+        open={sheetOpen}
+        params={params}
+        t={t}
+        isRtl={isRtl}
+        onClose={() => setSheetOpen(false)}
+        onApply={applyParams}
+      />
+
+      <div className="mt-4">
+        {isLoading ? (
+          <OrderListSkeleton count={5} />
+        ) : isError ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
+            {t.common.error}
+          </div>
+        ) : (
+          <OrderList orders={orders} showViewAll={false} />
+        )}
+      </div>
     </>
   );
 }

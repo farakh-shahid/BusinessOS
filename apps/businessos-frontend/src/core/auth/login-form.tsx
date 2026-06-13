@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Scissors, Sparkles } from "lucide-react";
+import {
+  CalendarClock,
+  Eye,
+  EyeOff,
+  Languages,
+  Ruler,
+  Scissors,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
@@ -14,6 +23,13 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useLoginMutation } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { LanguageToggle } from "@/tailor/ui/layout/language-toggle";
 
+const loginFeatures = [
+  { icon: CalendarClock, titleKey: "featureOrdersTitle", descKey: "featureOrdersDesc" },
+  { icon: Ruler, titleKey: "featureMeasurementsTitle", descKey: "featureMeasurementsDesc" },
+  { icon: Users, titleKey: "featureCustomersTitle", descKey: "featureCustomersDesc" },
+  { icon: Languages, titleKey: "featureBilingualTitle", descKey: "featureBilingualDesc" },
+] as const;
+
 export function LoginForm() {
   const router = useRouter();
   const { locale } = useLocale();
@@ -22,6 +38,7 @@ export function LoginForm() {
   const login = useLoginMutation();
   const [loginId, setLoginId] = useState("admin@demotailor.pk");
   const [password, setPassword] = useState("changeme123");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -60,6 +77,32 @@ export function LoginForm() {
             {t.auth.shopLabel}
           </h1>
           <p className="mt-4 max-w-md text-lg text-sidebar-text">{t.auth.shopBlurb}</p>
+        </div>
+
+        <div className="relative z-10 flex flex-1 flex-col justify-center px-10 xl:px-14">
+          <ul className="grid max-w-lg gap-3">
+            {loginFeatures.map(({ icon: Icon, titleKey, descKey }) => (
+              <li
+                key={titleKey}
+                className={cn(
+                  "flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm",
+                  isRtl && "flex-row-reverse text-right",
+                )}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">
+                    {t.auth[titleKey]}
+                  </p>
+                  <p className="mt-0.5 text-sm leading-snug text-sidebar-text">
+                    {t.auth[descKey]}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="relative z-10 p-10 xl:p-14">
@@ -112,15 +155,33 @@ export function LoginForm() {
 
               <div>
                 <Label htmlFor="password">{t.auth.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1.5"
-                  required
-                />
+                <div className="relative mt-1.5">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={cn(isRtl ? "pl-11" : "pr-11")}
+                    dir="ltr"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className={cn(
+                      "absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700",
+                      isRtl ? "left-1" : "right-1",
+                    )}
+                    aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <Button

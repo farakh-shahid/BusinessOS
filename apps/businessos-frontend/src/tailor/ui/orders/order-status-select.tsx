@@ -9,15 +9,7 @@ import {
   canEditOrderStatus,
   workflowOptionsForRole,
 } from "@/tailor/infrastructure/data/order-workflow";
-
-const badgeTone: Record<OrderWorkflowStatus, string> = {
-  pending: "border-slate-200 bg-slate-50 text-slate-700",
-  cutting: "border-sky-200 bg-sky-50 text-sky-800",
-  stitching: "border-brand-200 bg-brand-50 text-brand-800",
-  ready: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  delivered: "border-indigo-200 bg-indigo-50 text-indigo-800",
-  cancelled: "border-rose-200 bg-rose-50 text-rose-700",
-};
+import { statusBadgeClass } from "@/tailor/infrastructure/data/order-status-colors";
 
 interface OrderStatusSelectProps {
   orderId: string;
@@ -48,20 +40,17 @@ export function OrderStatusSelect({
   const editable = canEditOrderStatus(workflowStatus, isAdmin) && !disabled;
   const statusOptions = workflowOptionsForRole(isAdmin);
 
-  const tone =
-    workflowStatus === "pending" &&
-    (displayStatus === "overdue" || displayStatus === "due_today")
-      ? displayStatus === "overdue"
-        ? "border-rose-200 bg-rose-50 text-rose-700"
-        : "border-amber-200 bg-amber-50 text-amber-800"
-      : badgeTone[workflowStatus];
+  const tone = statusBadgeClass({
+    workflowStatus,
+    displayStatus,
+  });
 
   if (!editable) {
     const label = t.orderStatus[workflowStatus];
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-lg border px-2 py-1 font-bold uppercase tracking-wide",
+          "inline-flex items-center rounded-lg px-2 py-1 font-bold uppercase tracking-wide",
           isCard
             ? "max-w-[9rem] text-[10px]"
             : "text-xs sm:text-sm sm:normal-case",

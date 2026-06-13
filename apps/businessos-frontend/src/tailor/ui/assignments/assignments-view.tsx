@@ -9,6 +9,7 @@ import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useAssignmentsQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { AssignmentsSkeleton } from "@/tailor/ui/skeletons";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 export function AssignmentsView() {
   const { locale } = useLocale();
@@ -84,8 +85,13 @@ export function AssignmentsView() {
                         <UserRound className="h-5 w-5" />
                       </div>
                       <div className={cn("min-w-0", isRtl && "text-right")}>
-                        <CardTitle className="truncate text-base">
-                          {row.assignedToName}
+                        <CardTitle className="text-base">
+                          <PersonNameText
+                            name={row.assignedToName}
+                            className="min-w-0"
+                            firstClassName="font-semibold text-slate-900"
+                            restClassName="font-semibold text-slate-900"
+                          />
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
                           {row.orderCount} {t.assignments.activeOrders} ·{" "}

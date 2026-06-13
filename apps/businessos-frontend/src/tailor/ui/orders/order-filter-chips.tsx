@@ -48,9 +48,9 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   overdue: {
     icon: AlertTriangle,
-    idle: "border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100",
-    active: "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-600/25",
-    iconBox: "bg-rose-100 text-rose-700",
+    idle: "border-red-300 bg-red-50 text-red-900 hover:bg-red-100",
+    active: "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/25",
+    iconBox: "bg-red-100 text-red-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   due_today: {
@@ -69,10 +69,10 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   in_progress: {
     icon: Scissors,
-    idle: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800 hover:bg-fuchsia-100",
+    idle: "border-orange-300 bg-orange-50 text-orange-900 hover:bg-orange-100",
     active:
-      "border-fuchsia-600 bg-fuchsia-600 text-white shadow-md shadow-fuchsia-600/25",
-    iconBox: "bg-fuchsia-100 text-fuchsia-700",
+      "border-orange-600 bg-orange-600 text-white shadow-md shadow-orange-600/25",
+    iconBox: "bg-orange-100 text-orange-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   priority: {
@@ -84,39 +84,39 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   pending: {
     icon: Clock,
-    idle: "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100",
+    idle: "border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200",
     active: "border-slate-600 bg-slate-600 text-white shadow-md shadow-slate-600/25",
-    iconBox: "bg-slate-200 text-slate-600",
+    iconBox: "bg-slate-200 text-slate-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   cutting: {
     icon: Scissors,
-    idle: "border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100",
-    active: "border-sky-600 bg-sky-600 text-white shadow-md shadow-sky-600/25",
-    iconBox: "bg-sky-100 text-sky-700",
+    idle: "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100",
+    active: "border-amber-500 bg-amber-500 text-white shadow-md shadow-amber-500/25",
+    iconBox: "bg-amber-100 text-amber-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   stitching: {
     icon: Shirt,
-    idle: "border-violet-200 bg-violet-50 text-violet-800 hover:bg-violet-100",
+    idle: "border-orange-300 bg-orange-50 text-orange-900 hover:bg-orange-100",
     active:
-      "border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-600/25",
-    iconBox: "bg-violet-100 text-violet-700",
+      "border-orange-600 bg-orange-600 text-white shadow-md shadow-orange-600/25",
+    iconBox: "bg-orange-100 text-orange-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   ready: {
     icon: CheckCircle2,
-    idle: "border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100",
-    active: "border-teal-600 bg-teal-600 text-white shadow-md shadow-teal-600/25",
-    iconBox: "bg-teal-100 text-teal-700",
+    idle: "border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100",
+    active: "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/25",
+    iconBox: "bg-blue-100 text-blue-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   delivered: {
     icon: Truck,
-    idle: "border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100",
+    idle: "border-green-300 bg-green-50 text-green-900 hover:bg-green-100",
     active:
-      "border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-600/25",
-    iconBox: "bg-indigo-100 text-indigo-700",
+      "border-green-600 bg-green-600 text-white shadow-md shadow-green-600/25",
+    iconBox: "bg-green-100 text-green-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   cancelled: {
@@ -141,7 +141,7 @@ export function OrderFilterChips({ value, onChange }: OrderFilterChipsProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap gap-2",
+        "flex flex-nowrap gap-2",
         isRtl && "flex-row-reverse",
       )}
     >

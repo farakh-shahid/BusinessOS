@@ -12,6 +12,7 @@ import { SearchableCombobox } from "@/core/presentation/components/ui/searchable
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { FormFieldError } from "@/core/presentation/components/ui/form-field-error";
 import type { NewOrderDraft } from "@/tailor/infrastructure/data/new-order.mock";
+import type { NewOrderFieldErrors } from "@/tailor/infrastructure/data/new-order-validation";
 import {
   createNewCustomerSchema,
   type NewCustomerFormValues,
@@ -27,12 +28,16 @@ interface CustomerSectionProps {
   customers: TailorCustomer[];
   onChange: (patch: Partial<NewOrderDraft>) => void;
   isRtl: boolean;
+  fieldErrors?: NewOrderFieldErrors;
 }
 
 export const CustomerSection = forwardRef<
   CustomerSectionHandle,
   CustomerSectionProps
->(function CustomerSection({ t, draft, customers, onChange, isRtl }, ref) {
+>(function CustomerSection(
+  { t, draft, customers, onChange, isRtl, fieldErrors = {} },
+  ref,
+) {
   const schema = createNewCustomerSchema({
     nameRequired: t.validation.nameRequired,
     phoneRequired: t.validation.phoneRequired,
@@ -146,9 +151,9 @@ export const CustomerSection = forwardRef<
               description: c.phone,
             }))}
           />
-          {!draft.customerId && (
-            <FormFieldError message={t.validation.customerRequired} />
-          )}
+          {fieldErrors.customerId ? (
+            <FormFieldError message={fieldErrors.customerId} />
+          ) : null}
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -158,10 +163,17 @@ export const CustomerSection = forwardRef<
             </Label>
             <Input
               id="customer-name"
-              aria-invalid={!!errors.customerName}
+              aria-invalid={!!errors.customerName || !!fieldErrors.customerName}
+              className={
+                errors.customerName || fieldErrors.customerName
+                  ? "border-rose-300 focus-visible:ring-rose-400"
+                  : undefined
+              }
               {...register("customerName")}
             />
-            <FormFieldError message={errors.customerName?.message} />
+            <FormFieldError
+              message={errors.customerName?.message ?? fieldErrors.customerName}
+            />
           </div>
           <div>
             <Label htmlFor="customer-phone">
@@ -171,12 +183,19 @@ export const CustomerSection = forwardRef<
               id="customer-phone"
               type="tel"
               placeholder={t.form.phonePlaceholder}
-              aria-invalid={!!errors.customerPhone}
+              aria-invalid={!!errors.customerPhone || !!fieldErrors.customerPhone}
               dir="ltr"
+              className={
+                errors.customerPhone || fieldErrors.customerPhone
+                  ? "border-rose-300 focus-visible:ring-rose-400"
+                  : undefined
+              }
               {...register("customerPhone")}
             />
             <p className="mt-1 text-xs text-slate-400">{t.form.phoneHint}</p>
-            <FormFieldError message={errors.customerPhone?.message} />
+            <FormFieldError
+              message={errors.customerPhone?.message ?? fieldErrors.customerPhone}
+            />
           </div>
           <div>
             <Label htmlFor="customer-email">{t.form.email}</Label>

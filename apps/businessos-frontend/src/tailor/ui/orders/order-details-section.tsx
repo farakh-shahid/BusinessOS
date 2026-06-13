@@ -11,6 +11,8 @@ import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { resolveMediaUrl, uploadDressImage } from "@/tailor/infrastructure/api/upload.api";
 import { readDressImageFile, type NewOrderDraft } from "@/tailor/infrastructure/data/new-order.mock";
 import { AssignedToInput } from "./assigned-to-input";
+import { FormFieldError } from "@/core/presentation/components/ui/form-field-error";
+import type { NewOrderFieldErrors } from "@/tailor/infrastructure/data/new-order-validation";
 
 interface OrderDetailsSectionProps {
   t: Dictionary;
@@ -18,6 +20,7 @@ interface OrderDetailsSectionProps {
   onChange: (patch: Partial<NewOrderDraft>) => void;
   isRtl: boolean;
   assigneeSuggestions?: string[];
+  fieldErrors?: NewOrderFieldErrors;
 }
 
 export function OrderDetailsSection({
@@ -26,6 +29,7 @@ export function OrderDetailsSection({
   onChange,
   isRtl,
   assigneeSuggestions = [],
+  fieldErrors = {},
 }: OrderDetailsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -60,8 +64,15 @@ export function OrderDetailsSection({
             id="booking-date"
             type="date"
             value={draft.bookingDate}
+            aria-invalid={!!fieldErrors.bookingDate}
+            className={
+              fieldErrors.bookingDate
+                ? "border-rose-300 focus-visible:ring-rose-400"
+                : undefined
+            }
             onChange={(e) => onChange({ bookingDate: e.target.value })}
           />
+          <FormFieldError message={fieldErrors.bookingDate} />
         </div>
         <div>
           <Label htmlFor="suit-count">{t.form.suitCount}</Label>
@@ -71,8 +82,15 @@ export function OrderDetailsSection({
             min={1}
             max={99}
             value={draft.suitCount}
+            aria-invalid={!!fieldErrors.suitCount}
+            className={
+              fieldErrors.suitCount
+                ? "border-rose-300 focus-visible:ring-rose-400"
+                : undefined
+            }
             onChange={(e) => onChange({ suitCount: e.target.value })}
           />
+          <FormFieldError message={fieldErrors.suitCount} />
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="dress-code">{t.form.dressCode}</Label>
@@ -147,8 +165,15 @@ export function OrderDetailsSection({
             id="delivery"
             type="date"
             value={draft.deliveryDate}
+            aria-invalid={!!fieldErrors.deliveryDate}
+            className={
+              fieldErrors.deliveryDate
+                ? "border-rose-300 focus-visible:ring-rose-400"
+                : undefined
+            }
             onChange={(e) => onChange({ deliveryDate: e.target.value })}
           />
+          <FormFieldError message={fieldErrors.deliveryDate} />
         </div>
         <div className="sm:col-span-2">
           <Label>{t.form.fabricSource}</Label>
@@ -200,8 +225,15 @@ export function OrderDetailsSection({
             type="number"
             min={0}
             value={draft.totalPrice}
+            aria-invalid={!!fieldErrors.totalPrice}
+            className={
+              fieldErrors.totalPrice
+                ? "border-rose-300 focus-visible:ring-rose-400"
+                : undefined
+            }
             onChange={(e) => onChange({ totalPrice: e.target.value })}
           />
+          <FormFieldError message={fieldErrors.totalPrice} />
         </div>
         <div>
           <Label htmlFor="advance">{t.form.advancePaid}</Label>

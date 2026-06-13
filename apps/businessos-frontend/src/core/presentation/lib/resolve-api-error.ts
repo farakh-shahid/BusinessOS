@@ -21,6 +21,9 @@ export function resolveApiErrorMessage(
     }
 
     if (err.status === 400 && msg && !msg.startsWith("Request failed")) {
+      if (/phone number already exists|phone number is already registered/i.test(msg)) {
+        return t.errors.phoneAlreadyExists;
+      }
       return msg;
     }
 

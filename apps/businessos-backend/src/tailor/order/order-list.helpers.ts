@@ -1,9 +1,23 @@
 import type { Prisma } from "../../generated/prisma/client";
 
 function parseDay(value: string): Date {
-  const parsed = new Date(value);
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return new Date(`${trimmed}T00:00:00.000Z`);
+  }
+  const parsed = new Date(trimmed);
   parsed.setHours(0, 0, 0, 0);
   return parsed;
+}
+
+/** Calendar day in local TZ, stored the same way as `new Date("YYYY-MM-DD")` (UTC midnight). */
+function localTodayUtcMidnight(now = new Date()): Date {
+  const iso = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+  return new Date(`${iso}T00:00:00.000Z`);
 }
 
 function endOfDay(date: Date): Date {
@@ -58,8 +72,7 @@ export function buildOrderListWhere(
     ];
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = localTodayUtcMidnight();
 
   switch (filter) {
     case "pending":
@@ -97,13 +110,15 @@ export function buildOrderListWhere(
     case "priority":
       where.isRush = true;
       break;
-    case "due_this_week":
+    case "due_this_week": {
+      const localNow = new Date();
       where.deliveryDate = {
-        gte: startOfWeek(today),
-        lte: endOfWeek(today),
+        gte: startOfWeek(localNow),
+        lte: endOfWeek(localNow),
       };
       where.status = { notIn: ["DELIVERED", "CANCELLED"] };
       break;
+    }
     default:
       break;
   }

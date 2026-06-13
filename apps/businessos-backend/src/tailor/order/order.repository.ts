@@ -275,7 +275,9 @@ export class OrderRepository {
     }
 
     if (order.status === "CANCELLED" && nextStatus !== "CANCELLED") {
-      throw new BadRequestException("Cancelled orders cannot be updated");
+      if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+        throw new ForbiddenException("Only admin can restore cancelled orders");
+      }
     }
 
     if (order.status === "DELIVERED" && nextStatus !== "DELIVERED") {
@@ -582,17 +584,42 @@ export class OrderRepository {
       throw new BadRequestException("Customer name and phone are required");
     }
 
-    const customer = await this.prisma.customer.create({
-      data: {
-        tenantId,
-        name: dto.customerName.trim(),
-        phone: requirePakistanPhone(dto.customerPhone),
-        email: dto.customerEmail?.trim() || null,
-        preferredLocale: toLocalePreference("en"),
-      },
+    const phone = requirePakistanPhone(dto.customerPhone);
+    const existingByPhone = await this.prisma.customer.findFirst({
+      where: { tenantId, phone },
     });
 
-    return customer.id;
+    if (existingByPhone) {
+      throw new BadRequestException(
+        "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+      );
+    }
+
+    try {
+      const customer = await this.prisma.customer.create({
+        data: {
+          tenantId,
+          name: dto.customerName.trim(),
+          phone,
+          email: dto.customerEmail?.trim() || null,
+          preferredLocale: toLocalePreference("en"),
+        },
+      });
+
+      return customer.id;
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new BadRequestException(
+          "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+        );
+      }
+      throw error;
+    }
   }
 
   private async nextOrderNumber(tenantId: string) {

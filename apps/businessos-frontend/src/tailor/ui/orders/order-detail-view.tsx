@@ -40,6 +40,7 @@ import { MarkReadyDialog } from "./mark-ready-dialog";
 import { OrderStatusSelect } from "./order-status-select";
 import { printMeasurementCard, printOrderReceipt } from "./print-order";
 import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 interface OrderDetailViewProps {
   orderId: string;
@@ -200,9 +201,14 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
             isRtl && "sm:flex-row-reverse",
           )}
         >
-          <div className={cn("flex gap-3", isRtl && "flex-row-reverse")}>
+          <div
+            className={cn(
+              "flex min-w-0 flex-1 gap-3",
+              isRtl && "flex-row-reverse",
+            )}
+          >
             <UserAvatar name={order.customerName} size="lg" />
-            <div className={cn(isRtl && "text-right")}>
+            <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
               <div
                 className={cn(
                   "flex flex-wrap items-center gap-2",
@@ -212,27 +218,51 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                 <h2 className="text-xl font-bold text-slate-900 md:text-2xl">
                   #{order.orderNumber}
                 </h2>
-                {order.dressCode ? (
-                  <span className="inline-flex max-w-[14rem] items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
+                {order.isRush ? (
+                  <span className="inline-flex shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold uppercase text-rose-700">
+                    {t.orderDetail.rush}
+                  </span>
+                ) : null}
+              </div>
+
+              {order.dressCode ? (
+                <div
+                  className={cn(
+                    "mt-1.5 flex flex-wrap gap-2",
+                    isRtl && "justify-end",
+                  )}
+                >
+                  <span className="inline-flex max-w-full items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
                     <span className="truncate">
                       {t.form.dressCode}: {order.dressCode}
                     </span>
                   </span>
-                ) : null}
-                {order.isRush ? (
-                  <span className="inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold uppercase text-rose-700">
-                    {t.orderDetail.rush}
-                  </span>
-                ) : null}
-                {order.assignedToName ? (
-                  <span className="inline-flex max-w-[14rem] items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                    <span className="truncate">
-                      {t.form.assignedTo}: {order.assignedToName}
+                </div>
+              ) : null}
+
+              {order.assignedToName ? (
+                <div
+                  className={cn(
+                    "mt-1.5 flex flex-wrap gap-2",
+                    isRtl && "justify-end",
+                  )}
+                >
+                  <span
+                    className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                    title={`${t.form.assignedTo}: ${order.assignedToName}`}
+                  >
+                    <span className="shrink-0 text-slate-500">
+                      {t.form.assignedTo.split("(")[0]?.trim() ?? t.form.assignedTo}:
                     </span>
+                    <PersonNameText
+                      name={order.assignedToName}
+                      className="min-w-0 font-semibold text-slate-700"
+                    />
                   </span>
-                ) : null}
-              </div>
-              <p className="mt-1 font-medium text-slate-700">
+                </div>
+              ) : null}
+
+              <p className="mt-2 font-medium text-slate-700">
                 {order.customerName}
               </p>
               <p className="text-sm text-slate-500">{order.customerPhone}</p>
@@ -480,9 +510,16 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
               )}
               {!canEdit ? (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">{t.form.assignedTo}</dt>
-                  <dd className="font-medium text-slate-900">
-                    {order.assignedToName ?? t.form.assignedToNone}
+                  <dt className="shrink-0 text-slate-500">{t.form.assignedTo}</dt>
+                  <dd className="min-w-0 text-right font-medium text-slate-900">
+                    {order.assignedToName ? (
+                      <PersonNameText
+                        name={order.assignedToName}
+                        className="min-w-0 justify-end"
+                      />
+                    ) : (
+                      t.form.assignedToNone
+                    )}
                   </dd>
                 </div>
               ) : null}
@@ -530,6 +567,22 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
         <Card>
           <CardTitle>{t.form.measurements}</CardTitle>
+          <p className="mt-1 text-sm text-slate-600">
+            {order.suitCount > 1
+              ? `${order.suitCount} × ${order.garmentLabel}`
+              : order.garmentLabel}
+            {order.dressCode ? (
+              <>
+                {" · "}
+                <span className="font-medium text-slate-700">
+                  {t.form.dressCode}: {order.dressCode}
+                </span>
+              </>
+            ) : null}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            {t.orderDetail.measurementsSuitHint}
+          </p>
           <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
             {Object.entries(order.measurements).map(([key, value]) =>
               value ? (

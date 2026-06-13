@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -32,7 +32,10 @@ import {
   emptyNewOrderDraft,
   type NewOrderDraft,
 } from "@/tailor/infrastructure/data/new-order.mock";
-import { getNewOrderValidationError } from "@/tailor/infrastructure/data/new-order-validation";
+import {
+  validateNewOrderDraft,
+  type NewOrderFieldErrors,
+} from "@/tailor/infrastructure/data/new-order-validation";
 import {
   CustomerSection,
   type CustomerSectionHandle,
@@ -56,13 +59,8 @@ export function NewOrderForm() {
   const { data: assignments } = useAssignmentsQuery();
   const [draft, setDraft] = useState<NewOrderDraft>(emptyNewOrderDraft);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<NewOrderFieldErrors>({});
   const lastHydratedCustomerId = useRef<string | null>(null);
-
-  const validationError = useMemo(
-    () => getNewOrderValidationError(draft, t),
-    [draft, t],
-  );
-  const canSave = !validationError && !createOrder.isPending;
 
   const patch = useCallback((update: Partial<NewOrderDraft>) => {
     setDraft((prev) => {
@@ -75,6 +73,7 @@ export function NewOrderForm() {
       return { ...prev, ...update };
     });
     setError(null);
+    setFieldErrors({});
   }, []);
 
   const customerDetailQuery = useCustomerDetailQuery(
@@ -141,16 +140,22 @@ export function NewOrderForm() {
 
   async function handleSave() {
     setError(null);
+    setFieldErrors({});
 
     if (draft.customerMode === "new") {
       const valid = await customerSectionRef.current?.validateNewCustomer();
       if (!valid) return;
     }
 
-    const validationMessage = getNewOrderValidationError(draft, t);
-    if (validationMessage) {
-      setError(validationMessage);
-      showError(validationMessage);
+    const validation = validateNewOrderDraft(draft, t);
+    if (!validation.valid) {
+      setFieldErrors(validation.fields);
+      setError(validation.summary);
+      showError(validation.summary ?? t.validation.fixFormErrors);
+      validation.firstFieldId?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
       return;
     }
 
@@ -162,6 +167,13 @@ export function NewOrderForm() {
     } catch (err) {
       const msg = resolveApiErrorMessage(err, t);
       setError(msg);
+      if (/phone number already exists|already registered/i.test(msg)) {
+        setFieldErrors({ customerPhone: msg });
+        document.getElementById("customer-phone")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
       showError(msg);
     }
   }
@@ -206,6 +218,7 @@ export function NewOrderForm() {
         customers={customers}
         onChange={patch}
         isRtl={isRtl}
+        fieldErrors={fieldErrors}
       />
 
       <GarmentTypeSection
@@ -220,6 +233,7 @@ export function NewOrderForm() {
         garmentType={draft.garmentType}
         measurements={draft.measurements}
         onChange={(measurements) => patch({ measurements })}
+        fieldErrors={fieldErrors}
       />
 
       <StyleSpecsForm
@@ -235,6 +249,7 @@ export function NewOrderForm() {
         onChange={patch}
         isRtl={isRtl}
         assigneeSuggestions={assignments?.assignees ?? []}
+        fieldErrors={fieldErrors}
       />
 
       <div
@@ -252,7 +267,7 @@ export function NewOrderForm() {
         <Button
           className="w-full sm:w-auto"
           onClick={handleSave}
-          disabled={!canSave}
+          disabled={createOrder.isPending}
         >
           {createOrder.isPending ? t.common.loading : t.form.save}
         </Button>
