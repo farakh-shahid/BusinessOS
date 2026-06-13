@@ -152,10 +152,11 @@ export function NewOrderForm() {
       setFieldErrors(validation.fields);
       setError(validation.summary);
       showError(validation.summary ?? t.validation.fixFormErrors);
-      validation.firstFieldId?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      validation.firstFieldId &&
+        document.getElementById(validation.firstFieldId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       return;
     }
 
