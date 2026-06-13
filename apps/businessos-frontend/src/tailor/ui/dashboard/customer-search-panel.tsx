@@ -6,7 +6,6 @@ import { Plus, Search, Shirt } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
-import { Input } from "@/core/presentation/components/ui/input";
 import { Badge } from "@/core/presentation/components/ui/badge";
 import { UserAvatar } from "@/core/presentation/components/ui/user-avatar";
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
@@ -36,20 +35,44 @@ export function CustomerSearchPanel() {
       <CardTitle>{t.search.title}</CardTitle>
       <p className="mt-1 text-sm text-slate-500">{t.search.subtitle}</p>
 
-      <form
-        onSubmit={handleSearch}
-        className={cn("mt-4 space-y-3", isRtl && "text-right")}
-      >
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t.search.placeholder}
-          className="w-full"
-        />
-        <Button type="submit" className="h-11 w-full gap-2 sm:w-auto sm:min-w-32">
-          <Search className="h-4 w-4 shrink-0" />
-          {t.search.button}
-        </Button>
+      <form onSubmit={handleSearch} className={cn("mt-4", isRtl && "text-right")}>
+        <div
+          className={cn(
+            "flex h-11 items-stretch overflow-hidden rounded-xl border border-hairline bg-white shadow-sm transition-shadow focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-100",
+            isRtl && "flex-row-reverse",
+          )}
+        >
+          <div
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-2.5 px-3",
+              isRtl && "flex-row-reverse",
+            )}
+          >
+            <Search
+              className="h-4 w-4 shrink-0 text-muted-slate"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t.search.placeholder}
+              aria-label={t.search.placeholder}
+              className={cn(
+                "min-w-0 flex-1 border-0 bg-transparent py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm",
+                isRtl && "text-right",
+              )}
+            />
+          </div>
+          <Button
+            type="submit"
+            aria-label={t.search.button}
+            className="h-auto min-h-0 shrink-0 rounded-none px-4 sm:min-w-[6.75rem] sm:px-5"
+          >
+            <Search className="h-4 w-4 shrink-0 sm:hidden" aria-hidden />
+            <span className="hidden sm:inline">{t.search.button}</span>
+          </Button>
+        </div>
       </form>
 
       {submittedQuery.length >= 2 && (

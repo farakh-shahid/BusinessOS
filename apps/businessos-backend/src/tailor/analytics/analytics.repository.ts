@@ -119,7 +119,7 @@ export class AnalyticsRepository {
 
     const garmentBreakdown = garmentAnalytics(metricsOrders);
     const topGarments = garmentBreakdown.slice(0, 5);
-    const monthlyTrend = buildMonthlyTrend(orders, now, tenantCreatedAt);
+    const monthlyTrend = buildMonthlyTrend(orders, now);
 
     return {
       shopName: tenant.name,
@@ -458,11 +458,7 @@ function workflowSnapshot(orders: OrderRow[]) {
   return { inProgress, delivered };
 }
 
-function buildMonthlyTrend(
-  orders: OrderRow[],
-  now: Date,
-  tenantCreatedAt: Date,
-) {
+function buildMonthlyTrend(orders: OrderRow[], now: Date) {
   const points: {
     month: string;
     monthLabel: string;
@@ -472,9 +468,6 @@ function buildMonthlyTrend(
 
   for (let i = 5; i >= 0; i -= 1) {
     const monthStart = startOfMonth(addMonths(now, -i));
-    if (monthStart < startOfMonth(tenantCreatedAt) && i > 0) {
-      continue;
-    }
     const monthEnd = endOfMonth(monthStart);
     const cappedEnd = monthEnd > now ? endOfDay(now) : monthEnd;
     const monthOrders = orders.filter((o) =>

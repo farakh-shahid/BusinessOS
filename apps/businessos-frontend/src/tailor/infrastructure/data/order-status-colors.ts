@@ -11,42 +11,40 @@ export type StatusColorKey =
 
 export const statusColorClasses: Record<
   StatusColorKey,
-  { badge: string; avatar: string; stripe: string }
+  { badge: string; avatar: string }
 > = {
   pending: {
-    badge: "border-2 border-slate-400 bg-slate-200 text-slate-800",
-    avatar: "bg-slate-200 text-slate-800 ring-2 ring-slate-400/80",
-    stripe: "border-l-[5px] border-l-slate-400",
+    badge: "border-2 border-status-booked bg-status-booked-bg text-status-booked",
+    avatar: "bg-status-booked-bg text-status-booked ring-2 ring-status-booked/80",
   },
   cutting: {
-    badge: "border-2 border-amber-500 bg-amber-100 text-amber-950",
-    avatar: "bg-amber-100 text-amber-950 ring-2 ring-amber-500/80",
-    stripe: "border-l-[5px] border-l-amber-500",
+    badge: "border-2 border-status-cutting bg-status-cutting-bg text-[#9A6800]",
+    avatar: "bg-status-cutting-bg text-[#9A6800] ring-2 ring-status-cutting/80",
   },
   stitching: {
-    badge: "border-2 border-orange-500 bg-orange-100 text-orange-950",
-    avatar: "bg-orange-100 text-orange-950 ring-2 ring-orange-500/80",
-    stripe: "border-l-[5px] border-l-orange-500",
+    badge: "border-2 border-status-stitching bg-status-stitching-bg text-status-stitching",
+    avatar:
+      "bg-status-stitching-bg text-status-stitching ring-2 ring-status-stitching/80",
   },
   ready: {
-    badge: "border-2 border-blue-600 bg-blue-100 text-blue-950",
-    avatar: "bg-blue-100 text-blue-950 ring-2 ring-blue-600/80",
-    stripe: "border-l-[5px] border-l-blue-600",
+    badge: "border-2 border-status-ready bg-status-ready-bg text-status-ready",
+    avatar: "bg-status-ready-bg text-status-ready ring-2 ring-status-ready/80",
   },
   delivered: {
-    badge: "border-2 border-green-600 bg-green-100 text-green-950",
-    avatar: "bg-green-100 text-green-950 ring-2 ring-green-600/80",
-    stripe: "border-l-[5px] border-l-green-600",
+    badge:
+      "border-2 border-status-delivered bg-status-delivered-bg text-status-delivered",
+    avatar:
+      "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/80",
   },
   overdue: {
-    badge: "border-2 border-red-600 bg-red-100 text-red-950",
-    avatar: "bg-red-100 text-red-950 ring-2 ring-red-600/80",
-    stripe: "border-l-[5px] border-l-red-600",
+    badge: "border-2 border-status-urgent bg-status-urgent-bg text-status-urgent",
+    avatar: "bg-status-urgent-bg text-status-urgent ring-2 ring-status-urgent/80",
   },
   cancelled: {
-    badge: "border-2 border-red-400 bg-red-50 text-red-800",
-    avatar: "bg-red-50 text-red-700 ring-2 ring-red-400/80",
-    stripe: "border-l-[5px] border-l-red-400",
+    badge:
+      "border-2 border-status-delivered/70 bg-status-delivered-bg text-status-delivered",
+    avatar:
+      "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/60",
   },
 };
 
@@ -87,19 +85,4 @@ export function statusBadgeClass(options: {
 
 export function statusAvatarClass(status: OrderStatus): string {
   return statusColorClasses[displayStatusColorKey[status]].avatar;
-}
-
-export function statusStripeClass(
-  options: {
-    displayStatus?: OrderStatus | string;
-    workflowStatus?: OrderWorkflowStatus;
-  },
-  isRtl = false,
-): string {
-  const stripe =
-    statusColorClasses[resolveWorkflowColorKey(options.workflowStatus)].stripe;
-  if (!isRtl) return stripe;
-  return stripe
-    .replace("border-l-[5px]", "border-r-[5px]")
-    .replace(/border-l-(\S+)/g, "border-r-$1");
 }

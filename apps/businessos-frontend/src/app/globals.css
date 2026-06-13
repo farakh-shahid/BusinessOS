@@ -2,57 +2,75 @@
 
 /*
  * BusinessOS design tokens (Tailwind v4 @theme)
- * Change colors here — components use semantic names, not raw hex.
- *
- * sidebar  → app shell (sidebar, mobile header, home accents)
- * brand    → primary actions, links, buttons (#002347 family)
- * accent   → orange CTAs (new order, highlights)
- * analytics → analytics dashboard only (orange / coral)
+ * Calm shell + distinct order lifecycle hues.
+ * Thread Orange is primary actions only — not used for Cutting status.
  */
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Surfaces */
+  --background: #f5f7fa; /* Canvas */
+  --foreground: #0e1a36;
+  --card: #ffffff;
+  --hairline: #e4e8f0;
+  --muted-slate: #697a99;
 
-  /* Sidebar & home shell — #002347 */
-  --sidebar: #002347;
-  --sidebar-dark: #001a2e;
-  --sidebar-light: #003a6b;
-  --sidebar-text: #e6f0fa;
-  --sidebar-text-muted: #8fb4d4;
+  /* Sidebar & shell — Ink Navy / Slate Ink */
+  --sidebar: #0e1a36;
+  --sidebar-dark: #0a1428;
+  --sidebar-light: #1c2a4d;
+  --sidebar-text: #f5f7fa;
+  --sidebar-text-muted: #697a99;
 
-  /* Primary brand — same family as sidebar #002347 */
-  --brand-50: #e8f1f8;
-  --brand-100: #d1e3f1;
-  --brand-200: #a3c7e3;
-  --brand-500: #005299;
-  --brand-600: var(--sidebar-light);
-  --brand-700: var(--sidebar);
-  --brand-800: var(--sidebar-dark);
-  --brand-900: #00101f;
+  /* Brand — navy family (links, nav active states) */
+  --brand-50: #eef1f6;
+  --brand-100: #dde4ee;
+  --brand-200: #b8c4d9;
+  --brand-500: #1c2a4d;
+  --brand-600: #1c2a4d;
+  --brand-700: #0e1a36;
+  --brand-800: #0a1428;
+  --brand-900: #060d1a;
 
-  /* Accent orange — CTAs (#FF5003) */
-  --accent-50: #fff4ef;
-  --accent-100: #ffe5d9;
-  --accent-200: #ffc9b0;
-  --accent-400: #ff7a3d;
-  --accent-500: #ff5003;
-  --accent-600: #e04600;
-  --accent-700: #cc3d00;
+  /* Primary action — Thread Orange (CTAs only) */
+  --accent-50: #ffe9df; /* Orange Wash */
+  --accent-100: #ffd4c4;
+  --accent-200: #ffb8a3;
+  --accent-400: #ff8255;
+  --accent-500: #ff6a2b;
+  --accent-600: #e85f26;
+  --accent-700: #cc5422;
 
-  /* Analytics dashboard — orange family matches accent */
+  /* Order lifecycle */
+  --status-booked: #3b6ff6;
+  --status-booked-bg: #eef3fe;
+  --status-cutting: #f4a828;
+  --status-cutting-bg: #fef6e8;
+  --status-stitching: #8b5cf6;
+  --status-stitching-bg: #f3eeff;
+  --status-ready: #12a36a;
+  --status-ready-bg: #e7f7ef;
+  --status-delivered: #5a6b86;
+  --status-delivered-bg: #eef1f5;
+  --status-urgent: #e5484d;
+  --status-urgent-bg: #fdecee;
+
+  /* Analytics dashboard — charts & date picker use Thread Orange, not urgent red */
   --analytics-hero-from: #ff8a52;
-  --analytics-hero-via: #ff5003;
+  --analytics-hero-via: #ff6a2b;
   --analytics-hero-to: #ff6500;
-  --analytics-chart: #ff5003;
-  --analytics-chart-peak: #ff7a3d;
-  --analytics-select: #f43f5e;
-  --analytics-select-muted: #fff1f2;
+  --analytics-chart: #ff6a2b;
+  --analytics-chart-peak: #ff8255;
+  --analytics-chart-muted: #ffd4c4;
+  --analytics-select: #ff6a2b;
+  --analytics-select-muted: #ffe9df;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-hairline: var(--hairline);
+  --color-muted-slate: var(--muted-slate);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-dark: var(--sidebar-dark);
@@ -77,11 +95,25 @@
   --color-accent-600: var(--accent-600);
   --color-accent-700: var(--accent-700);
 
+  --color-status-booked: var(--status-booked);
+  --color-status-booked-bg: var(--status-booked-bg);
+  --color-status-cutting: var(--status-cutting);
+  --color-status-cutting-bg: var(--status-cutting-bg);
+  --color-status-stitching: var(--status-stitching);
+  --color-status-stitching-bg: var(--status-stitching-bg);
+  --color-status-ready: var(--status-ready);
+  --color-status-ready-bg: var(--status-ready-bg);
+  --color-status-delivered: var(--status-delivered);
+  --color-status-delivered-bg: var(--status-delivered-bg);
+  --color-status-urgent: var(--status-urgent);
+  --color-status-urgent-bg: var(--status-urgent-bg);
+
   --color-analytics-hero-from: var(--analytics-hero-from);
   --color-analytics-hero-via: var(--analytics-hero-via);
   --color-analytics-hero-to: var(--analytics-hero-to);
   --color-analytics-chart: var(--analytics-chart);
   --color-analytics-chart-peak: var(--analytics-chart-peak);
+  --color-analytics-chart-muted: var(--analytics-chart-muted);
   --color-analytics-select: var(--analytics-select);
   --color-analytics-select-muted: var(--analytics-select-muted);
 

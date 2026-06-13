@@ -6,9 +6,9 @@ export function CustomerSearchPanelSkeleton() {
     <SkeletonCard>
       <Skeleton className="h-5 w-36 rounded-md" />
       <SkeletonLine width="3/4" className="mt-2 h-3" />
-      <div className="mt-4 space-y-3">
-        <Skeleton className="h-11 w-full rounded-xl" />
-        <Skeleton className="h-11 w-full rounded-xl sm:w-32" />
+      <div className="mt-4 flex h-11 overflow-hidden rounded-xl border border-hairline">
+        <Skeleton className="h-full min-w-0 flex-1 rounded-none" />
+        <Skeleton className="h-full w-11 shrink-0 rounded-none sm:w-28" />
       </div>
     </SkeletonCard>
   );

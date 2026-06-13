@@ -25,7 +25,7 @@ export function ShopHero({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-3xl bg-gradient-to-br from-sidebar via-[#002a52] to-sidebar-dark shadow-lg shadow-sidebar-dark/20",
+        "relative overflow-hidden rounded-3xl bg-gradient-to-br from-sidebar via-sidebar-light to-sidebar-dark shadow-lg shadow-sidebar-dark/20",
         className,
       )}
     >

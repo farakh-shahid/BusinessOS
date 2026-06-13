@@ -40,10 +40,10 @@ import { formatRs, formatTrend } from "./format";
 import { AnalyticsSkeleton } from "@/tailor/ui/skeletons";
 
 const metricAccents = [
-  { bg: "bg-accent-100", icon: "text-accent-600", ring: "ring-accent-200" },
-  { bg: "bg-pink-100", icon: "text-pink-600", ring: "ring-pink-200" },
-  { bg: "bg-brand-100", icon: "text-brand-700", ring: "ring-brand-200" },
-  { bg: "bg-indigo-100", icon: "text-indigo-600", ring: "ring-indigo-200" },
+  { bg: "bg-accent-50", icon: "text-accent-600", ring: "ring-accent-100" },
+  { bg: "bg-status-stitching-bg", icon: "text-status-stitching", ring: "ring-status-stitching/20" },
+  { bg: "bg-status-booked-bg", icon: "text-status-booked", ring: "ring-status-booked/20" },
+  { bg: "bg-status-ready-bg", icon: "text-status-ready", ring: "ring-status-ready/20" },
 ];
 
 function ReportCard({
@@ -154,8 +154,8 @@ function StatsBarChart({
                   className={cn(
                     "w-full rounded-t-2xl transition-all",
                     point.disabled && "bg-slate-100",
-                    !point.disabled && !isPeak && "bg-slate-200",
-                    isPeak && "bg-gradient-to-t from-analytics-chart to-analytics-chart-peak",
+                    !point.disabled && !isPeak && "bg-accent-100",
+                    isPeak && "bg-gradient-to-t from-accent-600 to-accent-400",
                   )}
                   style={{ height: `${height}%` }}
                   title={`${point.orders} orders · ${formatRs(point.revenue)}`}
@@ -235,10 +235,10 @@ export function AnalyticsView() {
     data.statusBreakdown.cancelled;
 
   const statusItems = [
-    { label: t.analytics.statusPending, value: data.statusBreakdown.pending, color: "bg-slate-400" },
-    { label: t.analytics.statusInProgress, value: data.statusBreakdown.inProgress, color: "bg-accent-400" },
-    { label: t.analytics.statusReady, value: data.statusBreakdown.ready, color: "bg-emerald-400" },
-    { label: t.analytics.statusDelivered, value: data.statusBreakdown.delivered, color: "bg-sky-400" },
+    { label: t.analytics.statusPending, value: data.statusBreakdown.pending, color: "bg-status-booked" },
+    { label: t.analytics.statusInProgress, value: data.statusBreakdown.inProgress, color: "bg-status-cutting" },
+    { label: t.analytics.statusReady, value: data.statusBreakdown.ready, color: "bg-status-ready" },
+    { label: t.analytics.statusDelivered, value: data.statusBreakdown.delivered, color: "bg-status-delivered" },
   ];
 
   const exportLabels = buildAnalyticsExportLabels(t, data.viewMode);

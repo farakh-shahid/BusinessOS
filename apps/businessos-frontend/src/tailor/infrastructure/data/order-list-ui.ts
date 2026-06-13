@@ -46,7 +46,8 @@ export function resolveDueUrgency(
       key: "delivered",
       labelKey: "delivered",
       emoji: "✓",
-      className: "border-green-600 bg-green-100 text-green-900",
+      className:
+        "border-status-delivered bg-status-delivered-bg text-status-delivered",
     };
   }
 
@@ -55,7 +56,7 @@ export function resolveDueUrgency(
       key: "overdue",
       labelKey: "overdue",
       emoji: "🔴",
-      className: "border-red-600 bg-red-100 text-red-900",
+      className: "border-status-urgent bg-status-urgent-bg text-status-urgent",
     };
   }
 
@@ -64,7 +65,7 @@ export function resolveDueUrgency(
       key: "due_today",
       labelKey: "due_today",
       emoji: "🔥",
-      className: "border-orange-500 bg-orange-100 text-orange-950",
+      className: "border-status-urgent bg-status-urgent-bg text-status-urgent",
     };
   }
 
@@ -77,7 +78,7 @@ export function resolveDueUrgency(
       key: "due_tomorrow",
       labelKey: "due_tomorrow",
       emoji: "🔴",
-      className: "border-red-500 bg-red-50 text-red-900",
+      className: "border-status-urgent/70 bg-status-urgent-bg text-status-urgent",
     };
   }
   if (diff >= 2 && diff <= 7) {
@@ -85,7 +86,7 @@ export function resolveDueUrgency(
       key: "due_soon",
       labelKey: "due_soon",
       emoji: "📅",
-      className: "border-amber-500 bg-amber-50 text-amber-900",
+      className: "border-status-cutting bg-status-cutting-bg text-[#9A6800]",
     };
   }
 
@@ -93,7 +94,7 @@ export function resolveDueUrgency(
     key: "due_later",
     labelKey: "due_later",
     emoji: "📅",
-    className: "border-slate-300 bg-slate-100 text-slate-700",
+    className: "border-hairline bg-background text-muted-slate",
   };
 }
 

@@ -48,16 +48,18 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   overdue: {
     icon: AlertTriangle,
-    idle: "border-red-300 bg-red-50 text-red-900 hover:bg-red-100",
-    active: "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/25",
-    iconBox: "bg-red-100 text-red-700",
+    idle: "border-status-urgent/40 bg-status-urgent-bg text-status-urgent hover:bg-status-urgent-bg",
+    active:
+      "border-status-urgent bg-status-urgent text-white shadow-md shadow-status-urgent/25",
+    iconBox: "bg-status-urgent-bg text-status-urgent",
     iconBoxActive: "bg-white/20 text-white",
   },
   due_today: {
     icon: CalendarClock,
-    idle: "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100",
-    active: "border-amber-500 bg-amber-500 text-white shadow-md shadow-amber-500/25",
-    iconBox: "bg-amber-100 text-amber-700",
+    idle: "border-status-urgent/40 bg-status-urgent-bg text-status-urgent hover:bg-status-urgent-bg",
+    active:
+      "border-status-urgent bg-status-urgent text-white shadow-md shadow-status-urgent/25",
+    iconBox: "bg-status-urgent-bg text-status-urgent",
     iconBoxActive: "bg-white/20 text-white",
   },
   due_this_week: {
@@ -77,46 +79,50 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   priority: {
     icon: Zap,
-    idle: "border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100",
-    active: "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-600/25",
-    iconBox: "bg-rose-100 text-rose-700",
+    idle: "border-status-urgent/40 bg-status-urgent-bg text-status-urgent hover:bg-status-urgent-bg",
+    active:
+      "border-status-urgent bg-status-urgent text-white shadow-md shadow-status-urgent/25",
+    iconBox: "bg-status-urgent-bg text-status-urgent",
     iconBoxActive: "bg-white/20 text-white",
   },
   pending: {
     icon: Clock,
-    idle: "border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200",
-    active: "border-slate-600 bg-slate-600 text-white shadow-md shadow-slate-600/25",
-    iconBox: "bg-slate-200 text-slate-700",
+    idle: "border-status-booked/40 bg-status-booked-bg text-status-booked hover:bg-status-booked-bg",
+    active:
+      "border-status-booked bg-status-booked text-white shadow-md shadow-status-booked/25",
+    iconBox: "bg-status-booked-bg text-status-booked",
     iconBoxActive: "bg-white/20 text-white",
   },
   cutting: {
     icon: Scissors,
-    idle: "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100",
-    active: "border-amber-500 bg-amber-500 text-white shadow-md shadow-amber-500/25",
-    iconBox: "bg-amber-100 text-amber-700",
+    idle: "border-status-cutting/40 bg-status-cutting-bg text-[#9A6800] hover:bg-status-cutting-bg",
+    active:
+      "border-status-cutting bg-status-cutting text-white shadow-md shadow-status-cutting/25",
+    iconBox: "bg-status-cutting-bg text-[#9A6800]",
     iconBoxActive: "bg-white/20 text-white",
   },
   stitching: {
     icon: Shirt,
-    idle: "border-orange-300 bg-orange-50 text-orange-900 hover:bg-orange-100",
+    idle: "border-status-stitching/40 bg-status-stitching-bg text-status-stitching hover:bg-status-stitching-bg",
     active:
-      "border-orange-600 bg-orange-600 text-white shadow-md shadow-orange-600/25",
-    iconBox: "bg-orange-100 text-orange-700",
+      "border-status-stitching bg-status-stitching text-white shadow-md shadow-status-stitching/25",
+    iconBox: "bg-status-stitching-bg text-status-stitching",
     iconBoxActive: "bg-white/20 text-white",
   },
   ready: {
     icon: CheckCircle2,
-    idle: "border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100",
-    active: "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/25",
-    iconBox: "bg-blue-100 text-blue-700",
+    idle: "border-status-ready/40 bg-status-ready-bg text-status-ready hover:bg-status-ready-bg",
+    active:
+      "border-status-ready bg-status-ready text-white shadow-md shadow-status-ready/25",
+    iconBox: "bg-status-ready-bg text-status-ready",
     iconBoxActive: "bg-white/20 text-white",
   },
   delivered: {
     icon: Truck,
-    idle: "border-green-300 bg-green-50 text-green-900 hover:bg-green-100",
+    idle: "border-status-delivered/40 bg-status-delivered-bg text-status-delivered hover:bg-status-delivered-bg",
     active:
-      "border-green-600 bg-green-600 text-white shadow-md shadow-green-600/25",
-    iconBox: "bg-green-100 text-green-700",
+      "border-status-delivered bg-status-delivered text-white shadow-md shadow-status-delivered/25",
+    iconBox: "bg-status-delivered-bg text-status-delivered",
     iconBoxActive: "bg-white/20 text-white",
   },
   cancelled: {

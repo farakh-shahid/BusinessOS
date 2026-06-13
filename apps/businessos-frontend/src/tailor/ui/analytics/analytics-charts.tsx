@@ -2,6 +2,8 @@
 
 import { formatRs } from "./format";
 
+const TREND_CHART_HEIGHT = 128;
+
 export function HorizontalBarChart({
   title,
   subtitle,
@@ -38,10 +40,10 @@ export function HorizontalBarChart({
                   </span>
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-brand-700 to-accent-500"
-                    style={{ width: `${width}%` }}
-                  />
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-400"
+                  style={{ width: `${width}%` }}
+                />
                 </div>
                 {item.subLabel ? (
                   <p className="mt-0.5 text-xs text-slate-400">{item.subLabel}</p>
@@ -80,32 +82,32 @@ export function DualStatCompare({
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
       <h3 className="font-bold text-slate-900">{title}</h3>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-amber-50 px-3 py-4 ring-1 ring-amber-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+        <div className="rounded-2xl bg-status-cutting-bg px-3 py-4 ring-1 ring-status-cutting/25">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#9A6800]">
             {leftLabel}
           </p>
-          <p className="mt-1 text-2xl font-bold text-amber-900">{leftValue}</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{leftValue}</p>
           {leftSub ? (
-            <p className="mt-1 text-xs text-amber-700/80">{leftSub}</p>
+            <p className="mt-1 text-xs text-[#9A6800]/80">{leftSub}</p>
           ) : null}
         </div>
-        <div className="rounded-2xl bg-emerald-50 px-3 py-4 ring-1 ring-emerald-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="rounded-2xl bg-status-delivered-bg px-3 py-4 ring-1 ring-status-delivered/25">
+          <p className="text-xs font-semibold uppercase tracking-wide text-status-delivered">
             {rightLabel}
           </p>
-          <p className="mt-1 text-2xl font-bold text-emerald-900">{rightValue}</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{rightValue}</p>
           {rightSub ? (
-            <p className="mt-1 text-xs text-emerald-700/80">{rightSub}</p>
+            <p className="mt-1 text-xs text-status-delivered/80">{rightSub}</p>
           ) : null}
         </div>
       </div>
       <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="bg-amber-400 transition-all"
+          className="bg-status-cutting transition-all"
           style={{ width: `${leftPct}%` }}
         />
         <div
-          className="bg-emerald-500 transition-all"
+          className="bg-status-delivered transition-all"
           style={{ width: `${rightPct}%` }}
         />
       </div>
@@ -177,28 +179,51 @@ export function MonthlyTrendChart({
         <h3 className="font-bold text-slate-900">{title}</h3>
         {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
       </div>
-      <div className="flex items-end justify-between gap-2">
-        {points.map((point) => {
-          const height = Math.max((point.revenue / maxRevenue) * 100, 8);
-          return (
-            <div
-              key={point.label}
-              className="flex min-w-0 flex-1 flex-col items-center gap-2"
-            >
-              <div className="flex h-32 w-full flex-col justify-end">
+      {points.length === 0 ? (
+        <p className="text-sm text-slate-500">—</p>
+      ) : (
+        <div
+          className="grid items-end gap-1 sm:gap-2"
+          style={{
+            gridTemplateColumns: `repeat(${points.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {points.map((point) => {
+            const barHeight =
+              point.revenue > 0
+                ? Math.max(
+                    Math.round((point.revenue / maxRevenue) * TREND_CHART_HEIGHT),
+                    8,
+                  )
+                : 4;
+
+            return (
+              <div
+                key={point.label}
+                className="flex min-w-0 flex-col items-center gap-2"
+              >
                 <div
-                  className="w-full rounded-t-xl bg-gradient-to-t from-brand-800 to-brand-500"
-                  style={{ height: `${height}%` }}
-                  title={`${point.orders} orders · ${formatRs(point.revenue)}`}
-                />
+                  className="flex w-full flex-col justify-end"
+                  style={{ height: TREND_CHART_HEIGHT }}
+                >
+                  <div
+                    className={
+                      point.revenue > 0
+                        ? "mx-auto w-full max-w-10 rounded-t-xl bg-gradient-to-t from-accent-600 to-accent-400"
+                        : "mx-auto w-full max-w-10 rounded-t-sm bg-slate-100"
+                    }
+                    style={{ height: barHeight }}
+                    title={`${point.orders} orders · ${formatRs(point.revenue)}`}
+                  />
+                </div>
+                <p className="w-full truncate text-center text-[10px] font-semibold text-slate-500 sm:text-xs">
+                  {point.label}
+                </p>
               </div>
-              <p className="text-center text-[10px] font-semibold text-slate-500 sm:text-xs">
-                {point.label}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

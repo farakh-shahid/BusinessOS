@@ -12,6 +12,7 @@ import {
 import type { OrderWorkflowStatus } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
+import { featureFlags } from "@/core/config/feature-flags";
 import { isAdminRole } from "@/core/auth/roles";
 import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
@@ -630,31 +631,35 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
           )}
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardTitle>{t.orderDetail.activity}</CardTitle>
-          {order.auditLog.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">{t.orderDetail.noActivity}</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {order.auditLog.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="rounded-xl border border-slate-100 px-3 py-2 text-sm"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-slate-900">
-                      {t.orderDetail.auditActions[entry.action]}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {new Date(entry.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">{entry.userName}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        {featureFlags.activityLogEnabled && (
+          <Card className="lg:col-span-2">
+            <CardTitle>{t.orderDetail.activity}</CardTitle>
+            {order.auditLog.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500">
+                {t.orderDetail.noActivity}
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {order.auditLog.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="rounded-xl border border-slate-100 px-3 py-2 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-slate-900">
+                        {t.orderDetail.auditActions[entry.action]}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(entry.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">{entry.userName}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
       </div>
 
       <MarkReadyDialog

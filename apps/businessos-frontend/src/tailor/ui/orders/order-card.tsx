@@ -18,7 +18,6 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { AssignedToInput } from "./assigned-to-input";
 import { OrderStatusSelect } from "./order-status-select";
 import { OrderDueChip } from "./order-due-chip";
-import { statusStripeClass } from "@/tailor/infrastructure/data/order-status-colors";
 import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
@@ -108,7 +107,7 @@ export function OrderCard({
         {order.isRush ? (
           <span
             className={cn(
-              "inline-flex shrink-0 items-center gap-0.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-rose-700",
+              "inline-flex shrink-0 items-center gap-0.5 rounded-full bg-status-urgent-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-urgent",
               isRtl && "flex-row-reverse",
             )}
           >
@@ -217,14 +216,7 @@ export function OrderCard({
   return (
     <div
       className={cn(
-        "relative w-full rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md",
-        statusStripeClass(
-          {
-            workflowStatus: order.workflowStatus,
-            displayStatus: order.status,
-          },
-          isRtl,
-        ),
+        "relative w-full rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-md",
         isRtl && "text-right",
       )}
     >
