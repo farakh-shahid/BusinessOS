@@ -64,53 +64,89 @@ export function buildAnalyticsReportHtml(
     .join("");
 
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(labels.reportTitle)} — ${escapeHtml(data.shopName)}</title>
   <style>
+    :root {
+      --ink: #0e1a36;
+      --slate: #697a99;
+      --hairline: #e4e8f0;
+      --canvas: #f5f7fa;
+      --accent: #ff6a2b;
+      --accent-wash: #ffe9df;
+      --booked: #3b6ff6;
+      --booked-bg: #eef3fe;
+    }
     * { box-sizing: border-box; }
+    @page {
+      size: A4 portrait;
+      margin: 14mm 12mm 16mm;
+    }
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
       margin: 0;
       padding: 24px;
-      color: #0f172a;
+      color: var(--ink);
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.5;
       background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+      tr, .section, .report-footer { page-break-inside: avoid; break-inside: avoid; }
+      h2 { page-break-after: avoid; break-after: avoid; }
+    }
+    .print-hint {
+      margin: 0 0 16px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--canvas);
+      border: 1px solid var(--hairline);
+      color: var(--slate);
+      font-size: 11px;
     }
     .brand {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      border-bottom: 2px solid #0d9488;
+      border-bottom: 2px solid var(--ink);
       padding-bottom: 14px;
       margin-bottom: 18px;
     }
     h1 {
       font-size: 22px;
       margin: 0 0 6px;
-      color: #0f766e;
+      color: var(--ink);
+      letter-spacing: -0.02em;
     }
-    .meta { color: #64748b; font-size: 12px; margin: 2px 0; }
+    .meta { color: var(--slate); font-size: 12px; margin: 2px 0; }
+    .meta strong { color: var(--ink); }
     .badge {
       display: inline-block;
-      background: #f0fdfa;
-      color: #0f766e;
-      border: 1px solid #99f6e4;
+      background: var(--accent-wash);
+      color: var(--accent);
+      border: 1px solid #ffd4c4;
       border-radius: 999px;
       padding: 4px 10px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       white-space: nowrap;
     }
     h2 {
-      font-size: 14px;
+      font-size: 13px;
       margin: 22px 0 10px;
-      color: #0f766e;
-      border-bottom: 1px solid #e2e8f0;
+      color: var(--ink);
+      border-bottom: 1px solid var(--hairline);
       padding-bottom: 4px;
+      font-weight: 700;
     }
     .grid {
       display: grid;
@@ -118,15 +154,19 @@ export function buildAnalyticsReportHtml(
       gap: 10px;
       margin-bottom: 8px;
     }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr !important; }
+    }
     .card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--hairline);
       border-radius: 10px;
       padding: 10px 12px;
       background: #fff;
     }
     .card.highlight {
-      border-color: #fcd34d;
-      background: #fffbeb;
+      border-color: #ffd4c4;
+      background: var(--accent-wash);
     }
     .card span {
       display: block;
@@ -134,15 +174,15 @@ export function buildAnalyticsReportHtml(
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #64748b;
+      color: var(--slate);
     }
     .card strong {
       display: block;
       font-size: 17px;
       margin-top: 4px;
-      color: #0f172a;
+      color: var(--ink);
     }
-    .card.highlight strong { color: #b45309; }
+    .card.highlight strong { color: #cc5422; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -150,33 +190,50 @@ export function buildAnalyticsReportHtml(
       font-size: 11px;
     }
     th, td {
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--hairline);
       padding: 7px 9px;
       text-align: left;
+      vertical-align: top;
     }
     th {
-      background: #f8fafc;
+      background: var(--canvas);
       font-weight: 700;
-      color: #334155;
+      color: var(--ink);
     }
-    .pending-row td { background: #fff7ed; font-weight: 600; }
+    tbody tr:nth-child(even) td { background: #fafbfd; }
+    .pending-row td { background: var(--booked-bg) !important; font-weight: 600; }
     .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    .footer {
-      margin-top: 24px;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
-      color: #94a3b8;
-      font-size: 10px;
+    .section { margin-bottom: 4px; }
+    .report-footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid var(--hairline);
       text-align: center;
     }
-    .section { break-inside: avoid-page; page-break-inside: avoid; }
+    .report-footer .shop-line {
+      color: var(--slate);
+      font-size: 10px;
+      margin: 0 0 8px;
+    }
+    .report-footer .powered-line {
+      margin: 0;
+      color: var(--slate);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+    .report-footer .powered-line strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
+  <p class="print-hint no-print">${escapeHtml(labels.printHint)}</p>
+
   <div class="brand">
     <div>
       <h1>${escapeHtml(labels.reportTitle)}</h1>
@@ -295,7 +352,10 @@ export function buildAnalyticsReportHtml(
     </div>
   </div>
 
-  <p class="footer">BusinessOS · ${escapeHtml(data.shopName)} · ${escapeHtml(data.rangeLabel)}</p>
+  <footer class="report-footer">
+    <p class="shop-line">${escapeHtml(data.shopName)} · ${escapeHtml(data.rangeLabel)}</p>
+    <p class="powered-line">${escapeHtml(labels.poweredBy)} <strong>BusinessOS</strong></p>
+  </footer>
 </body>
 </html>`;
 }

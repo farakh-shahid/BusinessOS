@@ -47,6 +47,7 @@ Seed creates:
 - Super admin: `superadmin@businessos.pk`
 - Demo tenant: **Demo Tailor Shop**
 - Shop admin: `admin@demotailor.pk`
+- 6 staff tailors, 10 customers, 18 sample orders (with assignments, rush, receivables)
 - Password: `changeme123`
 
 ```bash

@@ -22,6 +22,7 @@ export function StatsRow({ stats }: StatsRowProps) {
         value={stats.totalOrders}
         icon={ClipboardList}
         tone="brand"
+        active
         href={routes.orders}
       />
       <StatCard

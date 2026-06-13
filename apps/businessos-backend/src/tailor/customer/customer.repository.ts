@@ -1,10 +1,15 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import type { CustomerDetail, CustomerSearchResult } from "@business-os/tailor";
+import type {
+  CustomerDetail,
+  CustomerSearchResult,
+  OrderWorkflowStatus,
+} from "@business-os/tailor";
 import { PrismaService } from "../../core/database/prisma.service";
 import {
   formatDueDate,
   garmentKey,
   garmentLabel,
+  orderStatusKey,
   resolveDisplayStatus,
   toLocalePreference,
 } from "../common/tailor.mapper";
@@ -20,10 +25,44 @@ export class CustomerRepository {
   async listByTenant(tenantId: string) {
     const rows = await this.prisma.customer.findMany({
       where: { tenantId },
+      include: {
+        orders: {
+          select: {
+            balanceDue: true,
+            status: true,
+            deliveryDate: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
+        },
+        measurements: {
+          select: { id: true },
+          take: 1,
+        },
+      },
       orderBy: { name: "asc" },
     });
 
-    return rows.map((row) => this.toCustomer(row));
+    return rows.map((row) => {
+      const activeOrders = row.orders.filter(
+        (o) => !["DELIVERED", "CANCELLED"].includes(o.status),
+      );
+      const outstandingBalance = activeOrders.reduce(
+        (sum, o) => sum + Number(o.balanceDue),
+        0,
+      );
+      const latest = row.orders[0];
+
+      return {
+        ...this.toCustomer(row),
+        totalOrders: row.orders.length,
+        outstandingBalance,
+        lastOrderDate: latest
+          ? formatDueDate(latest.deliveryDate)
+          : undefined,
+        hasMeasurements: row.measurements.length > 0,
+      };
+    });
   }
 
   async search(tenantId: string, query: string): Promise<CustomerSearchResult[]> {
@@ -75,8 +114,12 @@ export class CustomerRepository {
           garmentType: garmentKey(order.garmentType),
           garmentLabel: garmentLabel(order.garmentType),
           status: resolveDisplayStatus(order.status, order.deliveryDate),
+          workflowStatus: orderStatusKey(order.status) as OrderWorkflowStatus,
+          bookingDate: formatDueDate(order.bookingDate),
           deliveryDate: formatDueDate(order.deliveryDate),
           totalPrice: Number(order.totalPrice),
+          advancePaid: Number(order.advancePaid),
+          balanceDue: Number(order.balanceDue),
         })),
       };
     });
@@ -102,6 +145,9 @@ export class CustomerRepository {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
+        orders: {
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -111,9 +157,43 @@ export class CustomerRepository {
 
     const latest = row.measurements[0];
 
+    const orders = row.orders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      garmentType: garmentKey(order.garmentType),
+      garmentLabel: garmentLabel(order.garmentType),
+      status: resolveDisplayStatus(order.status, order.deliveryDate),
+      workflowStatus: orderStatusKey(order.status) as OrderWorkflowStatus,
+      bookingDate: formatDueDate(order.bookingDate),
+      deliveryDate: formatDueDate(order.deliveryDate),
+      totalPrice: Number(order.totalPrice),
+      advancePaid: Number(order.advancePaid),
+      balanceDue: Number(order.balanceDue),
+    }));
+
+    const lifetimeValue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const totalPaid = orders.reduce(
+      (sum, order) => sum + Math.max(0, order.totalPrice - order.balanceDue),
+      0,
+    );
+    const outstandingBalance = orders
+      .filter(
+        (order) =>
+          order.workflowStatus !== "delivered" &&
+          order.workflowStatus !== "cancelled",
+      )
+      .reduce((sum, order) => sum + order.balanceDue, 0);
+
     return {
       customer: this.toCustomer(row),
       latestMeasurement: latest ? toMeasurementDto(latest) : null,
+      orders,
+      summary: {
+        totalOrders: orders.length,
+        lifetimeValue,
+        totalPaid,
+        outstandingBalance,
+      },
     };
   }
 

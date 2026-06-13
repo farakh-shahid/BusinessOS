@@ -1,6 +1,7 @@
 import * as bcrypt from "bcrypt";
 import { UserRole } from "../src/generated/prisma/client";
 import { createPrismaClient } from "./client";
+import { seedDemoTailorData } from "./seed-demo-data";
 
 const prisma = createPrismaClient();
 
@@ -25,6 +26,9 @@ async function main() {
     create: {
       id: "00000000-0000-4000-8000-000000000001",
       name: "Demo Tailor Shop",
+      phone: "03168843648",
+      email: "admin@demotailor.pk",
+      address: "Main Market, Lahore",
     },
   });
 
@@ -41,10 +45,15 @@ async function main() {
     },
   });
 
+  const demo = await seedDemoTailorData(prisma, passwordHash, shopAdmin.id);
+
   console.log("Seed complete:");
   console.log(`  Super admin: ${superAdmin.email}`);
   console.log(`  Tenant:      ${tenant.name}`);
   console.log(`  Shop admin:  ${shopAdmin.email}`);
+  console.log(`  Staff:       ${demo.staffCount} tailors`);
+  console.log(`  Customers:   ${demo.customerCount}`);
+  console.log(`  Orders:      ${demo.orderCount} (${demo.assignedOrderCount} assigned)`);
   console.log("  Password:    changeme123 (change in production)");
 }
 

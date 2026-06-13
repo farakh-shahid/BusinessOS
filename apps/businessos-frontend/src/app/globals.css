@@ -8,11 +8,11 @@
 
 :root {
   /* Surfaces */
-  --background: #f5f7fa; /* Canvas */
+  --background: #f4f6fa; /* Canvas */
   --foreground: #0e1a36;
   --card: #ffffff;
-  --hairline: #e4e8f0;
-  --muted-slate: #697a99;
+  --hairline: #e7ebf2;
+  --muted-slate: #6b7a99;
 
   /* Sidebar & shell — Ink Navy / Slate Ink */
   --sidebar: #0e1a36;
@@ -118,6 +118,11 @@
   --color-analytics-select-muted: var(--analytics-select-muted);
 
   --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+}
+
+@utility font-display {
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
 }
 
 body {
@@ -134,4 +139,185 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Auth / app language toggle — matches sign-in HTML mock (.lang) */
+.lang {
+  display: inline-flex;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.lang button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted-slate);
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.lang button.on {
+  background: var(--foreground);
+  color: #fff;
+}
+
+.lang button:hover:not(.on) {
+  color: var(--foreground);
+}
+
+/* Mobile bottom nav — iOS / macOS floating dock glass */
+.mobile-nav-shell {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
+}
+
+.mobile-nav-dock {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 14px 44px rgba(14, 26, 54, 0.16),
+    0 4px 12px rgba(14, 26, 54, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(14, 26, 54, 0.05);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mobile-nav-dock {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+
+.mobile-nav-dock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(255, 255, 255, 0.28) 22%,
+    rgba(255, 255, 255, 0.06) 48%,
+    transparent 100%
+  );
+}
+
+.mobile-nav-dock::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.55),
+    inset 0 1px 12px rgba(255, 255, 255, 0.35);
+}
+
+.mobile-nav-dock-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sidebar active item — dark glass (iOS/macOS selection on navy) */
+.sidebar-nav-glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sidebar-nav-glass {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+.sidebar-nav-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.08) 32%,
+    transparent 68%
+  );
+}
+
+.sidebar-nav-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    inset 0 1px 10px rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * Tailwind preflight sets buttons to cursor: default — override in @layer base
+ * so these rules win after the generated stylesheet (must stay at file end).
+ */
+@layer base {
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]),
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [type="button"]:disabled,
+  [type="submit"]:disabled,
+  [type="reset"]:disabled,
+  [role="button"][aria-disabled="true"],
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Sidebar nav links — pointer must win over Tailwind preflight (keep at file end) */
+aside .sidebar-nav-link,
+aside .sidebar-new-order,
+aside .sidebar-logout {
+  cursor: pointer !important;
+}
+
+aside .sidebar-nav-link *,
+aside .sidebar-new-order *,
+aside .sidebar-logout * {
+  cursor: inherit;
 }

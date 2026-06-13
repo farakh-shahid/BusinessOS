@@ -52,7 +52,7 @@ export function OrderQuickFilters({
         type="button"
         onClick={onOpenSheet}
         className={cn(
-          "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm",
+          "inline-flex cursor-pointer items-center gap-2 rounded-xl border border-hairline bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm",
           isRtl && "flex-row-reverse",
         )}
       >
@@ -81,10 +81,10 @@ export function OrderQuickFilters({
                 type="button"
                 onClick={() => onFilterChange(key)}
                 className={cn(
-                  "shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition-colors",
+                  "shrink-0 cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
                   active
                     ? "border-brand-700 bg-brand-700 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-brand-200",
+                    : "border-hairline bg-card text-foreground hover:border-brand-200",
                 )}
               >
                 {quickLabel(key)}

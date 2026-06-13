@@ -1,22 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CalendarClock,
-  Eye,
-  EyeOff,
-  Languages,
-  Ruler,
-  Scissors,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { Check, Eye, EyeOff, Scissors } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
-import { Button } from "@/core/presentation/components/ui/button";
-import { Input } from "@/core/presentation/components/ui/input";
-import { Label } from "@/core/presentation/components/ui/label";
 import { ApiError } from "@/core/infrastructure/api/api-client";
 import { routes } from "@/core/config/routes";
 import { useLocale } from "@/core/i18n/locale-context";
@@ -24,11 +13,33 @@ import { useLoginMutation } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { LanguageToggle } from "@/tailor/ui/layout/language-toggle";
 
 const loginFeatures = [
-  { icon: CalendarClock, titleKey: "featureOrdersTitle", descKey: "featureOrdersDesc" },
-  { icon: Ruler, titleKey: "featureMeasurementsTitle", descKey: "featureMeasurementsDesc" },
-  { icon: Users, titleKey: "featureCustomersTitle", descKey: "featureCustomersDesc" },
-  { icon: Languages, titleKey: "featureBilingualTitle", descKey: "featureBilingualDesc" },
+  "featureTrack",
+  "featureWhatsApp",
+  "featureAnalytics",
 ] as const;
+
+function GoogleIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      />
+    </svg>
+  );
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -39,6 +50,7 @@ export function LoginForm() {
   const [loginId, setLoginId] = useState("admin@demotailor.pk");
   const [password, setPassword] = useState("changeme123");
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -60,142 +72,220 @@ export function LoginForm() {
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="min-h-screen bg-slate-950 lg:grid lg:grid-cols-2"
+      className="grid min-h-screen grid-cols-1 bg-background lg:grid-cols-[1.05fr_1fr]"
     >
-      <section className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute inset-0 bg-gradient-to-br from-sidebar via-sidebar to-sidebar-dark" />
-        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-accent-400/15 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sidebar-light/30 blur-3xl" />
-        <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:24px_24px]" />
+      <section className="relative flex flex-col overflow-hidden bg-gradient-to-br from-[#0E1A36] to-[#1A2747] px-7 py-8 text-white sm:px-[52px] sm:py-[46px] lg:min-h-screen">
+        <div
+          className="pointer-events-none absolute -bottom-[90px] -right-[90px] h-[340px] w-[340px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, color-mix(in srgb, #FF6A2B 36%, transparent), transparent 70%)",
+          }}
+        />
+        <div className="pointer-events-none absolute left-[52px] right-[52px] top-[130px] hidden h-px bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.25)_0_8px,transparent_8px_16px)] lg:block" />
 
-        <div className="relative z-10 p-10 xl:p-14">
-          <div className="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
-            <Scissors className="h-5 w-5 text-amber-300" />
-            <span className="text-sm font-semibold tracking-wide">{t.appName}</span>
+        <div
+          className={cn(
+            "relative z-[1] flex items-center gap-[13px]",
+            isRtl && "flex-row-reverse",
+          )}
+        >
+          <span className="grid h-[46px] w-[46px] place-items-center rounded-[13px] bg-gradient-to-br from-accent-500 to-[color-mix(in_srgb,#FF6A2B_55%,#fff)]">
+            <Scissors className="h-[23px] w-[23px] text-white" strokeWidth={2} />
+          </span>
+          <div className={cn(isRtl && "text-right")}>
+            <b className="font-display block text-xl font-bold leading-[1.1]">
+              {t.appName}
+            </b>
+            <small className="text-[11px] tracking-[0.02em] text-white/55">
+              {t.auth.brandTagline}
+            </small>
           </div>
-          <h1 className="mt-10 max-w-lg text-4xl font-bold leading-tight text-white xl:text-5xl">
-            {t.auth.shopLabel}
-          </h1>
-          <p className="mt-4 max-w-md text-lg text-sidebar-text">{t.auth.shopBlurb}</p>
         </div>
 
-        <div className="relative z-10 flex flex-1 flex-col justify-center px-10 xl:px-14">
-          <ul className="grid max-w-lg gap-3">
-            {loginFeatures.map(({ icon: Icon, titleKey, descKey }) => (
-              <li
-                key={titleKey}
+        <div className="relative z-[1] my-6 max-w-[420px] lg:my-auto">
+          <h1 className="font-display text-[28px] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[38px]">
+            {t.auth.headlinePrefix}{" "}
+            <span className="text-accent-500">{t.auth.headlineAccent}</span>
+          </h1>
+          <p className="mt-3.5 text-[15px] leading-relaxed text-white/66">
+            {t.auth.headlineSub}
+          </p>
+
+          <div className="mt-[30px] hidden flex-col gap-[13px] lg:flex">
+            {loginFeatures.map((key) => (
+              <div
+                key={key}
                 className={cn(
-                  "flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm",
+                  "flex items-center gap-3 text-sm text-white/[0.86]",
                   isRtl && "flex-row-reverse text-right",
                 )}
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-white">
-                    {t.auth[titleKey]}
-                  </p>
-                  <p className="mt-0.5 text-sm leading-snug text-sidebar-text">
-                    {t.auth[descKey]}
-                  </p>
-                </div>
-              </li>
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-white/10 text-xs text-accent-500">
+                  <Check className="h-3 w-3" strokeWidth={3} />
+                </span>
+                {t.auth[key]}
+              </div>
             ))}
-          </ul>
-        </div>
-
-        <div className="relative z-10 p-10 xl:p-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-sidebar-text backdrop-blur-sm">
-            <Sparkles className="h-4 w-4 text-amber-300" />
-            <span>{t.appTagline}</span>
           </div>
         </div>
+
+        <p className="relative z-[1] hidden text-xs text-white/40 lg:block">
+          {t.auth.brandFooter}
+        </p>
       </section>
 
-      <section className="flex items-center justify-center px-6 py-10 sm:px-10">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
-            <div className="inline-flex items-center gap-2 rounded-xl bg-sidebar px-3 py-2 text-white">
-              <Scissors className="h-4 w-4" />
-              <span className="text-sm font-semibold">{t.appName}</span>
-            </div>
+      <section className="flex min-h-0 flex-col px-6 py-7 sm:px-10 sm:py-10 lg:min-h-screen lg:px-14 lg:py-10">
+        <div className="ftop flex items-center justify-between gap-3.5">
+          <LanguageToggle />
+        </div>
+
+        <div className="mx-auto my-auto w-full max-w-[380px] py-8 lg:py-0">
+          <h2 className="font-display text-[26px] font-bold tracking-[-0.01em] text-foreground">
+            {t.auth.welcomeBack}
+          </h2>
+          <p className="mt-1.5 text-sm text-muted-slate">
+            {t.auth.signInToPrefix}{" "}
+            <b className="font-semibold text-foreground">{t.auth.demoShopName}</b>
+          </p>
+
+          <button
+            type="button"
+            disabled
+            className="mt-[26px] flex w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border border-hairline bg-card px-3 py-3 text-sm font-semibold text-foreground opacity-70"
+            aria-disabled
+            title={t.auth.continueWithGoogle}
+          >
+            <GoogleIcon />
+            {t.auth.continueWithGoogle}
+          </button>
+
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-slate">
+            <span className="h-px flex-1 bg-hairline" />
+            {t.auth.orSignInWithEmail}
+            <span className="h-px flex-1 bg-hairline" />
           </div>
 
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-200/50 sm:p-8">
-            <div className={cn("flex items-start justify-between gap-4", isRtl && "flex-row-reverse")}>
-              <div className={cn(isRtl && "text-right")}>
-                <h2 className="text-2xl font-bold text-slate-900">{t.auth.welcomeBack}</h2>
-                <p className="mt-2 text-sm text-slate-500">{t.auth.signInSubtitle}</p>
+          <form onSubmit={handleSubmit}>
+            {error ? (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
+                {error}
               </div>
-              <LanguageToggle />
+            ) : null}
+
+            <div className="mb-[15px]">
+              <label
+                htmlFor="login"
+                className="mb-1.5 block text-[12.5px] font-semibold text-foreground"
+              >
+                {t.auth.loginId}
+              </label>
+              <input
+                id="login"
+                type="text"
+                autoComplete="username"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                placeholder={t.auth.loginIdPlaceholder}
+                dir="ltr"
+                required
+                className="w-full rounded-xl border border-hairline bg-card px-3.5 py-[13px] text-sm text-foreground transition placeholder:text-muted-slate focus:border-accent-500 focus:outline-none focus:ring-[3px] focus:ring-accent-50"
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {error && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="login">{t.auth.loginId}</Label>
-                <Input
-                  id="login"
-                  type="text"
-                  autoComplete="username"
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
-                  className="mt-1.5"
-                  placeholder={t.auth.loginIdPlaceholder}
+            <div className="mb-[15px]">
+              <label
+                htmlFor="password"
+                className="mb-1.5 block text-[12.5px] font-semibold text-foreground"
+              >
+                {t.auth.password}
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   dir="ltr"
                   required
+                  className={cn(
+                    "w-full rounded-xl border border-hairline bg-card py-[13px] text-sm text-foreground transition placeholder:text-muted-slate focus:border-accent-500 focus:outline-none focus:ring-[3px] focus:ring-accent-50",
+                    isRtl ? "pl-11 pr-3.5" : "pr-11 pl-3.5",
+                  )}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2 text-muted-slate transition hover:text-foreground",
+                    isRtl ? "left-3" : "right-3",
+                  )}
+                  aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="password">{t.auth.password}</Label>
-                <div className="relative mt-1.5">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={cn(isRtl ? "pl-11" : "pr-11")}
-                    dir="ltr"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className={cn(
-                      "absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700",
-                      isRtl ? "left-1" : "right-1",
-                    )}
-                    aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="min-h-11 w-full text-base"
-                disabled={login.isPending}
+            <div
+              className={cn(
+                "mb-[22px] flex items-center justify-between text-[13px]",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 text-muted-slate",
+                  isRtl && "flex-row-reverse",
+                )}
               >
-                {login.isPending ? t.auth.signingIn : t.auth.signIn}
-              </Button>
-            </form>
+                <input
+                  type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(e) => setKeepSignedIn(e.target.checked)}
+                  className="h-[15px] w-[15px] accent-accent-500"
+                />
+                {t.auth.keepSignedIn}
+              </label>
+              <a
+                href="#"
+                className="font-semibold text-accent-500 no-underline hover:underline"
+                onClick={(e) => e.preventDefault()}
+              >
+                {t.auth.forgotPassword}
+              </a>
+            </div>
 
-            <p className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-center text-xs text-slate-500">
-              {t.auth.demoHint}
-            </p>
+            <button
+              type="submit"
+              disabled={login.isPending}
+              className="w-full cursor-pointer rounded-xl bg-accent-500 px-3 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-[0.96] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {login.isPending ? t.auth.signingIn : t.auth.signIn}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-[13.5px] text-muted-slate">
+            {t.auth.newToBusinessOS}{" "}
+            <Link
+              href={routes.signup}
+              className="font-semibold text-accent-500 no-underline hover:underline"
+            >
+              {t.auth.createShopAccount}
+            </Link>
+          </p>
+
+          <div className="mt-[22px] rounded-xl border border-dashed border-[color-mix(in_srgb,#FF6A2B_40%,#E7EBF2)] bg-[color-mix(in_srgb,#FF6A2B_8%,#FFFFFF)] px-3.5 py-[11px] text-center text-xs text-muted-slate">
+            {t.auth.demoLoginPrefix}{" "}
+            <b className="font-display font-bold text-foreground">
+              {t.auth.demoLoginCredentials}
+            </b>
           </div>
         </div>
       </section>

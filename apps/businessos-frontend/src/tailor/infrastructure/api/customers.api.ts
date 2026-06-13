@@ -1,12 +1,13 @@
 import type {
   CustomerDetail,
+  CustomerListEntry,
   CustomerSearchResult,
   TailorCustomer,
 } from "@business-os/tailor";
 import { apiFetch } from "@/core/infrastructure/api/api-client";
 
 export function fetchCustomers() {
-  return apiFetch<TailorCustomer[]>("/tailor/customers");
+  return apiFetch<CustomerListEntry[]>("/tailor/customers");
 }
 
 export function fetchCustomerDetail(customerId: string) {

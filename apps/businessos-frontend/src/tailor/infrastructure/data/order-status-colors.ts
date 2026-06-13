@@ -11,40 +11,47 @@ export type StatusColorKey =
 
 export const statusColorClasses: Record<
   StatusColorKey,
-  { badge: string; avatar: string }
+  { badge: string; avatar: string; stripe: string }
 > = {
   pending: {
     badge: "border-2 border-status-booked bg-status-booked-bg text-status-booked",
     avatar: "bg-status-booked-bg text-status-booked ring-2 ring-status-booked/80",
+    stripe: "md:border-l-[5px] md:border-l-status-booked",
   },
   cutting: {
     badge: "border-2 border-status-cutting bg-status-cutting-bg text-[#9A6800]",
     avatar: "bg-status-cutting-bg text-[#9A6800] ring-2 ring-status-cutting/80",
+    stripe: "md:border-l-[5px] md:border-l-status-cutting",
   },
   stitching: {
     badge: "border-2 border-status-stitching bg-status-stitching-bg text-status-stitching",
     avatar:
       "bg-status-stitching-bg text-status-stitching ring-2 ring-status-stitching/80",
+    stripe: "md:border-l-[5px] md:border-l-status-stitching",
   },
   ready: {
     badge: "border-2 border-status-ready bg-status-ready-bg text-status-ready",
     avatar: "bg-status-ready-bg text-status-ready ring-2 ring-status-ready/80",
+    stripe: "md:border-l-[5px] md:border-l-status-ready",
   },
   delivered: {
     badge:
       "border-2 border-status-delivered bg-status-delivered-bg text-status-delivered",
     avatar:
       "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/80",
+    stripe: "md:border-l-[5px] md:border-l-status-delivered",
   },
   overdue: {
     badge: "border-2 border-status-urgent bg-status-urgent-bg text-status-urgent",
     avatar: "bg-status-urgent-bg text-status-urgent ring-2 ring-status-urgent/80",
+    stripe: "md:border-l-[5px] md:border-l-status-urgent",
   },
   cancelled: {
     badge:
       "border-2 border-status-delivered/70 bg-status-delivered-bg text-status-delivered",
     avatar:
       "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/60",
+    stripe: "md:border-l-[5px] md:border-l-status-urgent",
   },
 };
 
@@ -85,4 +92,23 @@ export function statusBadgeClass(options: {
 
 export function statusAvatarClass(status: OrderStatus): string {
   return statusColorClasses[displayStatusColorKey[status]].avatar;
+}
+
+export function statusStripeClass(
+  options: {
+    displayStatus?: OrderStatus | string;
+    workflowStatus?: OrderWorkflowStatus;
+  },
+  isRtl = false,
+): string {
+  const stripe =
+    statusColorClasses[resolveWorkflowColorKey(options.workflowStatus)].stripe;
+
+  if (isRtl) {
+    return stripe
+      .replace(/md:border-l-\[5px\]/g, "md:border-r-[5px] md:border-l-0")
+      .replace(/md:border-l-status-/g, "md:border-r-status-");
+  }
+
+  return stripe;
 }

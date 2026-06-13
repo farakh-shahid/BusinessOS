@@ -8,24 +8,25 @@ interface StatCardProps {
   icon: LucideIcon;
   tone?: "brand" | "violet" | "amber" | "emerald";
   href?: string;
+  active?: boolean;
 }
 
 const toneStyles = {
   brand: {
-    icon: "bg-brand-50 text-brand-700 ring-brand-100",
-    hover: "hover:border-brand-200 hover:shadow-brand-700/5",
+    icon: "bg-accent-50 text-accent-500",
+    hover: "hover:border-brand-200 hover:shadow-[0_10px_26px_rgba(14,26,54,0.08)]",
   },
   violet: {
-    icon: "bg-violet-50 text-violet-600 ring-violet-100",
-    hover: "hover:border-violet-200 hover:shadow-violet-500/5",
+    icon: "bg-status-stitching-bg text-status-stitching",
+    hover: "hover:border-violet-200 hover:shadow-[0_10px_26px_rgba(14,26,54,0.08)]",
   },
   amber: {
-    icon: "bg-amber-50 text-amber-600 ring-amber-100",
-    hover: "hover:border-amber-200 hover:shadow-amber-500/5",
+    icon: "bg-status-cutting-bg text-[#9A6800]",
+    hover: "hover:border-amber-200 hover:shadow-[0_10px_26px_rgba(14,26,54,0.08)]",
   },
   emerald: {
-    icon: "bg-emerald-50 text-emerald-600 ring-emerald-100",
-    hover: "hover:border-emerald-200 hover:shadow-emerald-500/5",
+    icon: "bg-status-ready-bg text-status-ready",
+    hover: "hover:border-emerald-200 hover:shadow-[0_10px_26px_rgba(14,26,54,0.08)]",
   },
 };
 
@@ -35,6 +36,7 @@ export function StatCard({
   icon: Icon,
   tone = "brand",
   href,
+  active = false,
 }: StatCardProps) {
   const styles = toneStyles[tone];
 
@@ -42,28 +44,25 @@ export function StatCard({
     <>
       <div
         className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-4",
+          "mb-3 flex h-9 w-9 items-center justify-center rounded-[10px] text-base",
           styles.icon,
         )}
       >
-        <Icon className="h-5 w-5" strokeWidth={2} />
+        <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
       </div>
-      <div className="min-w-0 text-center md:text-left">
-        <p className="text-2xl font-bold tracking-tight text-slate-900 md:text-[1.75rem]">
-          {value}
-        </p>
-        <p className="mt-0.5 text-xs font-medium leading-snug text-slate-500 md:text-sm">
-          {label}
-        </p>
-      </div>
+      <p className="font-display text-[1.6875rem] font-bold leading-none tracking-tight text-foreground">
+        {value}
+      </p>
+      <p className="mt-1 text-xs font-medium text-muted-slate sm:text-sm">{label}</p>
     </>
   );
 
   const className = cn(
-    "flex flex-col items-center gap-3 rounded-2xl border border-slate-100/80 bg-white px-4 py-4 shadow-sm md:flex-row md:gap-4 md:px-5 md:py-5",
+    "rounded-[15px] border bg-card px-4 py-4 shadow-sm transition duration-150",
+    active ? "border-brand-700 shadow-[0_0_0_1px_var(--brand-700)]" : "border-hairline",
     href &&
       cn(
-        "cursor-pointer transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]",
+        "cursor-pointer hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]",
         styles.hover,
       ),
   );

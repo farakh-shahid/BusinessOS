@@ -42,6 +42,10 @@ import { OrderStatusSelect } from "./order-status-select";
 import { printMeasurementCard, printOrderReceipt } from "./print-order";
 import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
+import { BackLink } from "@/tailor/ui/shared/back-link";
+import { KvRow } from "@/tailor/ui/shared/kv-row";
+import { MeasurementGrid } from "@/tailor/ui/shared/measurement-grid";
+import { OrderWorkflowStepper } from "./order-workflow-stepper";
 
 interface OrderDetailViewProps {
   orderId: string;
@@ -116,6 +120,21 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       (Number(advancePaid) || order.advancePaid),
     0,
   );
+  const measurementItems = Object.entries(order.measurements)
+    .filter(([, value]) => value)
+    .map(([key, value]) => ({
+      label:
+        key in t.measurements
+          ? t.measurements[key as keyof typeof t.measurements]
+          : key,
+      value: `${value}"`,
+    }));
+  const stepperLabels = {
+    pending: t.orderStatus.pending,
+    cutting: t.orderStatus.cutting,
+    stitching: t.orderStatus.stitching,
+    ready: t.orderStatus.ready,
+  };
 
   async function handleStatusChange(
     _orderId: string,
@@ -189,97 +208,69 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
   return (
     <>
-      <div className="mb-4">
-        <Link
-          href={routes.orders}
-          className="text-sm font-medium text-brand-700 hover:text-brand-800"
-        >
-          ← {t.nav.orders}
-        </Link>
+      <BackLink href={routes.orders} label={t.nav.orders} isRtl={isRtl} />
+
+      <div
+        className={cn(
+          "mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+          isRtl && "sm:flex-row-reverse",
+        )}
+      >
         <div
           className={cn(
-            "mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
-            isRtl && "sm:flex-row-reverse",
+            "flex min-w-0 flex-1 gap-3",
+            isRtl && "flex-row-reverse",
           )}
         >
-          <div
-            className={cn(
-              "flex min-w-0 flex-1 gap-3",
-              isRtl && "flex-row-reverse",
-            )}
-          >
-            <UserAvatar name={order.customerName} size="lg" />
-            <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
+          <UserAvatar name={order.customerName} size="lg" />
+          <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-2",
+                isRtl && "flex-row-reverse justify-end",
+              )}
+            >
+              <h2 className="font-display text-xl font-bold text-foreground md:text-2xl">
+                #{order.orderNumber}
+              </h2>
+              {order.isRush ? (
+                <span className="inline-flex shrink-0 rounded-full bg-status-urgent-bg px-2 py-0.5 text-xs font-bold uppercase text-status-urgent">
+                  {t.orderDetail.rush}
+                </span>
+              ) : null}
+            </div>
+
+            {order.dressCode ? (
               <div
                 className={cn(
-                  "flex flex-wrap items-center gap-2",
-                  isRtl && "flex-row-reverse justify-end",
+                  "mt-1.5 flex flex-wrap gap-2",
+                  isRtl && "justify-end",
                 )}
               >
-                <h2 className="text-xl font-bold text-slate-900 md:text-2xl">
-                  #{order.orderNumber}
-                </h2>
-                {order.isRush ? (
-                  <span className="inline-flex shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold uppercase text-rose-700">
-                    {t.orderDetail.rush}
+                <span className="inline-flex max-w-full items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
+                  <span className="truncate">
+                    {t.form.dressCode}: {order.dressCode}
                   </span>
-                ) : null}
+                </span>
               </div>
+            ) : null}
 
-              {order.dressCode ? (
-                <div
-                  className={cn(
-                    "mt-1.5 flex flex-wrap gap-2",
-                    isRtl && "justify-end",
-                  )}
-                >
-                  <span className="inline-flex max-w-full items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
-                    <span className="truncate">
-                      {t.form.dressCode}: {order.dressCode}
-                    </span>
-                  </span>
-                </div>
-              ) : null}
-
-              {order.assignedToName ? (
-                <div
-                  className={cn(
-                    "mt-1.5 flex flex-wrap gap-2",
-                    isRtl && "justify-end",
-                  )}
-                >
-                  <span
-                    className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700"
-                    title={`${t.form.assignedTo}: ${order.assignedToName}`}
-                  >
-                    <span className="shrink-0 text-slate-500">
-                      {t.form.assignedTo.split("(")[0]?.trim() ?? t.form.assignedTo}:
-                    </span>
-                    <PersonNameText
-                      name={order.assignedToName}
-                      className="min-w-0 font-semibold text-slate-700"
-                    />
-                  </span>
-                </div>
-              ) : null}
-
-              <p className="mt-2 font-medium text-slate-700">
-                {order.customerName}
-              </p>
-              <p className="text-sm text-slate-500">{order.customerPhone}</p>
-            </div>
+            <p className="mt-2 text-sm text-muted-slate">
+              {order.garmentLabel}
+              {order.suitCount > 1 ? ` · ${order.suitCount} ${t.orders.items}` : ""}
+            </p>
           </div>
-          <OrderStatusSelect
-            orderId={orderId}
-            workflowStatus={order.workflowStatus}
-            displayStatus={order.status}
-            isAdmin={isAdmin}
-            disabled={updateStatus.isPending}
-            onChange={handleStatusChange}
-            context="detail"
-            className="shrink-0"
-          />
         </div>
+        <OrderStatusSelect
+          orderId={orderId}
+          workflowStatus={order.workflowStatus}
+          displayStatus={order.status}
+          isAdmin={isAdmin}
+          disabled={updateStatus.isPending}
+          onChange={handleStatusChange}
+          context="detail"
+          className="shrink-0"
+        />
       </div>
 
       <div
@@ -348,7 +339,16 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <Card className="mb-4">
+        <OrderWorkflowStepper
+          workflowStatus={order.workflowStatus}
+          labels={stepperLabels}
+          isRtl={isRtl}
+        />
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+        <div className="space-y-4">
         <Card>
           <CardTitle>{t.form.orderDetails}</CardTitle>
           {canEdit && !editing ? (
@@ -568,74 +568,32 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
         <Card>
           <CardTitle>{t.form.measurements}</CardTitle>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-muted-slate">
             {order.suitCount > 1
               ? `${order.suitCount} × ${order.garmentLabel}`
               : order.garmentLabel}
             {order.dressCode ? (
               <>
                 {" · "}
-                <span className="font-medium text-slate-700">
+                <span className="font-medium text-foreground">
                   {t.form.dressCode}: {order.dressCode}
                 </span>
               </>
             ) : null}
           </p>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="mt-0.5 text-xs text-muted-slate">
             {t.orderDetail.measurementsSuitHint}
           </p>
-          <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            {Object.entries(order.measurements).map(([key, value]) =>
-              value ? (
-                <div key={key}>
-                  <dt className="text-slate-500">
-                    {key in t.measurements
-                      ? t.measurements[key as keyof typeof t.measurements]
-                      : key}
-                  </dt>
-                  <dd className="font-medium text-slate-900">{value}"</dd>
-                </div>
-              ) : null,
-            )}
-          </dl>
-        </Card>
-
-        <Card>
-          <CardTitle>{t.orderDetail.payments}</CardTitle>
-          {order.payments.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">
-              {t.orderDetail.noPayments}
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {order.payments.map((payment) => (
-                <li
-                  key={payment.id}
-                  className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Rs. {payment.amount.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {payment.recordedByName} ·{" "}
-                      {new Date(payment.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {payment.note && (
-                    <span className="text-xs text-slate-600">{payment.note}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="mt-4">
+            <MeasurementGrid items={measurementItems} isRtl={isRtl} />
+          </div>
         </Card>
 
         {featureFlags.activityLogEnabled && (
-          <Card className="lg:col-span-2">
+          <Card>
             <CardTitle>{t.orderDetail.activity}</CardTitle>
             {order.auditLog.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">
+              <p className="mt-4 text-sm text-muted-slate">
                 {t.orderDetail.noActivity}
               </p>
             ) : (
@@ -643,23 +601,121 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                 {order.auditLog.map((entry) => (
                   <li
                     key={entry.id}
-                    className="rounded-xl border border-slate-100 px-3 py-2 text-sm"
+                    className="rounded-xl border border-hairline bg-background px-3 py-2 text-sm"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-slate-900">
+                      <span className="font-medium text-foreground">
                         {t.orderDetail.auditActions[entry.action]}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted-slate">
                         {new Date(entry.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500">{entry.userName}</p>
+                    <p className="text-xs text-muted-slate">{entry.userName}</p>
                   </li>
                 ))}
               </ul>
             )}
           </Card>
         )}
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardTitle>{t.orderDetail.customerPanel}</CardTitle>
+            <div
+              className={cn(
+                "mt-4 flex items-start gap-3",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              <UserAvatar name={order.customerName} size="md" />
+              <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
+                <Link
+                  href={routes.customerDetail(order.customerId)}
+                  className="font-display text-base font-bold text-foreground hover:text-brand-700 hover:underline"
+                >
+                  {order.customerName}
+                </Link>
+                <p className="mt-1 text-sm text-muted-slate" dir="ltr">
+                  {order.customerPhone}
+                </p>
+                {order.customerEmail ? (
+                  <p className="text-sm text-muted-slate" dir="ltr">
+                    {order.customerEmail}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            {order.assignedToName ? (
+              <div className="mt-4 border-t border-hairline pt-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-slate">
+                  {t.form.assignedTo}
+                </p>
+                <PersonNameText
+                  name={order.assignedToName}
+                  className="mt-1 text-sm font-semibold text-foreground"
+                />
+              </div>
+            ) : null}
+          </Card>
+
+          <Card>
+            <CardTitle>{t.orderDetail.payments}</CardTitle>
+            <div className="mt-2">
+              <KvRow
+                label={t.form.totalPrice}
+                value={`Rs. ${order.totalPrice.toLocaleString()}`}
+                isRtl={isRtl}
+              />
+              <KvRow
+                label={t.form.advancePaid}
+                value={`Rs. ${order.advancePaid.toLocaleString()}`}
+                isRtl={isRtl}
+              />
+              <KvRow
+                label={t.form.balanceDue}
+                value={`Rs. ${order.balanceDue.toLocaleString()}`}
+                valueClassName={
+                  order.balanceDue > 0 ? "text-status-urgent" : "text-status-ready"
+                }
+                isRtl={isRtl}
+              />
+            </div>
+            {order.payments.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-slate">
+                {t.orderDetail.noPayments}
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-2 border-t border-hairline pt-3">
+                {order.payments.map((payment) => (
+                  <li
+                    key={payment.id}
+                    className="rounded-[10px] bg-background px-3 py-2 text-sm"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-between gap-2",
+                        isRtl && "flex-row-reverse",
+                      )}
+                    >
+                      <p className="font-semibold text-foreground">
+                        Rs. {payment.amount.toLocaleString()}
+                      </p>
+                      <span className="text-xs text-muted-slate">
+                        {new Date(payment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-slate">
+                      {payment.recordedByName}
+                      {payment.note ? ` · ${payment.note}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
       </div>
 
       <MarkReadyDialog

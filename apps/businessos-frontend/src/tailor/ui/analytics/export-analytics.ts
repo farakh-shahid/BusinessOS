@@ -41,6 +41,8 @@ export interface AnalyticsExportLabels {
   viewModeWeek: string;
   viewModeMonth: string;
   noData: string;
+  printHint: string;
+  poweredBy: string;
 }
 
 function csvEscape(value: string | number): string {
@@ -204,5 +206,7 @@ export function buildAnalyticsExportLabels(
     viewModeWeek: t.analytics.viewModeWeek,
     viewModeMonth: t.analytics.viewModeMonth,
     noData: t.analytics.noGarmentData,
+    printHint: t.analytics.printHint,
+    poweredBy: t.analytics.poweredBy,
   };
 }

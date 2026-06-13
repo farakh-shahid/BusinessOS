@@ -41,9 +41,11 @@ export {
 } from "./measurement-schemas";
 export type {
   TailorCustomer,
+  CustomerListEntry,
   CustomerSearchResult,
   CustomerOrderHistoryItem,
   CustomerGarmentCount,
+  CustomerPaymentSummary,
   CustomerDetail,
 } from "./types/customer";
 export type {

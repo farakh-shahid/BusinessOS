@@ -8,9 +8,9 @@ import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useCustomersQuery } from "@/tailor/infrastructure/api/hooks/use-customers";
-import { CustomerEditDialog } from "./customer-edit-dialog";
 import { CustomerListItem } from "./customer-list-item";
 import { CustomerListSkeleton } from "@/tailor/ui/skeletons";
+import { PageHeader } from "@/tailor/ui/shared/page-header";
 
 export function CustomersView() {
   const { locale } = useLocale();
@@ -19,9 +19,6 @@ export function CustomersView() {
 
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
-    null,
-  );
 
   const { data: customers = [], isLoading, isError } = useCustomersQuery();
 
@@ -49,12 +46,11 @@ export function CustomersView() {
 
   return (
     <>
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-slate-900 md:text-2xl">
-          {t.nav.customers}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">{t.customers.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.nav.customers}
+        subtitle={t.customers.subtitle}
+        isRtl={isRtl}
+      />
 
       <form
         onSubmit={handleSearch}
@@ -80,7 +76,7 @@ export function CustomersView() {
             isRtl && "sm:flex-row-reverse",
           )}
         >
-          <Button type="submit" className="h-11 w-full gap-2 sm:min-w-32 sm:w-auto">
+          <Button type="submit" variant="brand" className="h-11 w-full gap-2 sm:min-w-32 sm:w-auto">
             <Search className="h-4 w-4 shrink-0" />
             {t.search.button}
           </Button>
@@ -116,19 +112,10 @@ export function CustomersView() {
             )}
           </p>
           {filteredCustomers.map((customer) => (
-            <CustomerListItem
-              key={customer.id}
-              customer={customer}
-              onSelect={setSelectedCustomerId}
-            />
+            <CustomerListItem key={customer.id} customer={customer} />
           ))}
         </section>
       )}
-
-      <CustomerEditDialog
-        customerId={selectedCustomerId}
-        onClose={() => setSelectedCustomerId(null)}
-      />
     </>
   );
 }

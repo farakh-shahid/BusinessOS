@@ -10,6 +10,8 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useAssignmentsQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { AssignmentsSkeleton } from "@/tailor/ui/skeletons";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
+import { BackLink } from "@/tailor/ui/shared/back-link";
+import { PageHeader } from "@/tailor/ui/shared/page-header";
 
 export function AssignmentsView() {
   const { locale } = useLocale();
@@ -19,18 +21,13 @@ export function AssignmentsView() {
 
   return (
     <>
-      <div className="mb-4">
-        <Link
-          href={routes.dashboard}
-          className="text-sm font-medium text-brand-700 hover:text-brand-800"
-        >
-          ← {t.nav.dashboard}
-        </Link>
-        <h2 className="mt-2 text-lg font-bold text-slate-900 md:text-2xl">
-          {t.assignments.title}
-        </h2>
-        <p className="text-sm text-slate-500">{t.assignments.subtitle}</p>
-      </div>
+      <BackLink href={routes.dashboard} label={t.nav.dashboard} isRtl={isRtl} />
+
+      <PageHeader
+        title={t.assignments.title}
+        subtitle={t.assignments.subtitle}
+        isRtl={isRtl}
+      />
 
       {isLoading ? (
         <AssignmentsSkeleton />

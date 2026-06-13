@@ -23,32 +23,25 @@ export function SidebarNavLink({
     <Link
       href={href}
       className={cn(
-        "group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+        "sidebar-nav-link group flex items-center gap-3 rounded-2xl text-sm font-semibold transition-all duration-200",
         active
-          ? "bg-white text-sidebar shadow-lg shadow-black/10"
-          : "text-sidebar-text/90 hover:bg-white/10 hover:text-white",
+          ? "sidebar-nav-glass px-4 py-3.5 text-white"
+          : "px-3 py-3 text-sidebar-text-muted hover:bg-white/[0.05] hover:text-white/90",
         isRtl && "flex-row-reverse",
       )}
     >
-      <span
-        className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
-          active
-            ? "bg-gradient-to-br from-sidebar-light to-sidebar-dark text-white"
-            : "bg-white/10 text-sidebar-text group-hover:bg-white/15",
-        )}
-      >
-        <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.5 : 2} />
-      </span>
-      <span className="truncate">{label}</span>
-      {active && (
+      {active ? (
         <span
-          className={cn(
-            "absolute top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-accent-500",
-            isRtl ? "-right-1" : "-left-1",
-          )}
+          className="relative z-[1] h-8 w-1.5 shrink-0 rounded-full bg-accent-500 shadow-[0_0_12px_rgba(255,106,43,0.45)]"
+          aria-hidden
+        />
+      ) : (
+        <Icon
+          className="relative z-[1] h-[18px] w-[18px] shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+          strokeWidth={2}
         />
       )}
+      <span className="relative z-[1] truncate">{label}</span>
     </Link>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
+import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useOrdersQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
@@ -23,6 +23,8 @@ import { OrderQuickFilters } from "@/tailor/ui/orders/order-quick-filters";
 import { OrderFiltersSheet } from "@/tailor/ui/orders/order-filters-sheet";
 import { OrderList } from "@/tailor/ui/orders/order-list";
 import { OrderListSkeleton } from "@/tailor/ui/skeletons";
+import { BackLink } from "@/tailor/ui/shared/back-link";
+import { PageHeader } from "@/tailor/ui/shared/page-header";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 export function OrdersView() {
@@ -92,30 +94,27 @@ export function OrdersView() {
 
   return (
     <>
-      <div className="mb-2">
-        <Link
-          href={routes.dashboard}
-          className="text-sm font-medium text-brand-700 hover:text-brand-800"
-        >
-          ← {t.nav.dashboard}
-        </Link>
-        <h2 className="mt-2 text-lg font-bold text-slate-900 md:text-2xl">
-          {t.orders.allOrders}
-        </h2>
-        {params.assignedTo ? (
-          <p className="mt-1 inline-flex max-w-full min-w-0 items-baseline gap-1 text-sm text-slate-500">
-            <span className="shrink-0">{t.form.assignedTo}:</span>
-            <PersonNameText
-              name={params.assignedTo}
-              className="min-w-0 font-medium text-slate-700"
-            />
-          </p>
-        ) : null}
-      </div>
+      <BackLink href={routes.dashboard} label={t.nav.dashboard} isRtl={isRtl} />
+
+      <PageHeader
+        title={t.orders.allOrders}
+        isRtl={isRtl}
+        meta={
+          params.assignedTo ? (
+            <p className="inline-flex max-w-full min-w-0 items-baseline gap-1 text-sm text-muted-slate">
+              <span className="shrink-0">{t.form.assignedTo}:</span>
+              <PersonNameText
+                name={params.assignedTo}
+                className="min-w-0 font-medium text-foreground"
+              />
+            </p>
+          ) : undefined
+        }
+      />
 
       <div
         className={cn(
-          "sticky top-0 z-20 -mx-4 space-y-3 border-b border-slate-200/80 bg-slate-50/95 px-4 py-3 backdrop-blur-md",
+          "sticky top-0 z-20 -mx-4 space-y-3 border-b border-hairline bg-background/95 px-4 py-3 backdrop-blur-md",
           "sm:-mx-6 sm:px-6",
           "lg:-mx-10 lg:px-10",
         )}
@@ -127,7 +126,7 @@ export function OrdersView() {
           <div className="relative min-w-0 flex-1">
             <Search
               className={cn(
-                "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400",
+                "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-slate",
                 isRtl ? "right-3" : "left-3",
               )}
             />
@@ -135,16 +134,13 @@ export function OrdersView() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t.orderList.searchOrdersPlaceholder}
-              className={cn("w-full", isRtl ? "pr-10" : "pl-10")}
+              className={cn("w-full bg-card", isRtl ? "pr-10" : "pl-10")}
             />
           </div>
-          <button
-            type="submit"
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button type="submit" variant="brand" className="shrink-0 gap-2">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">{t.search.button}</span>
-          </button>
+          </Button>
         </form>
 
         <OrderQuickFilters

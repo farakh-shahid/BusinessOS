@@ -3,32 +3,26 @@
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 
-export function LanguageToggle() {
+export function LanguageToggle({ className }: { className?: string }) {
   const { locale, setLocale } = useLocale();
 
   return (
-    <div className="flex rounded-full border border-slate-200 bg-white p-0.5 text-xs font-semibold shadow-sm">
+    <div className={cn("lang", className)} dir="ltr" role="group" aria-label="Language">
       <button
         type="button"
+        data-l="EN"
+        className={locale === "en" ? "on" : undefined}
         onClick={() => setLocale("en")}
-        className={cn(
-          "rounded-full px-3 py-1.5 transition-colors",
-          locale === "en"
-            ? "bg-brand-700 text-white"
-            : "text-slate-500 hover:text-slate-700",
-        )}
+        aria-pressed={locale === "en"}
       >
         EN
       </button>
       <button
         type="button"
+        data-l="UR"
+        className={locale === "ur" ? "on" : undefined}
         onClick={() => setLocale("ur")}
-        className={cn(
-          "rounded-full px-3 py-1.5 transition-colors",
-          locale === "ur"
-            ? "bg-brand-700 text-white"
-            : "text-slate-500 hover:text-slate-700",
-        )}
+        aria-pressed={locale === "ur"}
       >
         اردو
       </button>

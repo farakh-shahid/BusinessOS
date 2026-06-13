@@ -18,7 +18,9 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { AssignedToInput } from "./assigned-to-input";
 import { OrderStatusSelect } from "./order-status-select";
 import { OrderDueChip } from "./order-due-chip";
+import { OrderWorkflowStepper } from "./order-workflow-stepper";
 import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
+import { statusStripeClass } from "@/tailor/infrastructure/data/order-status-colors";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 interface OrderCardProps {
@@ -101,7 +103,7 @@ export function OrderCard({
           isRtl && "flex-row-reverse justify-end",
         )}
       >
-        <p className="truncate font-semibold text-slate-900">
+        <p className="truncate font-display font-bold text-slate-900">
           {order.customerName}
         </p>
         {order.isRush ? (
@@ -213,10 +215,33 @@ export function OrderCard({
     </div>
   );
 
+  const stepperLabels = {
+    pending: t.status.pending,
+    cutting: t.status.cutting,
+    stitching: t.status.stitching,
+    ready: t.status.ready,
+  } as const;
+
+  const progressStepper = (
+    <OrderWorkflowStepper
+      workflowStatus={order.workflowStatus}
+      labels={stepperLabels}
+      isRtl={isRtl}
+      className="mt-1"
+    />
+  );
+
   return (
     <div
       className={cn(
-        "relative w-full rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-md",
+        "relative w-full rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px] sm:py-4",
+        statusStripeClass(
+          {
+            workflowStatus: order.workflowStatus,
+            displayStatus: order.status,
+          },
+          isRtl,
+        ),
         isRtl && "text-right",
       )}
     >
@@ -239,8 +264,10 @@ export function OrderCard({
           {customerInfoColumn}
         </div>
 
+        {progressStepper}
+
         {(onAssignChange || onStatusChange || onMarkReady) && (
-          <div className="space-y-3 border-t border-slate-100 pt-3">
+          <div className="space-y-3 border-t border-hairline pt-3">
             {(onAssignChange || onStatusChange) && (
               <div className="pointer-events-auto relative z-10 flex flex-col gap-2">
                 {onStatusChange ? (
@@ -294,79 +321,83 @@ export function OrderCard({
         )}
       </div>
 
-      {/* Desktop: original horizontal layout */}
-      <div
-        className={cn(
-          "hidden w-full items-stretch gap-3 md:flex",
-          isRtl && "flex-row-reverse",
-        )}
-      >
+      {/* Desktop: horizontal row + progress stepper */}
+      <div className="hidden w-full flex-col gap-3 md:flex">
         <div
           className={cn(
-            "flex min-w-0 flex-1 items-center gap-3",
+            "flex w-full items-stretch gap-3",
             isRtl && "flex-row-reverse",
           )}
         >
-          <UserAvatar name={order.customerName} className="shrink-0" />
-          {customerInfoColumn}
-        </div>
-
-        {(onAssignChange || onStatusChange || onMarkReady) && (
           <div
             className={cn(
-              "flex shrink-0 items-stretch gap-2",
+              "flex min-w-0 flex-1 items-center gap-3",
               isRtl && "flex-row-reverse",
             )}
           >
+            <UserAvatar name={order.customerName} className="shrink-0" />
+            {customerInfoColumn}
+          </div>
+
+          {(onAssignChange || onStatusChange || onMarkReady) && (
             <div
               className={cn(
-                "pointer-events-auto relative z-10 flex flex-col items-end justify-center gap-2",
-                isRtl && "items-start",
+                "flex shrink-0 items-stretch gap-2",
+                isRtl && "flex-row-reverse",
               )}
             >
-              {onStatusChange ? (
-                <OrderStatusSelect
-                  orderId={order.id}
-                  workflowStatus={order.workflowStatus}
-                  displayStatus={order.status}
-                  isAdmin={isAdmin}
-                  disabled={statusUpdating}
-                  onChange={onStatusChange}
-                  context="card"
-                  className={controlWidth}
+              <div
+                className={cn(
+                  "pointer-events-auto relative z-10 flex flex-col items-end justify-center gap-2",
+                  isRtl && "items-start",
+                )}
+              >
+                {onStatusChange ? (
+                  <OrderStatusSelect
+                    orderId={order.id}
+                    workflowStatus={order.workflowStatus}
+                    displayStatus={order.status}
+                    isAdmin={isAdmin}
+                    disabled={statusUpdating}
+                    onChange={onStatusChange}
+                    context="card"
+                    className={controlWidth}
+                  />
+                ) : null}
+
+                {onAssignChange ? (
+                  <AssignedToInput
+                    t={t}
+                    value={order.assignedToName ?? ""}
+                    onChange={() => {}}
+                    onCommit={(assignedToName) =>
+                      onAssignChange(order.id, assignedToName)
+                    }
+                    suggestions={assigneeSuggestions}
+                    isRtl={isRtl}
+                    disabled={assignmentUpdating}
+                    compact
+                    showLabel={false}
+                    variant="tagged"
+                    className={controlWidth}
+                  />
+                ) : null}
+
+                {dateLines}
+              </div>
+
+              {onMarkReady ? (
+                <MarkReadyButton
+                  canMarkReady={canMarkReady}
+                  actionLabel={actionLabel}
+                  onClick={handleMarkReady}
                 />
               ) : null}
-
-              {onAssignChange ? (
-                <AssignedToInput
-                  t={t}
-                  value={order.assignedToName ?? ""}
-                  onChange={() => {}}
-                  onCommit={(assignedToName) =>
-                    onAssignChange(order.id, assignedToName)
-                  }
-                  suggestions={assigneeSuggestions}
-                  isRtl={isRtl}
-                  disabled={assignmentUpdating}
-                  compact
-                  showLabel={false}
-                  variant="tagged"
-                  className={controlWidth}
-                />
-              ) : null}
-
-              {dateLines}
             </div>
+          )}
+        </div>
 
-            {onMarkReady ? (
-              <MarkReadyButton
-                canMarkReady={canMarkReady}
-                actionLabel={actionLabel}
-                onClick={handleMarkReady}
-              />
-            ) : null}
-          </div>
-        )}
+        {progressStepper}
       </div>
       </div>
     </div>

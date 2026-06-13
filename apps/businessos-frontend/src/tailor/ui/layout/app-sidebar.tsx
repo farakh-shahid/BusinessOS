@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Plus, Scissors } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { routes } from "@/core/config/routes";
@@ -10,6 +10,7 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useLogout, useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { getVisibleNavItems, isNavActive, navPath } from "./nav-items";
 import { SidebarNavLink } from "./sidebar-nav-link";
+import { BrandLogo } from "@/tailor/ui/shared/brand-logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -44,22 +45,7 @@ export function AppSidebar() {
       <div className="pointer-events-none absolute -bottom-16 -left-10 h-48 w-48 rounded-full bg-accent-500/10" />
 
       <div className="relative border-b border-white/10 px-5 py-6">
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            isRtl && "flex-row-reverse",
-          )}
-        >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-            <Scissors className="h-5 w-5 text-white" strokeWidth={2} />
-          </div>
-          <div className={cn("min-w-0", isRtl && "text-right")}>
-            <h1 className="truncate text-lg font-bold tracking-tight text-white">
-              {t.appName}
-            </h1>
-            <p className="truncate text-xs text-sidebar-text-muted">{t.appTagline}</p>
-          </div>
-        </div>
+        <BrandLogo solutionsLabel={t.brand.solutionsChip} isRtl={isRtl} />
       </div>
 
       <nav className="relative flex-1 space-y-1.5 overflow-y-auto px-3 py-5">
@@ -87,7 +73,7 @@ export function AppSidebar() {
         <Link
           href={routes.newOrder}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-500 to-accent-400 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98]",
+            "sidebar-new-order flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-500 to-accent-400 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98]",
             isRtl && "flex-row-reverse",
           )}
         >
@@ -116,7 +102,8 @@ export function AppSidebar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sidebar-text transition hover:bg-white/10 hover:text-white"
+              title={t.auth.logout}
+              className="sidebar-logout flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sidebar-text transition hover:bg-white/10 hover:text-white"
               aria-label={t.auth.logout}
             >
               <LogOut className="h-4 w-4" />

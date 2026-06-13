@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { Bell, Plus, Scissors } from "lucide-react";
+import { Bell, Scissors } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
-import { routes } from "@/core/config/routes";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { LanguageToggle } from "./language-toggle";
@@ -50,16 +48,6 @@ export function AppHeader() {
           <Bell className="h-[18px] w-[18px]" />
         </button>
         <LanguageToggle />
-        <Link
-          href={routes.newOrder}
-          className={cn(
-            "hidden items-center gap-2 rounded-xl bg-gradient-to-r from-sidebar to-sidebar-dark px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sidebar-dark/25 transition hover:brightness-105 md:inline-flex",
-            isRtl && "flex-row-reverse",
-          )}
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-          {t.nav.newOrder}
-        </Link>
       </div>
     </header>
   );

@@ -1,16 +1,33 @@
 "use client";
 
-import { LayoutDashboard } from "lucide-react";
+import type { DashboardStats, Order } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
+import { routes } from "@/core/config/routes";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useDashboardQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { formatTodayDate, timeGreeting } from "@/tailor/ui/shared/greeting";
 import { ShopHero } from "@/tailor/ui/shared/shop-hero";
-import { StatsRow } from "@/tailor/ui/dashboard/stats-row";
+import { SectionHeader } from "@/tailor/ui/shared/section-header";
 import { CustomerSearchPanel } from "@/tailor/ui/dashboard/customer-search-panel";
+import { DashboardDueWeekPanel } from "@/tailor/ui/dashboard/dashboard-due-week-panel";
 import { OrderList } from "@/tailor/ui/orders/order-list";
 import { DashboardSkeleton } from "@/tailor/ui/skeletons";
+import { LayoutDashboard } from "lucide-react";
+
+function bannerStats(orders: Order[], stats: DashboardStats) {
+  const active = orders.filter(
+    (order) =>
+      order.workflowStatus !== "delivered" &&
+      order.workflowStatus !== "cancelled",
+  );
+
+  return {
+    dueToday: stats.dueToday,
+    rush: active.filter((order) => order.isRush).length,
+    overdue: active.filter((order) => order.status === "overdue").length,
+  };
+}
 
 export function DashboardView() {
   const { locale } = useLocale();
@@ -19,7 +36,6 @@ export function DashboardView() {
   const { data: user } = useMeQuery();
   const { data, isLoading, isError } = useDashboardQuery();
 
-  const firstName = user?.name?.split(" ")[0] ?? "";
   const shopName = user?.tenantName ?? t.appName;
 
   if (isLoading) {
@@ -34,23 +50,55 @@ export function DashboardView() {
     );
   }
 
-  const eyebrow = firstName
-    ? `${timeGreeting(t)}, ${firstName}`
-    : timeGreeting(t);
+  const counts = bannerStats(data.orders, data.stats);
 
   return (
     <>
       <ShopHero
-        eyebrow={eyebrow}
+        variant="dashboard"
+        eyebrow={`${timeGreeting(t)} 👋`}
         title={shopName}
         dateLabel={formatTodayDate(locale)}
         icon={LayoutDashboard}
         isRtl={isRtl}
+        statusItems={[
+          { value: counts.dueToday, label: t.dashboard.dueTodayShort },
+          { value: counts.rush, label: t.dashboard.rushShort },
+          { value: counts.overdue, label: t.dashboard.overdueShort },
+        ]}
+        newOrderHref={routes.newOrder}
+        newOrderLabel={t.nav.newOrder}
       />
 
-      <StatsRow stats={data.stats} />
-      <CustomerSearchPanel />
-      <OrderList orders={data.orders} />
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_310px]">
+        <section>
+          <SectionHeader
+            title={t.dashboard.todayQueue}
+            linkHref={routes.orders}
+            linkLabel={t.orders.viewAll}
+            isRtl={isRtl}
+          />
+          <OrderList orders={data.orders} />
+        </section>
+
+        <aside className="hidden space-y-4 xl:block">
+          <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
+          <DashboardDueWeekPanel
+            orders={data.orders}
+            title={t.dashboard.dueThisWeek}
+            isRtl={isRtl}
+          />
+        </aside>
+      </div>
+
+      <div className="mt-4 space-y-4 xl:hidden">
+        <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
+        <DashboardDueWeekPanel
+          orders={data.orders}
+          title={t.dashboard.dueThisWeek}
+          isRtl={isRtl}
+        />
+      </div>
     </>
   );
 }

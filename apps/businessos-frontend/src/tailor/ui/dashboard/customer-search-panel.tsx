@@ -14,7 +14,11 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useCustomerSearchQuery } from "@/tailor/infrastructure/api/hooks/use-customer-search";
 import { CustomerSearchResultsSkeleton } from "@/tailor/ui/skeletons";
 
-export function CustomerSearchPanel() {
+interface CustomerSearchPanelProps {
+  compactTitle?: string;
+}
+
+export function CustomerSearchPanel({ compactTitle }: CustomerSearchPanelProps) {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
@@ -32,8 +36,10 @@ export function CustomerSearchPanel() {
 
   return (
     <Card>
-      <CardTitle>{t.search.title}</CardTitle>
-      <p className="mt-1 text-sm text-slate-500">{t.search.subtitle}</p>
+      <CardTitle>{compactTitle ?? t.search.title}</CardTitle>
+      {!compactTitle ? (
+        <p className="mt-1 text-sm text-muted-slate">{t.search.subtitle}</p>
+      ) : null}
 
       <form onSubmit={handleSearch} className={cn("mt-4", isRtl && "text-right")}>
         <div
@@ -66,6 +72,7 @@ export function CustomerSearchPanel() {
           </div>
           <Button
             type="submit"
+            variant="brand"
             aria-label={t.search.button}
             className="h-auto min-h-0 shrink-0 rounded-none px-4 sm:min-w-[6.75rem] sm:px-5"
           >
@@ -101,9 +108,12 @@ export function CustomerSearchPanel() {
                 <div className={cn("flex gap-3", isRtl && "flex-row-reverse")}>
                   <UserAvatar name={result.customer.name} size="lg" />
                   <div className={cn(isRtl && "text-right")}>
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <Link
+                      href={routes.customerDetail(result.customer.id)}
+                      className="text-lg font-bold text-slate-900 hover:text-brand-700 hover:underline"
+                    >
                       {result.customer.name}
-                    </h3>
+                    </Link>
                     <p className="text-sm text-slate-600">{result.customer.phone}</p>
                     {result.customer.email && (
                       <p className="text-sm text-slate-500">{result.customer.email}</p>

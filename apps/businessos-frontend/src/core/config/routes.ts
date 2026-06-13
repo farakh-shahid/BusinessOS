@@ -1,5 +1,6 @@
 export const routes = {
   login: "/login",
+  signup: "/signup",
   dashboard: "/tailor/dashboard",
   orders: "/tailor/orders",
   ordersWithFilter: (filter: string) =>
@@ -10,6 +11,8 @@ export const routes = {
   orderDetail: (id: string) => `/tailor/orders/${id}`,
   receivables: "/tailor/receivables",
   customers: "/tailor/customers",
+  customerDetail: (id: string) => `/tailor/customers/${id}`,
+  customerEdit: (id: string) => `/tailor/customers/${id}/edit`,
   analytics: "/tailor/analytics",
   settings: "/tailor/settings",
   staff: "/tailor/staff",
