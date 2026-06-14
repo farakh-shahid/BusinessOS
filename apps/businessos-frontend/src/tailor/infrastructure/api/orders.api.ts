@@ -4,9 +4,11 @@ import type {
   MarkReadyResult,
   Order,
   OrderFullDetail,
-  ReceivableOrder,
+  PaginatedList,
+  ReceivablesPageData,
   ReminderResult,
 } from "@business-os/tailor";
+import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import { apiFetch } from "@/core/infrastructure/api/api-client";
 import type { NewOrderDraft } from "@/tailor/infrastructure/data/new-order.mock";
 import type { OrderListFilter } from "@/tailor/infrastructure/data/order-filters";
@@ -26,6 +28,8 @@ export interface OrdersQueryParams {
   sort?: OrderListSort;
   dueFrom?: string;
   dueTo?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface UpdateOrderPayload {
@@ -39,8 +43,11 @@ export interface UpdateOrderPayload {
   fabricNotes?: string;
   styleNotes?: string;
   dressImageUrl?: string;
+  dressImagePublicId?: string;
   isRush?: boolean;
   assignedToName?: string;
+  measurements?: Record<string, string>;
+  style?: Record<string, string>;
 }
 
 export interface UpdateOrderStatusPayload {
@@ -62,6 +69,8 @@ function ordersQueryString(params?: OrdersQueryParams) {
   }
   if (params?.dueFrom?.trim()) search.set("dueFrom", params.dueFrom.trim());
   if (params?.dueTo?.trim()) search.set("dueTo", params.dueTo.trim());
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+  if (params?.offset !== undefined) search.set("offset", String(params.offset));
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 }
@@ -74,12 +83,29 @@ export function fetchDashboard() {
   return apiFetch<DashboardData>("/tailor/orders/dashboard");
 }
 
+export function fetchOrdersPage(params?: OrdersQueryParams) {
+  return apiFetch<PaginatedList<Order>>(
+    `/tailor/orders${ordersQueryString({
+      limit: DEFAULT_PAGE_SIZE,
+      offset: 0,
+      ...params,
+    })}`,
+  );
+}
+
 export function fetchOrders(params?: OrdersQueryParams) {
-  return apiFetch<Order[]>(`/tailor/orders${ordersQueryString(params)}`);
+  return fetchOrdersPage(params).then((page) => page.items);
 }
 
 export function fetchReceivables() {
-  return apiFetch<ReceivableOrder[]>("/tailor/orders/receivables");
+  return apiFetch<ReceivablesPageData>("/tailor/orders/receivables");
+}
+
+export function markReceivableCustomerPaid(customerId: string) {
+  return apiFetch<{ clearedOrders: number }>(
+    `/tailor/orders/receivables/customers/${customerId}/mark-paid`,
+    { method: "POST" },
+  );
 }
 
 export function fetchOrderDetail(orderId: string) {
@@ -131,6 +157,7 @@ export function createOrder(draft: NewOrderDraft) {
       dressCode: draft.dressCode,
       suitCount: draft.suitCount,
       dressImageUrl: draft.dressImageUrl || undefined,
+      dressImagePublicId: draft.dressImagePublicId || undefined,
       fabricSource: draft.fabricSource,
       fabricNotes: draft.fabricNotes,
       bookingDate: draft.bookingDate,

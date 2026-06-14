@@ -11,6 +11,10 @@ type OrderRow = {
   advancePaid: { toString(): string };
   balanceDue: { toString(): string };
   createdAt: Date;
+  deliveryDate: Date;
+  assignedToName: string | null;
+  customerId: string;
+  customer: { name: string };
 };
 
 @Injectable()
@@ -36,6 +40,10 @@ export class AnalyticsRepository {
           advancePaid: true,
           balanceDue: true,
           createdAt: true,
+          deliveryDate: true,
+          assignedToName: true,
+          customerId: true,
+          customer: { select: { name: true } },
         },
       }),
       this.prisma.customer.count({ where: { tenantId } }),
@@ -120,6 +128,30 @@ export class AnalyticsRepository {
     const garmentBreakdown = garmentAnalytics(metricsOrders);
     const topGarments = garmentBreakdown.slice(0, 5);
     const monthlyTrend = buildMonthlyTrend(orders, now);
+    const yearlyTrend = buildYearlyTrend(orders, now);
+    const currentMonthRange = resolveRange("month", now, now);
+    const currentMonthOrders = orders.filter((o) =>
+      isInRange(o.createdAt, currentMonthRange.rangeStart, currentMonthRange.rangeEnd),
+    );
+    const previousMonthStart = startOfMonth(addMonths(now, -1));
+    const previousMonthEnd = endOfMonth(previousMonthStart);
+    const previousMonthOrders = orders.filter((o) =>
+      isInRange(o.createdAt, previousMonthStart, previousMonthEnd),
+    );
+    const currentMonth = aggregateOrders(currentMonthOrders);
+    const previousMonth = aggregateOrders(previousMonthOrders);
+    const activeOrders = orders.filter(
+      (o) => !["DELIVERED", "CANCELLED"].includes(o.status),
+    );
+    const receivables = buildReceivablesSnapshot(activeOrders);
+    const productionPipeline = buildProductionPipeline(activeOrders);
+    const busiestDays = buildBusiestDays(metricsOrders);
+    const karigarOutput = buildKarigarOutput(metricsOrders);
+    const topCustomers = buildTopCustomers(metricsOrders);
+    const advanceCollectionRate =
+      selectedPeriod.revenue > 0
+        ? Math.round((selectedPeriod.advanceCollected / selectedPeriod.revenue) * 100)
+        : 0;
 
     return {
       shopName: tenant.name,
@@ -166,6 +198,22 @@ export class AnalyticsRepository {
           ? selectedPeriod.revenue / selectedPeriod.orders
           : 0,
       completionRate,
+      currentMonth,
+      currentMonthComparison: {
+        revenueChangePercent: percentChange(
+          previousMonth.revenue,
+          currentMonth.revenue,
+        ),
+      },
+      yearlyTrend,
+      receivablesAging: receivables.aging,
+      receivablesCustomersOwing: receivables.customersOwing,
+      topDebtors: receivables.topDebtors,
+      productionPipeline,
+      busiestDays,
+      karigarOutput,
+      topCustomers,
+      advanceCollectionRate,
     };
   }
 }
@@ -459,6 +507,14 @@ function workflowSnapshot(orders: OrderRow[]) {
 }
 
 function buildMonthlyTrend(orders: OrderRow[], now: Date) {
+  return buildMonthSeries(orders, now, 5);
+}
+
+function buildYearlyTrend(orders: OrderRow[], now: Date) {
+  return buildMonthSeries(orders, now, 11);
+}
+
+function buildMonthSeries(orders: OrderRow[], now: Date, monthsBack: number) {
   const points: {
     month: string;
     monthLabel: string;
@@ -466,7 +522,7 @@ function buildMonthlyTrend(orders: OrderRow[], now: Date) {
     revenue: number;
   }[] = [];
 
-  for (let i = 5; i >= 0; i -= 1) {
+  for (let i = monthsBack; i >= 0; i -= 1) {
     const monthStart = startOfMonth(addMonths(now, -i));
     const monthEnd = endOfMonth(monthStart);
     const cappedEnd = monthEnd > now ? endOfDay(now) : monthEnd;
@@ -478,7 +534,6 @@ function buildMonthlyTrend(orders: OrderRow[], now: Date) {
       month: monthStart.toISOString().slice(0, 7),
       monthLabel: monthStart.toLocaleDateString("en-US", {
         month: "short",
-        year: "2-digit",
       }),
       orders: monthOrders.length,
       revenue: sumField(monthOrders, "totalPrice"),
@@ -486,6 +541,142 @@ function buildMonthlyTrend(orders: OrderRow[], now: Date) {
   }
 
   return points;
+}
+
+function buildReceivablesSnapshot(orders: OrderRow[]) {
+  const owing = orders.filter((o) => Number(o.balanceDue) > 0);
+  const aging = {
+    current: 0,
+    late_1_2w: 0,
+    late_2w_plus: 0,
+  };
+  const byCustomer = new Map<
+    string,
+    { customerName: string; balance: number; daysLate: number }
+  >();
+  const today = startOfDay(new Date());
+
+  for (const order of owing) {
+    const balance = Number(order.balanceDue);
+    const due = startOfDay(order.deliveryDate);
+    const daysLate = Math.max(
+      0,
+      Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)),
+    );
+
+    if (daysLate === 0) aging.current += balance;
+    else if (daysLate <= 14) aging.late_1_2w += balance;
+    else aging.late_2w_plus += balance;
+
+    const existing = byCustomer.get(order.customerId);
+    if (existing) {
+      existing.balance += balance;
+      existing.daysLate = Math.max(existing.daysLate, daysLate);
+    } else {
+      byCustomer.set(order.customerId, {
+        customerName: order.customer.name,
+        balance,
+        daysLate,
+      });
+    }
+  }
+
+  return {
+    aging: [
+      { key: "current" as const, amount: aging.current },
+      { key: "late_1_2w" as const, amount: aging.late_1_2w },
+      { key: "late_2w_plus" as const, amount: aging.late_2w_plus },
+    ],
+    customersOwing: byCustomer.size,
+    topDebtors: Array.from(byCustomer.entries())
+      .sort((a, b) => b[1].balance - a[1].balance)
+      .slice(0, 5)
+      .map(([customerId, row]) => ({
+        customerId,
+        customerName: row.customerName,
+        balance: row.balance,
+        daysLate: row.daysLate,
+      })),
+  };
+}
+
+function buildProductionPipeline(orders: OrderRow[]) {
+  return {
+    orderCount: orders.length,
+    totalValue: sumField(orders, "totalPrice"),
+  };
+}
+
+function buildBusiestDays(orders: OrderRow[]) {
+  const counts = [0, 0, 0, 0, 0, 0, 0];
+  for (const order of orders) {
+    counts[order.createdAt.getDay()] += 1;
+  }
+
+  const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const order = [1, 2, 3, 4, 5, 6, 0];
+
+  return order.map((dayKey) => ({
+    dayKey,
+    dayLabel: labels[dayKey],
+    orders: counts[dayKey],
+  }));
+}
+
+function buildKarigarOutput(orders: OrderRow[]) {
+  const map = new Map<string, { pieces: number; revenue: number }>();
+
+  for (const order of orders) {
+    const name = order.assignedToName?.trim();
+    if (!name) continue;
+
+    const existing = map.get(name);
+    if (existing) {
+      existing.pieces += 1;
+      existing.revenue += Number(order.totalPrice);
+    } else {
+      map.set(name, {
+        pieces: 1,
+        revenue: Number(order.totalPrice),
+      });
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.pieces - a.pieces)
+    .slice(0, 6);
+}
+
+function buildTopCustomers(orders: OrderRow[]) {
+  const map = new Map<
+    string,
+    { customerName: string; revenue: number; orderCount: number }
+  >();
+
+  for (const order of orders) {
+    const existing = map.get(order.customerId);
+    if (existing) {
+      existing.orderCount += 1;
+      existing.revenue += Number(order.totalPrice);
+    } else {
+      map.set(order.customerId, {
+        customerName: order.customer.name,
+        revenue: Number(order.totalPrice),
+        orderCount: 1,
+      });
+    }
+  }
+
+  return Array.from(map.entries())
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5)
+    .map(([customerId, row]) => ({
+      customerId,
+      customerName: row.customerName,
+      revenue: row.revenue,
+      orderCount: row.orderCount,
+    }));
 }
 
 function percentChange(previous: number, current: number): number | null {

@@ -273,7 +273,10 @@ export function SearchableCombobox({
           if (!disabled) setOpen((prev) => !prev);
         }}
         className={cn(
-          "flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition-colors",
+          "flex w-full items-center gap-2 rounded-xl border px-3 text-sm outline-none transition-colors",
+          !buttonClassName?.includes("border-status-") &&
+            !buttonClassName?.includes("border-2") &&
+            "border-slate-200 bg-white",
           variant === "default" && "h-11",
           variant === "compact" &&
             "h-auto min-h-9 py-1.5 text-xs font-semibold",
@@ -288,7 +291,7 @@ export function SearchableCombobox({
         <span
           className={cn(
             "min-w-0 flex-1 truncate",
-            selected ? "text-slate-900" : "text-slate-400",
+            selected ? "text-inherit" : "text-slate-400",
           )}
         >
           {selected ? (
@@ -304,8 +307,14 @@ export function SearchableCombobox({
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-            open && "rotate-180 text-brand-700",
+            "h-4 w-4 shrink-0 transition-transform",
+            buttonClassName?.includes("text-status-")
+              ? "text-current opacity-70"
+              : "text-slate-400",
+            open &&
+              (buttonClassName?.includes("text-status-")
+                ? "rotate-180 opacity-100"
+                : "rotate-180 text-brand-700"),
           )}
         />
       </button>

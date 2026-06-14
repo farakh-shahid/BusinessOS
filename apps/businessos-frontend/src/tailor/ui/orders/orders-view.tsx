@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
-import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
+import { useDebouncedValue } from "@/core/presentation/hooks/use-debounced-value";
 import { useLocale } from "@/core/i18n/locale-context";
-import { useOrdersQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { useInfiniteOrdersQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import type { OrderListFilter } from "@/tailor/infrastructure/data/order-filters";
 import {
   buildOrdersListUrl,
@@ -24,6 +24,7 @@ import {
 import { computeOrderListSummary } from "@/tailor/infrastructure/data/order-list-ui";
 import { OrderQuickFilters } from "@/tailor/ui/orders/order-quick-filters";
 import { OrderFiltersSheet } from "@/tailor/ui/orders/order-filters-sheet";
+import { OrderDeliveryDateSheet } from "@/tailor/ui/orders/order-delivery-date-sheet";
 import { OrderList } from "@/tailor/ui/orders/order-list";
 import { OrderBoardView } from "@/tailor/ui/orders/order-board-view";
 import { OrderTableView } from "@/tailor/ui/orders/order-table-view";
@@ -33,6 +34,8 @@ import { BackLink } from "@/tailor/ui/shared/back-link";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
+const SEARCH_DEBOUNCE_MS = 350;
+
 export function OrdersView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +44,7 @@ export function OrdersView() {
   const isRtl = locale === "ur";
   const hydrated = useRef(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [dateSheetOpen, setDateSheetOpen] = useState(false);
 
   const [params, setParams] = useState<OrderListParams>(() =>
     parseOrderListParams(searchParams),
@@ -48,6 +52,7 @@ export function OrdersView() {
   const [searchInput, setSearchInput] = useState(
     () => searchParams.get("search")?.trim() ?? "",
   );
+  const debouncedSearchInput = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
 
   useEffect(() => {
     if (hydrated.current) return;
@@ -67,14 +72,53 @@ export function OrdersView() {
     setSearchInput(next.search);
   }, [searchParams]);
 
-  const { data: orders = [], isLoading, isError } = useOrdersQuery({
+  useEffect(() => {
+    const trimmed = debouncedSearchInput.trim();
+    if (trimmed === params.search) return;
+    patchParams({ search: trimmed });
+  }, [debouncedSearchInput, params.search]);
+
+  const listParams = {
     filter: params.filter || undefined,
     search: params.search || undefined,
     assignedTo: params.assignedTo || undefined,
     sort: params.sort,
     dueFrom: params.dueFrom || undefined,
     dueTo: params.dueTo || undefined,
-  });
+  };
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteOrdersQuery(listParams);
+
+  const orders = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: "240px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, orders.length]);
 
   function applyParams(next: OrderListParams) {
     persistOrderListParams(next);
@@ -88,14 +132,32 @@ export function OrdersView() {
   function handleFilterChange(next: OrderListFilter) {
     patchParams({
       filter: next,
-      dueFrom: next === "due_this_week" ? "" : params.dueFrom,
-      dueTo: next === "due_this_week" ? "" : params.dueTo,
+      dueFrom:
+        next === "due_this_week" || next === "booked_today" || next === "booked_last_week"
+          ? ""
+          : params.dueFrom,
+      dueTo:
+        next === "due_this_week" || next === "booked_today" || next === "booked_last_week"
+          ? ""
+          : params.dueTo,
     });
   }
 
-  function handleSearchSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    patchParams({ search: searchInput.trim() });
+  function handleDeliveryDatesApply(dueFrom: string, dueTo: string) {
+    patchParams({
+      dueFrom,
+      dueTo,
+      filter:
+        params.filter === "due_this_week" ||
+        params.filter === "booked_today" ||
+        params.filter === "booked_last_week"
+          ? ""
+          : params.filter,
+    });
+  }
+
+  function handleClearDeliveryDates() {
+    patchParams({ dueFrom: "", dueTo: "" });
   }
 
   function handleViewChange(view: OrderListView) {
@@ -138,36 +200,21 @@ export function OrdersView() {
         }
       />
 
-      <div
-        className={cn(
-          "sticky top-0 z-20 -mx-4 space-y-3 border-b border-hairline bg-background/95 px-4 py-3 backdrop-blur-md",
-          "sm:-mx-6 sm:px-6",
-          "lg:-mx-10 lg:px-10",
-        )}
-      >
-        <form
-          onSubmit={handleSearchSubmit}
-          className={cn("flex gap-2", isRtl && "flex-row-reverse")}
-        >
-          <div className="relative min-w-0 flex-1">
-            <Search
-              className={cn(
-                "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-slate",
-                isRtl ? "right-3" : "left-3",
-              )}
-            />
-            <Input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={t.orderList.searchOrdersPlaceholder}
-              className={cn("w-full bg-card", isRtl ? "pr-10" : "pl-10")}
-            />
-          </div>
-          <Button type="submit" variant="brand" className="shrink-0 gap-2">
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.search.button}</span>
-          </Button>
-        </form>
+      <div className="mobile-sticky-toolbar space-y-3">
+        <div className="relative min-w-0">
+          <Search
+            className={cn(
+              "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-slate",
+              isRtl ? "right-3" : "left-3",
+            )}
+          />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t.orderList.searchOrdersPlaceholder}
+            className={cn("w-full bg-card", isRtl ? "pr-10" : "pl-10")}
+          />
+        </div>
 
         <OrderQuickFilters
           params={params}
@@ -175,6 +222,8 @@ export function OrdersView() {
           isRtl={isRtl}
           onFilterChange={handleFilterChange}
           onOpenSheet={() => setSheetOpen(true)}
+          onOpenDateSheet={() => setDateSheetOpen(true)}
+          onClearDeliveryDates={handleClearDeliveryDates}
           trailing={
             <OrderViewSwitcher
               view={params.view}
@@ -195,6 +244,15 @@ export function OrdersView() {
         onApply={applyParams}
       />
 
+      <OrderDeliveryDateSheet
+        open={dateSheetOpen}
+        params={params}
+        t={t}
+        isRtl={isRtl}
+        onClose={() => setDateSheetOpen(false)}
+        onApply={handleDeliveryDatesApply}
+      />
+
       <div className="mt-4">
         {isLoading ? (
           <OrderListSkeleton count={5} />
@@ -208,6 +266,16 @@ export function OrdersView() {
           <OrderTableView orders={orders} t={t} isRtl={isRtl} />
         ) : (
           <OrderList orders={orders} showViewAll={false} />
+        )}
+
+        {!isLoading && !isError && orders.length > 0 && (
+          <div ref={loadMoreRef} className="py-6 text-center text-sm text-muted-slate">
+            {isFetchingNextPage
+              ? t.orderList.loadMore
+              : hasNextPage
+                ? null
+                : t.orderList.endOfList}
+          </div>
         )}
       </div>
     </>

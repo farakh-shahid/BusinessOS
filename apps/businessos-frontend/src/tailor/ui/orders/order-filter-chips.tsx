@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   Ban,
+  Banknote,
   CalendarClock,
   CheckCircle2,
   Clock,
@@ -69,6 +70,20 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
     iconBox: "bg-sky-100 text-sky-700",
     iconBoxActive: "bg-white/20 text-white",
   },
+  booked_today: {
+    icon: CalendarClock,
+    idle: "border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100",
+    active: "border-brand-700 bg-brand-700 text-white shadow-md shadow-brand-700/25",
+    iconBox: "bg-brand-100 text-brand-700",
+    iconBoxActive: "bg-white/20 text-white",
+  },
+  booked_last_week: {
+    icon: CalendarClock,
+    idle: "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100",
+    active: "border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-600/25",
+    iconBox: "bg-violet-100 text-violet-700",
+    iconBoxActive: "bg-white/20 text-white",
+  },
   in_progress: {
     icon: Scissors,
     idle: "border-orange-300 bg-orange-50 text-orange-900 hover:bg-orange-100",
@@ -83,6 +98,14 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
     active:
       "border-status-urgent bg-status-urgent text-white shadow-md shadow-status-urgent/25",
     iconBox: "bg-status-urgent-bg text-status-urgent",
+    iconBoxActive: "bg-white/20 text-white",
+  },
+  payment_due: {
+    icon: Banknote,
+    idle: "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
+    active:
+      "border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-600/25",
+    iconBox: "bg-emerald-100 text-emerald-700",
     iconBoxActive: "bg-white/20 text-white",
   },
   pending: {
@@ -119,10 +142,10 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
   },
   delivered: {
     icon: Truck,
-    idle: "border-status-delivered/40 bg-status-delivered-bg text-status-delivered hover:bg-status-delivered-bg",
+    idle: "border-status-ready/40 bg-status-ready-bg text-status-ready hover:bg-status-ready-bg",
     active:
-      "border-status-delivered bg-status-delivered text-white shadow-md shadow-status-delivered/25",
-    iconBox: "bg-status-delivered-bg text-status-delivered",
+      "border-status-ready bg-status-ready text-white shadow-md shadow-status-ready/25",
+    iconBox: "bg-status-ready-bg text-status-ready",
     iconBoxActive: "bg-white/20 text-white",
   },
   cancelled: {

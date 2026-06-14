@@ -23,6 +23,15 @@ const garmentMap: Record<string, GarmentType> = {
   kurta: "KURTA",
 };
 
+const prismaGarmentTypes = new Set<string>(Object.values(garmentMap));
+
+export function toGarmentType(value: string): GarmentType {
+  const mapped = garmentMap[value];
+  if (mapped) return mapped;
+  if (prismaGarmentTypes.has(value)) return value as GarmentType;
+  return "SHALWAR_QAMEEZ";
+}
+
 const pocketMap: Record<string, PocketOption> = {
   none: "NONE",
   single: "SINGLE",
@@ -42,10 +51,6 @@ const placketMap: Record<string, PlacketType> = {
   hidden: "HIDDEN",
   other: "OTHER",
 };
-
-export function toGarmentType(value: string): GarmentType {
-  return garmentMap[value] ?? "SHALWAR_QAMEEZ";
-}
 
 export function toPocketOption(value?: string): PocketOption | undefined {
   if (!value) return undefined;

@@ -1,6 +1,5 @@
 "use client";
 
-import type { DashboardStats, Order } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
@@ -9,26 +8,24 @@ import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useDashboardQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { formatTodayDate, timeGreeting } from "@/tailor/ui/shared/greeting";
 import { ShopHero } from "@/tailor/ui/shared/shop-hero";
-import { SectionHeader } from "@/tailor/ui/shared/section-header";
-import { CustomerSearchPanel } from "@/tailor/ui/dashboard/customer-search-panel";
+import {
+  CustomerSearchPanel,
+  CustomerSearchMobileHeader,
+  CustomerSearchMobileResults,
+  CustomerSearchMobileShell,
+} from "@/tailor/ui/dashboard/customer-search-panel";
+import { DashboardDueWeekChartPanel } from "@/tailor/ui/dashboard/dashboard-due-week-chart";
 import { DashboardDueWeekPanel } from "@/tailor/ui/dashboard/dashboard-due-week-panel";
-import { OrderList } from "@/tailor/ui/orders/order-list";
+import { DashboardCashPanel } from "@/tailor/ui/dashboard/dashboard-cash-panel";
+import { DashboardGarmentMixPanel } from "@/tailor/ui/dashboard/dashboard-garment-mix-panel";
+import { DashboardSectionLabel } from "@/tailor/ui/dashboard/dashboard-section-label";
+import { DashboardTailorWorkloadPanel } from "@/tailor/ui/dashboard/dashboard-tailor-workload-panel";
+import { DashboardWorkloadPanel } from "@/tailor/ui/dashboard/dashboard-workload-panel";
+import { NeedsAttentionPanel } from "@/tailor/ui/dashboard/needs-attention-panel";
+import { DashboardQueueList } from "@/tailor/ui/dashboard/dashboard-queue-list";
 import { DashboardSkeleton } from "@/tailor/ui/skeletons";
-import { LayoutDashboard } from "lucide-react";
 
-function bannerStats(orders: Order[], stats: DashboardStats) {
-  const active = orders.filter(
-    (order) =>
-      order.workflowStatus !== "delivered" &&
-      order.workflowStatus !== "cancelled",
-  );
-
-  return {
-    dueToday: stats.dueToday,
-    rush: active.filter((order) => order.isRush).length,
-    overdue: active.filter((order) => order.status === "overdue").length,
-  };
-}
+const QUEUE_PREVIEW_COUNT = 4;
 
 export function DashboardView() {
   const { locale } = useLocale();
@@ -38,6 +35,7 @@ export function DashboardView() {
   const { data, isLoading, isError } = useDashboardQuery();
 
   const shopName = user?.tenantName ?? t.appName;
+  const firstName = user?.name?.split(" ")[0] ?? "";
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -51,65 +49,114 @@ export function DashboardView() {
     );
   }
 
-  const counts = bannerStats(data.orders, data.stats);
+  const { stats } = data;
+  const queuePreview = data.orders.slice(0, QUEUE_PREVIEW_COUNT);
 
   return (
     <>
-      <ShopHero
-        variant="dashboard"
-        eyebrow={`${timeGreeting(t)} 👋`}
-        title={shopName}
-        dateLabel={formatTodayDate(locale)}
-        icon={LayoutDashboard}
-        isRtl={isRtl}
-        statusItems={[
-          { value: counts.dueToday, label: t.dashboard.dueTodayShort },
-          { value: counts.rush, label: t.dashboard.rushShort },
-          { value: counts.overdue, label: t.dashboard.overdueShort },
-        ]}
-        newOrderHref={routes.newOrder}
-        newOrderLabel={t.nav.newOrder}
-      />
-
-      <div className="mt-6 grid gap-x-4 gap-y-3 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
-        <SectionHeader
-          title={t.dashboard.todayQueue}
-          linkHref={routes.orders}
-          linkLabel={t.orders.viewAll}
-          isRtl={isRtl}
-          className="mb-0 xl:col-start-1 xl:row-start-1"
-        />
-
-        <h2
+      <CustomerSearchMobileShell compactTitle={t.dashboard.findCustomer}>
+        <div
           className={cn(
-            "hidden font-display text-base font-bold text-foreground xl:col-start-2 xl:row-start-1 xl:block",
-            isRtl && "text-right",
+            "mobile-sticky-toolbar space-y-4",
           )}
         >
-          {t.dashboard.findCustomer}
-        </h2>
+          <ShopHero
+            badge={t.nav.dashboard}
+            eyebrow={
+              firstName
+                ? `${timeGreeting(t)}, ${firstName}`
+                : timeGreeting(t)
+            }
+            title={shopName}
+            dateLabel={formatTodayDate(locale)}
+            isRtl={isRtl}
+            newOrderHref={routes.newOrder}
+            newOrderLabel={t.nav.newOrder}
+          />
 
-        <div className="min-w-0 xl:col-start-1 xl:row-start-2">
-          <OrderList orders={data.orders} />
+          <CustomerSearchMobileHeader className="xl:hidden" />
         </div>
 
-        <aside className="hidden space-y-4 xl:col-start-2 xl:row-start-2 xl:block">
-          <CustomerSearchPanel hideTitle />
+        <CustomerSearchMobileResults className="mt-4 xl:hidden" />
+      </CustomerSearchMobileShell>
+
+      <div className="hidden md:block">
+        <DashboardSectionLabel isRtl={isRtl}>
+          {t.dashboard.prioritiesSection}
+        </DashboardSectionLabel>
+
+        <div className="grid min-w-0 gap-3.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-stretch">
+          <NeedsAttentionPanel
+            items={data.needsAttention}
+            readyForPickup={data.readyForPickup}
+            readyCount={stats.ready}
+            t={t}
+            isRtl={isRtl}
+          />
+
+          <div className="flex min-w-0 flex-col gap-4 lg:h-full">
+            <DashboardWorkloadPanel
+              workload={data.workload}
+              t={t}
+              isRtl={isRtl}
+            />
+            <DashboardCashPanel
+              cash={data.cash}
+              t={t}
+              isRtl={isRtl}
+              className="min-h-0 flex-1"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+        <DashboardSectionLabel isRtl={isRtl}>
+          {t.dashboard.insightsSection}
+        </DashboardSectionLabel>
+
+        <div className="grid gap-3.5 lg:grid-cols-3">
+          <DashboardDueWeekChartPanel
+            chart={data.dueWeekChart}
+            title={t.dashboard.dueThisWeek}
+            t={t}
+            isRtl={isRtl}
+          />
+          <DashboardGarmentMixPanel mix={data.garmentMix} t={t} isRtl={isRtl} />
+          <DashboardTailorWorkloadPanel
+            items={data.workloadByTailor}
+            t={t}
+            isRtl={isRtl}
+          />
+        </div>
+      </div>
+
+      <DashboardSectionLabel isRtl={isRtl}>
+        {t.dashboard.todayQueue}
+      </DashboardSectionLabel>
+
+      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+        <div className="min-w-0">
+          {queuePreview.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              {t.dashboard.queueEmpty}
+            </div>
+          ) : (
+            <DashboardQueueList
+              orders={queuePreview}
+              showViewAll={data.orders.length > QUEUE_PREVIEW_COUNT}
+            />
+          )}
+        </div>
+
+        <aside className="hidden space-y-3.5 xl:block">
+          <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
           <DashboardDueWeekPanel
-            orders={data.orders}
+            orders={data.dueSoonOrders}
             title={t.dashboard.dueThisWeek}
             isRtl={isRtl}
           />
         </aside>
-      </div>
-
-      <div className="mt-4 space-y-4 xl:hidden">
-        <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
-        <DashboardDueWeekPanel
-          orders={data.orders}
-          title={t.dashboard.dueThisWeek}
-          isRtl={isRtl}
-        />
       </div>
     </>
   );

@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { IsPakistanPhone } from "../../../common/validators/is-pakistan-phone.validator";
 
 export class UpdateCustomerDto {
@@ -15,4 +15,8 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isVip?: boolean;
 }

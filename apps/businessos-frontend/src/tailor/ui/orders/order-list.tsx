@@ -137,9 +137,7 @@ export function OrderList({
             enableStatusChange ? handleStatusChange : undefined
           }
           assigneeSuggestions={assignments?.assignees ?? []}
-          onAssignChange={
-            enableStatusChange ? handleAssignChange : undefined
-          }
+          onAssignChange={handleAssignChange}
           assignmentUpdating={assigningOrderId === order.id}
         />
       ))}

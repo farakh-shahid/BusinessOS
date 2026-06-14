@@ -8,7 +8,10 @@ import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
 import { formatRs } from "@/tailor/ui/analytics/format";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
-import { formatOrderDueShort } from "@/tailor/infrastructure/data/order-list-ui";
+import {
+  formatOrderDueShort,
+  phoneTelHref,
+} from "@/tailor/infrastructure/data/order-list-ui";
 import { OrderWorkflowStatusBadge } from "./order-workflow-status-badge";
 
 interface OrderTableViewProps {
@@ -67,7 +70,7 @@ export function OrderTableView({ orders, t, isRtl }: OrderTableViewProps) {
                 onClick={() => router.push(routes.orderDetail(order.id))}
                 className="cursor-pointer border-b border-hairline last:border-b-0 hover:bg-background"
               >
-                <td className={cn("px-3.5 py-2.5", isRtl && "text-right")}>
+                <td className={cn("px-3.5 py-2", isRtl && "text-right")}>
                   <div
                     className={cn(
                       "flex flex-wrap items-center gap-1.5",
@@ -89,24 +92,51 @@ export function OrderTableView({ orders, t, isRtl }: OrderTableViewProps) {
                       </span>
                     ) : null}
                   </div>
+                  <p
+                    className={cn(
+                      "mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-slate",
+                      isRtl && "flex-row-reverse justify-end",
+                    )}
+                  >
+                    <a
+                      href={phoneTelHref(order.customerPhone)}
+                      className="font-medium text-brand-700 hover:underline"
+                      dir="ltr"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {order.customerPhone}
+                    </a>
+                    {order.dressCode ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {t.form.dressCode}: {order.dressCode}
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
                 </td>
                 <td
                   className={cn(
-                    "px-3.5 py-2.5 font-display text-[11.5px] text-muted-slate",
+                    "px-3.5 py-2 font-display text-[11.5px] text-muted-slate",
                     isRtl && "text-right",
                   )}
                 >
-                  #{order.orderNumber}
+                  <span className="tabular-nums">#{order.orderNumber}</span>
+                  <span aria-hidden className="mx-1 text-slate-300">
+                    ·
+                  </span>
+                  <span className="font-medium text-slate-600">{order.bookingDate}</span>
                 </td>
                 <td
                   className={cn(
-                    "px-3.5 py-2.5 text-[12.5px] text-foreground",
+                    "px-3.5 py-2 text-[12.5px] text-foreground",
                     isRtl && "text-right",
                   )}
                 >
                   {order.items}
                 </td>
-                <td className="px-3.5 py-2.5">
+                <td className="px-3.5 py-2">
                   <OrderWorkflowStatusBadge
                     workflowStatus={order.workflowStatus}
                     t={t}
@@ -114,7 +144,7 @@ export function OrderTableView({ orders, t, isRtl }: OrderTableViewProps) {
                 </td>
                 <td
                   className={cn(
-                    "px-3.5 py-2.5 text-[12.5px] text-foreground",
+                    "px-3.5 py-2 text-[12.5px] text-foreground",
                     isRtl && "text-right",
                   )}
                 >
@@ -122,7 +152,7 @@ export function OrderTableView({ orders, t, isRtl }: OrderTableViewProps) {
                 </td>
                 <td
                   className={cn(
-                    "px-3.5 py-2.5 text-right text-[12.5px] font-semibold",
+                    "px-3.5 py-2 text-right text-[12.5px] font-semibold",
                     settled ? "text-status-ready" : "text-status-urgent",
                   )}
                 >

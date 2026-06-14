@@ -5,6 +5,7 @@ import {
 } from "./order-filters";
 
 export type OrderListSort =
+  | "workflow"
   | "newest"
   | "due_asc"
   | "due_desc"
@@ -17,6 +18,7 @@ export type OrderListView = "list" | "board" | "table";
 const validViews: OrderListView[] = ["list", "board", "table"];
 
 const validSorts: OrderListSort[] = [
+  "workflow",
   "newest",
   "due_asc",
   "due_desc",
@@ -39,7 +41,7 @@ export interface OrderListParams {
 
 export const defaultOrderListParams = (): OrderListParams => ({
   filter: "",
-  sort: "newest",
+  sort: "workflow",
   view: "list",
   search: "",
   dueFrom: "",
@@ -51,7 +53,7 @@ function parseSort(value: string | null): OrderListSort {
   if (value && validSorts.includes(value as OrderListSort)) {
     return value as OrderListSort;
   }
-  return "newest";
+  return "workflow";
 }
 
 function parseView(value: string | null): OrderListView {
@@ -117,7 +119,7 @@ export function persistOrderListParams(params: OrderListParams): void {
 export function buildOrdersListUrl(params: OrderListParams): string {
   const sp = new URLSearchParams();
   if (params.filter) sp.set("filter", params.filter);
-  if (params.sort && params.sort !== "newest") sp.set("sort", params.sort);
+  if (params.sort && params.sort !== "workflow") sp.set("sort", params.sort);
   if (params.view && params.view !== "list") sp.set("view", params.view);
   if (params.search) sp.set("search", params.search);
   if (params.dueFrom) sp.set("dueFrom", params.dueFrom);

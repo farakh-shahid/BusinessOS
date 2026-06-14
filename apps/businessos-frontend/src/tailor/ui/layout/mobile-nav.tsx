@@ -1,51 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   ClipboardList,
+  Ellipsis,
   Home,
   Plus,
-  Settings,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
-import { isAdminRole } from "@/core/auth/roles";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
+import { BottomSheet } from "@/core/presentation/components/ui/bottom-sheet";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
-import { isNavActive, navPath, type NavItem } from "./nav-items";
-
-type MobileTabLabelKey = "home" | "orders" | "clients" | "stats" | "settings";
-
-interface MobileTab {
-  segment: NavItem["segment"];
-  icon: LucideIcon;
-  labelKey: MobileTabLabelKey;
-}
-
-function getMobileTabs(role?: string | null): {
-  left: MobileTab[];
-  right: MobileTab[];
-} {
-  const fourth: MobileTab = isAdminRole(role)
-    ? { segment: "analytics", icon: BarChart3, labelKey: "stats" }
-    : { segment: "settings", icon: Settings, labelKey: "settings" };
-
-  return {
-    left: [
-      { segment: "dashboard", icon: Home, labelKey: "home" },
-      { segment: "orders", icon: ClipboardList, labelKey: "orders" },
-    ],
-    right: [
-      { segment: "customers", icon: Users, labelKey: "clients" },
-      fourth,
-    ],
-  };
-}
+import {
+  getMobileMoreNavItems,
+  isNavActive,
+  navPath,
+  type NavItem,
+} from "./nav-items";
 
 function MobileBottomNavLink({
   href,
@@ -74,55 +51,169 @@ function MobileBottomNavLink({
   );
 }
 
+function MobileMoreNavButton({
+  label,
+  active,
+  open,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={open}
+      aria-haspopup="dialog"
+      className={cn(
+        "flex min-w-0 flex-col items-center justify-end gap-1 px-1 py-1.5 transition-colors",
+        active || open
+          ? "text-accent-500"
+          : "text-muted-slate hover:text-foreground",
+      )}
+    >
+      <Ellipsis
+        className="h-5 w-5 shrink-0"
+        strokeWidth={active || open ? 2.5 : 2}
+      />
+      <span className="max-w-full truncate text-[10px] font-semibold leading-tight">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function MobileMoreNavSheet({
+  open,
+  items,
+  pathname,
+  t,
+  isRtl,
+  onClose,
+}: {
+  open: boolean;
+  items: NavItem[];
+  pathname: string;
+  t: ReturnType<typeof getDictionary>;
+  isRtl: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <BottomSheet
+      open={open}
+      title={t.nav.more}
+      onClose={onClose}
+      isRtl={isRtl}
+    >
+      <ul className="space-y-2">
+        {items.map(({ segment, icon: Icon, labelKey }) => {
+          const active = isNavActive(pathname, segment);
+
+          return (
+            <li key={segment}>
+              <Link
+                href={navPath(segment)}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
+                  isRtl && "flex-row-reverse text-right",
+                  active
+                    ? "border-brand-700 bg-brand-50 text-brand-900"
+                    : "border-hairline bg-card text-foreground hover:border-brand-200",
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "h-5 w-5 shrink-0",
+                    active ? "text-brand-700" : "text-slate-500",
+                  )}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                {t.nav[labelKey]}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </BottomSheet>
+  );
+}
+
 export function MobileNav() {
   const pathname = usePathname();
   const { locale } = useLocale();
   const t = getDictionary(locale);
+  const isRtl = locale === "ur";
   const { data: user } = useMeQuery();
-  const { left, right } = getMobileTabs(user?.role);
+  const moreItems = getMobileMoreNavItems(user?.role);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreActive = moreItems.some((item) =>
+    isNavActive(pathname, item.segment),
+  );
 
-  function tabLabel(key: MobileTabLabelKey): string {
-    return t.nav[key];
-  }
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   return (
-    <div className="mobile-nav-shell pointer-events-none fixed inset-x-0 bottom-0 z-50 md:hidden">
-      <nav
-        className="mobile-nav-dock pointer-events-auto mx-auto max-w-lg"
-        aria-label="Main navigation"
-      >
-        <div className="mobile-nav-dock-inner grid grid-cols-5 items-end px-2 pb-2 pt-2.5">
-          {left.map(({ segment, icon, labelKey }) => (
+    <>
+      <div className="mobile-nav-shell pointer-events-none fixed inset-x-0 bottom-0 z-50 md:hidden">
+        <nav
+          className="mobile-nav-dock pointer-events-auto mx-auto max-w-lg"
+          aria-label="Main navigation"
+        >
+          <div className="mobile-nav-dock-inner grid grid-cols-5 items-end px-2 pb-2 pt-2.5">
             <MobileBottomNavLink
-              key={segment}
-              href={navPath(segment)}
-              label={tabLabel(labelKey)}
-              icon={icon}
-              active={isNavActive(pathname, segment)}
+              href={navPath("dashboard")}
+              label={t.nav.home}
+              icon={Home}
+              active={isNavActive(pathname, "dashboard")}
             />
-          ))}
+            <MobileBottomNavLink
+              href={navPath("orders")}
+              label={t.nav.orders}
+              icon={ClipboardList}
+              active={isNavActive(pathname, "orders")}
+            />
 
-          <div className="flex justify-center pb-1">
-            <Link
-              href={routes.newOrder}
-              aria-label={t.nav.newOrder}
-              className="-mt-7 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_8px_24px_rgba(255,106,43,0.45),0_2px_6px_rgba(14,26,54,0.12)] ring-[3px] ring-white/80 transition hover:brightness-105 active:scale-95"
-            >
-              <Plus className="h-7 w-7" strokeWidth={2.5} />
-            </Link>
+            <div className="flex justify-center pb-1">
+              <Link
+                href={routes.newOrder}
+                aria-label={t.nav.newOrder}
+                className="-mt-7 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_8px_24px_rgba(255,106,43,0.45),0_2px_6px_rgba(14,26,54,0.12)] ring-[3px] ring-white/80 transition hover:brightness-105 active:scale-95"
+              >
+                <Plus className="h-7 w-7" strokeWidth={2.5} />
+              </Link>
+            </div>
+
+            <MobileBottomNavLink
+              href={navPath("customers")}
+              label={t.nav.clients}
+              icon={Users}
+              active={isNavActive(pathname, "customers")}
+            />
+
+            <MobileMoreNavButton
+              label={t.nav.more}
+              active={moreActive}
+              open={moreOpen}
+              onClick={() => setMoreOpen(true)}
+            />
           </div>
+        </nav>
+      </div>
 
-          {right.map(({ segment, icon, labelKey }) => (
-            <MobileBottomNavLink
-              key={segment}
-              href={navPath(segment)}
-              label={tabLabel(labelKey)}
-              icon={icon}
-              active={isNavActive(pathname, segment)}
-            />
-          ))}
-        </div>
-      </nav>
-    </div>
+      <MobileMoreNavSheet
+        open={moreOpen}
+        items={moreItems}
+        pathname={pathname}
+        t={t}
+        isRtl={isRtl}
+        onClose={() => setMoreOpen(false)}
+      />
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  emptyMeasurementsForGarment,
   emptyStyleForGarment,
   mergeMeasurementsForGarmentChange,
   normalizeBookingGarmentType,
@@ -18,8 +19,8 @@ import { useToast } from "@/core/presentation/components/ui/toast";
 import { useLocale } from "@/core/i18n/locale-context";
 import {
   useCustomerDetailQuery,
-  useCustomersQuery,
 } from "@/tailor/infrastructure/api/hooks/use-customers";
+import { fetchCustomerByPhone } from "@/tailor/infrastructure/api/customers.api";
 import {
   useAssignmentsQuery,
   useCreateOrderMutation,
@@ -42,9 +43,14 @@ import {
 } from "@/tailor/ui/customers/customer-section";
 import { MeasurementFieldsForm } from "@/tailor/ui/measurements/measurement-fields-form";
 import { StyleSpecsForm } from "@/tailor/ui/measurements/style-specs-form";
+import { CustomerSavedMeasurementsPanel } from "@/tailor/ui/orders/customer-saved-measurements-panel";
 import { GarmentTypeSection } from "@/tailor/ui/orders/garment-type-section";
 import { OrderDetailsSection } from "@/tailor/ui/orders/order-details-section";
-import { NewOrderFormSkeleton } from "@/tailor/ui/skeletons";
+import { OrderReceiptDialog } from "@/tailor/ui/orders/order-receipt-dialog";
+import {
+  WorksheetPanel,
+  WorksheetSectionTitle,
+} from "@/tailor/ui/orders/worksheet-form-primitives";
 
 export function NewOrderForm() {
   const router = useRouter();
@@ -53,13 +59,13 @@ export function NewOrderForm() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
-  const { data: customers = [], isLoading: customersLoading } = useCustomersQuery();
   const { showError, showSuccess } = useToast();
   const createOrder = useCreateOrderMutation();
   const { data: assignments } = useAssignmentsQuery();
   const [draft, setDraft] = useState<NewOrderDraft>(emptyNewOrderDraft);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<NewOrderFieldErrors>({});
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
   const lastHydratedCustomerId = useRef<string | null>(null);
 
   const patch = useCallback((update: Partial<NewOrderDraft>) => {
@@ -91,14 +97,8 @@ export function NewOrderForm() {
         customerMode: "existing",
         customerId,
       }));
-      return;
     }
-
-    if (customers.length > 0 && !draft.customerId) {
-      lastHydratedCustomerId.current = null;
-      setDraft((prev) => ({ ...prev, customerId: customers[0]!.id }));
-    }
-  }, [customers, draft.customerId, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (draft.customerMode !== "existing" || !draft.customerId) {
@@ -126,16 +126,34 @@ export function NewOrderForm() {
   function handleGarmentChange(garmentType: BookingGarmentType) {
     if (garmentType === draft.garmentType) return;
 
-    setDraft((prev) => ({
-      ...prev,
-      garmentType,
-      measurements: mergeMeasurementsForGarmentChange(
+    setDraft((prev) => {
+      const detail = customerDetailQuery.data;
+      const fromCustomer =
+        prev.customerMode === "existing" &&
+        prev.customerId &&
+        detail?.customer.id === prev.customerId
+          ? patchFromCustomerDetail(detail, garmentType)
+          : null;
+
+      return {
+        ...prev,
         garmentType,
-        prev.measurements,
-      ),
-      style: emptyStyleForGarment(garmentType),
-    }));
+        measurements:
+          fromCustomer?.measurements ??
+          mergeMeasurementsForGarmentChange(garmentType, prev.measurements),
+        style:
+          fromCustomer?.style ?? emptyStyleForGarment(garmentType),
+      };
+    });
     setError(null);
+  }
+
+  function handleClearMeasurements() {
+    const suitType = normalizeBookingGarmentType(draft.garmentType);
+    patch({
+      measurements: emptyMeasurementsForGarment(suitType),
+      style: emptyStyleForGarment(suitType),
+    });
   }
 
   async function handleSave() {
@@ -161,15 +179,21 @@ export function NewOrderForm() {
     }
 
     try {
-      await createOrder.mutateAsync(draft);
+      const created = await createOrder.mutateAsync(draft);
       showSuccess(t.common.saved);
-      router.replace(routes.orders);
-      router.refresh();
+      setReceiptOrderId(created.id);
     } catch (err) {
       const msg = resolveApiErrorMessage(err, t);
       setError(msg);
       if (/phone number already exists|already registered/i.test(msg)) {
+        const existing = await fetchCustomerByPhone(draft.customerPhone);
         setFieldErrors({ customerPhone: msg });
+        if (existing) {
+          patch({
+            customerMode: "existing",
+            customerId: existing.id,
+          });
+        }
         document.getElementById("customer-phone")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
@@ -177,10 +201,6 @@ export function NewOrderForm() {
       }
       showError(msg);
     }
-  }
-
-  if (customersLoading) {
-    return <NewOrderFormSkeleton />;
   }
 
   return (
@@ -212,46 +232,86 @@ export function NewOrderForm() {
           </div>
         )}
 
-      <CustomerSection
-        ref={customerSectionRef}
-        t={t}
-        draft={draft}
-        customers={customers}
-        onChange={patch}
-        isRtl={isRtl}
-        fieldErrors={fieldErrors}
-      />
+      <WorksheetPanel className="space-y-8">
+        <WorksheetSectionTitle>{t.form.newOrderWorksheetTitle}</WorksheetSectionTitle>
 
-      <GarmentTypeSection
-        t={t}
-        value={draft.garmentType}
-        onChange={handleGarmentChange}
-        isRtl={isRtl}
-      />
+        <CustomerSection
+          ref={customerSectionRef}
+          t={t}
+          draft={draft}
+          selectedCustomer={customerDetailQuery.data?.customer ?? null}
+          onChange={patch}
+          isRtl={isRtl}
+          fieldErrors={fieldErrors}
+          variant="worksheet"
+        />
 
-      <MeasurementFieldsForm
-        t={t}
-        garmentType={draft.garmentType}
-        measurements={draft.measurements}
-        onChange={(measurements) => patch({ measurements })}
-        fieldErrors={fieldErrors}
-      />
+        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+          <GarmentTypeSection
+            t={t}
+            value={draft.garmentType}
+            onChange={handleGarmentChange}
+            isRtl={isRtl}
+            variant="worksheet"
+          />
+          <OrderDetailsSection
+            t={t}
+            draft={draft}
+            onChange={patch}
+            isRtl={isRtl}
+            assigneeSuggestions={assignments?.assignees ?? []}
+            fieldErrors={fieldErrors}
+            variant="worksheet"
+            fieldPlacement="primary"
+          />
+        </div>
 
-      <StyleSpecsForm
-        t={t}
-        garmentType={draft.garmentType}
-        style={draft.style}
-        onChange={(style) => patch({ style })}
-      />
+        {draft.customerMode === "existing" &&
+        draft.customerId &&
+        customerDetailQuery.data?.customer.id === draft.customerId ? (
+          <CustomerSavedMeasurementsPanel
+            detail={{
+              ...customerDetailQuery.data,
+              savedMeasurements:
+                customerDetailQuery.data.savedMeasurements ?? [],
+            }}
+            garmentType={draft.garmentType}
+            measurements={draft.measurements}
+            t={t}
+            isRtl={isRtl}
+            onClear={handleClearMeasurements}
+            onSelectGarment={handleGarmentChange}
+          />
+        ) : null}
 
-      <OrderDetailsSection
-        t={t}
-        draft={draft}
-        onChange={patch}
-        isRtl={isRtl}
-        assigneeSuggestions={assignments?.assignees ?? []}
-        fieldErrors={fieldErrors}
-      />
+        <MeasurementFieldsForm
+          t={t}
+          garmentType={draft.garmentType}
+          measurements={draft.measurements}
+          onChange={(measurements) => patch({ measurements })}
+          fieldErrors={fieldErrors}
+          variant="worksheet"
+        />
+
+        <StyleSpecsForm
+          t={t}
+          garmentType={draft.garmentType}
+          style={draft.style}
+          onChange={(style) => patch({ style })}
+          variant="worksheet"
+        />
+
+        <OrderDetailsSection
+          t={t}
+          draft={draft}
+          onChange={patch}
+          isRtl={isRtl}
+          assigneeSuggestions={assignments?.assignees ?? []}
+          fieldErrors={fieldErrors}
+          variant="worksheet"
+          fieldPlacement="secondary"
+        />
+      </WorksheetPanel>
 
       <div
         className={cn(
@@ -273,6 +333,22 @@ export function NewOrderForm() {
           {createOrder.isPending ? t.common.loading : t.form.save}
         </Button>
       </div>
+
+      <OrderReceiptDialog
+        orderId={receiptOrderId}
+        title={t.receipt.postOrderTitle}
+        subtitle={t.receipt.postOrderSubtitle}
+        onClose={() => {
+          const id = receiptOrderId;
+          setReceiptOrderId(null);
+          if (id) {
+            router.replace(routes.orderDetail(id));
+          } else {
+            router.replace(routes.orders);
+          }
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

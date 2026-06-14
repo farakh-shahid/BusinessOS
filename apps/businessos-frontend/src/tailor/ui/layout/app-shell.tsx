@@ -15,7 +15,7 @@ export function AppShell({ children }: AppShellProps) {
   const isRtl = locale === "ur";
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} className="min-h-screen bg-background">
+    <div dir={isRtl ? "rtl" : "ltr"} className="min-h-screen w-full max-w-[100vw] bg-background">
       <AppSidebar />
 
       <div
@@ -24,9 +24,11 @@ export function AppShell({ children }: AppShellProps) {
           isRtl ? "md:pr-[17.5rem]" : "md:pl-[17.5rem]",
         )}
       >
-        <div className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-5 sm:px-6 md:pb-8 md:pt-8 lg:px-10">
+        <div className="mx-auto w-full max-w-7xl flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-8 md:pt-8 lg:px-10">
           <AppHeader />
-          <main className="mt-5 space-y-6 md:mt-8 md:space-y-8">{children}</main>
+          <main className="mt-5 min-w-0 space-y-6 md:mt-8 md:space-y-8">
+            {children}
+          </main>
         </div>
       </div>
 

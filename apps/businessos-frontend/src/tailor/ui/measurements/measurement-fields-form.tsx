@@ -13,6 +13,12 @@ import { FormFieldError } from "@/core/presentation/components/ui/form-field-err
 import { sanitizeMeasurementInput } from "@/core/presentation/lib/validate-measurements";
 import type { NewOrderFieldErrors } from "@/tailor/infrastructure/data/new-order-validation";
 import { useLocale } from "@/core/i18n/locale-context";
+import {
+  WorksheetField,
+  WorksheetSectionTitle,
+  savedMeasurementsChartBorderClass,
+  worksheetFieldClass,
+} from "@/tailor/ui/orders/worksheet-form-primitives";
 
 interface MeasurementFieldsFormProps {
   t: Dictionary;
@@ -20,6 +26,9 @@ interface MeasurementFieldsFormProps {
   measurements: Record<string, string>;
   onChange: (measurements: Record<string, string>) => void;
   fieldErrors?: NewOrderFieldErrors;
+  variant?: "default" | "worksheet";
+  framed?: boolean;
+  showWorksheetHeader?: boolean;
 }
 
 const groupLabels: Record<string, keyof Dictionary["form"]> = {
@@ -34,8 +43,12 @@ export function MeasurementFieldsForm({
   measurements,
   onChange,
   fieldErrors = {},
+  variant = "default",
+  framed = true,
+  showWorksheetHeader = true,
 }: MeasurementFieldsFormProps) {
   const { locale } = useLocale();
+  const isWorksheet = variant === "worksheet";
   const suitType = normalizeBookingGarmentType(garmentType);
   const schema = getGarmentSchema(suitType);
   const groups = ["body", "upper", "lower"] as const;
@@ -48,6 +61,68 @@ export function MeasurementFieldsForm({
   function labelFor(key: string) {
     const m = t.measurements as Record<string, string>;
     return m[key] ?? key;
+  }
+
+  const allFields = schema.measurementFields;
+
+  if (isWorksheet) {
+    const grid = (
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 md:grid-cols-4">
+        {allFields.map((field) => {
+          const isNumeric = field.type !== "text";
+          const label = labelFor(field.labelKey).toUpperCase();
+
+          return (
+            <WorksheetField
+              key={field.key}
+              label={label}
+              htmlFor={`m-${field.key}`}
+              required={field.required}
+              error={fieldErrors[field.key]}
+              measureStyle
+            >
+              <Input
+                id={`m-${field.key}`}
+                type="text"
+                inputMode={isNumeric ? "decimal" : "text"}
+                placeholder={
+                  isNumeric ? t.form.measurementPlaceholder : ""
+                }
+                value={measurements[field.key] ?? ""}
+                aria-invalid={!!fieldErrors[field.key]}
+                className={worksheetFieldClass(!!fieldErrors[field.key])}
+                onChange={(e) =>
+                  updateField(field.key, e.target.value, isNumeric)
+                }
+                dir={locale === "ur" ? "ltr" : undefined}
+                autoComplete="off"
+              />
+            </WorksheetField>
+          );
+        })}
+      </div>
+    );
+
+    return (
+      <section className="space-y-4">
+        {showWorksheetHeader ? (
+          <>
+            <WorksheetSectionTitle>
+              {t.form.measurementsWorksheetTitle}
+            </WorksheetSectionTitle>
+            <p className="text-xs text-slate-400">{t.form.unitInchesHint}</p>
+          </>
+        ) : null}
+        {fieldErrors.measurements ? (
+          <FormFieldError message={fieldErrors.measurements} />
+        ) : null}
+        {framed ? (
+          <div className={savedMeasurementsChartBorderClass}>{grid}</div>
+        ) : (
+          grid
+        )}
+      </section>
+    );
   }
 
   return (

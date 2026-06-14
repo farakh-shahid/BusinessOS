@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { isValidPakistanPhone } from "@business-os/shared";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
-import { Label } from "@/core/presentation/components/ui/label";
-import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { cn } from "@/core/presentation/lib/utils";
 import { resolveApiErrorMessage } from "@/core/presentation/lib/resolve-api-error";
 import { findInvalidMeasurement } from "@/core/presentation/lib/validate-measurements";
@@ -22,6 +19,10 @@ import {
   useUpdateCustomerMutation,
 } from "@/tailor/infrastructure/api/hooks/use-customers";
 import {
+  findSavedMeasurement,
+  measurementToDraftFields,
+} from "@/tailor/infrastructure/data/customer-measurement-patch";
+import {
   emptyMeasurementsForGarment,
   emptyStyleForGarment,
   getGarmentSchema,
@@ -31,24 +32,16 @@ import {
 import { GarmentTypeSection } from "@/tailor/ui/orders/garment-type-section";
 import { MeasurementFieldsForm } from "@/tailor/ui/measurements/measurement-fields-form";
 import { StyleSpecsForm } from "@/tailor/ui/measurements/style-specs-form";
+import {
+  WorksheetField,
+  WorksheetPanel,
+  WorksheetSectionTitle,
+  worksheetFieldClass,
+} from "@/tailor/ui/orders/worksheet-form-primitives";
 import { DialogContentSkeleton } from "@/tailor/ui/skeletons";
 
 interface CustomerEditViewProps {
   customerId: string;
-}
-
-function numberToField(value?: number): string {
-  return value !== undefined && value !== null ? String(value) : "";
-}
-
-function isBookingGarmentType(value?: string): value is BookingGarmentType {
-  return (
-    value === "shalwarQameez" ||
-    value === "dressPantCoat" ||
-    value === "sherwani" ||
-    value === "kurta" ||
-    value === "waistcoat"
-  );
 }
 
 export function CustomerEditView({ customerId }: CustomerEditViewProps) {
@@ -65,6 +58,7 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [isVip, setIsVip] = useState(false);
   const [garmentType, setGarmentType] =
     useState<BookingGarmentType>("shalwarQameez");
   const [measurements, setMeasurements] = useState(
@@ -79,41 +73,40 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
     setName(data.customer.name);
     setPhone(data.customer.phone);
     setEmail(data.customer.email ?? "");
+    setIsVip(data.customer.isVip ?? false);
     setError(null);
 
-    const m = data.latestMeasurement;
-    const nextGarment = isBookingGarmentType(m?.garmentType)
-      ? m.garmentType
-      : "shalwarQameez";
+    const nextGarment: BookingGarmentType = "shalwarQameez";
     setGarmentType(nextGarment);
 
+    const m = findSavedMeasurement(data, nextGarment);
     if (m) {
-      const baseMeasurements = emptyMeasurementsForGarment(nextGarment);
-      const schema = getGarmentSchema(nextGarment);
-      for (const field of schema.measurementFields) {
-        const val = m.measurements[field.key];
-        if (val !== undefined && val !== null) {
-          baseMeasurements[field.key] = String(val);
-        }
-      }
-      for (const [key, val] of Object.entries(m.measurements)) {
-        if (!baseMeasurements[key]?.trim() && val !== undefined) {
-          baseMeasurements[key] = numberToField(val);
-        }
-      }
-      setMeasurements(baseMeasurements);
-
-      const baseStyle = emptyStyleForGarment(nextGarment);
-      for (const field of schema.styleFields) {
-        const val = m.style[field.key];
-        if (val) baseStyle[field.key] = val;
-      }
-      setStyle(baseStyle);
+      const fields = measurementToDraftFields(m, nextGarment);
+      setMeasurements(fields.measurements);
+      setStyle(fields.style);
     } else {
       setMeasurements(emptyMeasurementsForGarment(nextGarment));
       setStyle(emptyStyleForGarment(nextGarment));
     }
   }, [data]);
+
+  function applyGarmentProfile(next: BookingGarmentType) {
+    if (next === garmentType) return;
+    setGarmentType(next);
+
+    if (data) {
+      const saved = findSavedMeasurement(data, next);
+      if (saved) {
+        const fields = measurementToDraftFields(saved, next);
+        setMeasurements(fields.measurements);
+        setStyle(fields.style);
+        return;
+      }
+    }
+
+    setMeasurements((prev) => mergeMeasurementsForGarmentChange(next, prev));
+    setStyle(emptyStyleForGarment(next));
+  }
 
   const isSaving = updateCustomer.isPending || saveMeasurement.isPending;
 
@@ -160,12 +153,15 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim(),
+          isVip,
         },
       });
 
+      const existingForGarment = findSavedMeasurement(data, garmentType);
+
       await saveMeasurement.mutateAsync({
         customerId,
-        measurementId: data.latestMeasurement?.id,
+        measurementId: existingForGarment?.id,
         payload: {
           garmentType,
           measurements,
@@ -184,23 +180,24 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={routes.customerDetail(customerId)}
-        className={cn(
-          "inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:underline",
-          isRtl && "flex-row-reverse",
-        )}
-      >
-        <ArrowLeft className={cn("h-4 w-4", isRtl && "rotate-180")} />
-        {t.customers.backToProfile}
-      </Link>
-
       <div className={cn(isRtl && "text-right")}>
-        <h1 className="text-xl font-bold text-slate-900 md:text-2xl">
+        <Link
+          href={routes.customerDetail(customerId)}
+          className="text-sm font-medium text-brand-700 hover:text-brand-800"
+        >
+          ← {t.customers.backToProfile}
+        </Link>
+        <h1 className="mt-2 text-xl font-bold text-slate-900 md:text-2xl">
           {t.customers.editCustomer}
         </h1>
         <p className="mt-1 text-sm text-slate-500">{t.customers.editSubtitle}</p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
 
       {isLoading && <DialogContentSkeleton />}
 
@@ -211,97 +208,122 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
       )}
 
       {data && (
-        <Card className="space-y-6 border-hairline">
-          <section className="space-y-3">
-            <CardTitle>{t.form.customer}</CardTitle>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label htmlFor="cust-name">{t.form.name}</Label>
-                <Input
-                  id="cust-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+        <>
+          <WorksheetPanel className="space-y-8">
+            <WorksheetSectionTitle>
+              {t.customers.editCustomerWorksheetTitle}
+            </WorksheetSectionTitle>
+
+            <section className="space-y-4">
+              <WorksheetSectionTitle>{t.form.customer}</WorksheetSectionTitle>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <WorksheetField label={t.form.name} htmlFor="cust-name" required>
+                    <Input
+                      id="cust-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={worksheetFieldClass()}
+                    />
+                  </WorksheetField>
+                </div>
+                <WorksheetField
+                  label={t.form.phone}
+                  htmlFor="cust-phone"
+                  required
+                  hint={t.form.phoneHint}
+                >
+                  <Input
+                    id="cust-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder={t.form.phonePlaceholder}
+                    dir="ltr"
+                    className={worksheetFieldClass()}
+                  />
+                </WorksheetField>
+                <WorksheetField label={t.form.email} htmlFor="cust-email" hint={t.form.emailHint}>
+                  <Input
+                    id="cust-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    dir="ltr"
+                    className={worksheetFieldClass()}
+                  />
+                </WorksheetField>
               </div>
-              <div>
-                <Label htmlFor="cust-phone">{t.form.phone}</Label>
-                <Input
-                  id="cust-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t.form.phonePlaceholder}
-                  dir="ltr"
+
+              <label
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border border-hairline bg-background px-4 py-3",
+                  isRtl && "flex-row-reverse text-right",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={isVip}
+                  onChange={(e) => setIsVip(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-accent-500 focus:ring-accent-500"
                 />
-                <p className="mt-1 text-xs text-slate-400">{t.form.phoneHint}</p>
-              </div>
-              <div>
-                <Label htmlFor="cust-email">{t.form.email}</Label>
-                <Input
-                  id="cust-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  dir="ltr"
-                />
-              </div>
-            </div>
-          </section>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">
+                    {t.customers.markAsVip}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-slate">
+                    {t.customers.markAsVipHint}
+                  </span>
+                </span>
+              </label>
+            </section>
 
-          <GarmentTypeSection
-            t={t}
-            value={garmentType}
-            onChange={(next) => {
-              if (next === garmentType) return;
-              setGarmentType(next);
-              setMeasurements((prev) =>
-                mergeMeasurementsForGarmentChange(next, prev),
-              );
-              setStyle(emptyStyleForGarment(next));
-            }}
-            isRtl={isRtl}
-          />
+            <GarmentTypeSection
+              t={t}
+              value={garmentType}
+              onChange={applyGarmentProfile}
+              isRtl={isRtl}
+              variant="worksheet"
+            />
 
-          <MeasurementFieldsForm
-            t={t}
-            garmentType={garmentType}
-            measurements={measurements}
-            onChange={setMeasurements}
-          />
+            <MeasurementFieldsForm
+              t={t}
+              garmentType={garmentType}
+              measurements={measurements}
+              onChange={setMeasurements}
+              variant="worksheet"
+            />
 
-          <StyleSpecsForm
-            t={t}
-            garmentType={garmentType}
-            style={style}
-            onChange={setStyle}
-          />
-
-          {error && (
-            <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {error}
-            </p>
-          )}
+            <StyleSpecsForm
+              t={t}
+              garmentType={garmentType}
+              style={style}
+              onChange={setStyle}
+              variant="worksheet"
+            />
+          </WorksheetPanel>
 
           <div
             className={cn(
-              "flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end",
+              "flex flex-col gap-3 pb-4 sm:flex-row sm:justify-end",
               isRtl && "sm:flex-row-reverse",
             )}
           >
-            <Link href={routes.customerDetail(customerId)}>
-              <Button variant="outline" className="w-full sm:w-auto" disabled={isSaving}>
-                {t.form.cancel}
-              </Button>
+            <Link
+              href={routes.customerDetail(customerId)}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
+            >
+              {t.form.cancel}
             </Link>
             <Button
-              className="w-full sm:min-w-40 sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => void handleSave()}
               disabled={isSaving}
             >
               {isSaving ? t.customers.saving : t.customers.saveChanges}
             </Button>
           </div>
-        </Card>
+        </>
       )}
     </div>
   );

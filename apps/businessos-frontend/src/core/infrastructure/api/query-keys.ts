@@ -4,8 +4,12 @@ export const queryKeys = {
   },
   customers: {
     all: ["customers"] as const,
+    infiniteList: (params?: { q?: string; segment?: string }) =>
+      ["customers", "infinite", params ?? {}] as const,
     detail: (id: string) => ["customers", id] as const,
     search: (q: string) => ["customers", "search", q] as const,
+    lookup: (q: string) => ["customers", "lookup", q] as const,
+    byPhone: (phone: string) => ["customers", "by-phone", phone] as const,
   },
   orders: {
     dashboard: ["orders", "dashboard"] as const,
@@ -19,6 +23,15 @@ export const queryKeys = {
       dueFrom?: string;
       dueTo?: string;
     }) => ["orders", "list", params ?? {}] as const,
+    infiniteList: (params?: {
+      filter?: string;
+      customerId?: string;
+      search?: string;
+      assignedTo?: string;
+      sort?: string;
+      dueFrom?: string;
+      dueTo?: string;
+    }) => ["orders", "infinite", params ?? {}] as const,
     receivables: ["orders", "receivables"] as const,
     assignments: ["orders", "assignments"] as const,
     detail: (id: string) => ["orders", id] as const,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import { queryKeys } from "@/core/infrastructure/api/query-keys";
 import {
   createOrder,
@@ -8,8 +9,10 @@ import {
   fetchDashboard,
   fetchOrderDetail,
   fetchOrders,
+  fetchOrdersPage,
   fetchReceivables,
   markOrderReady,
+  markReceivableCustomerPaid,
   sendOrderReminder,
   updateOrder,
   updateOrderStatus,
@@ -31,6 +34,22 @@ export function useOrdersQuery(params?: OrdersQueryParams) {
   return useQuery({
     queryKey: queryKeys.orders.list(params),
     queryFn: () => fetchOrders(params),
+  });
+}
+
+export function useInfiniteOrdersQuery(
+  params?: Omit<OrdersQueryParams, "limit" | "offset">,
+) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.orders.infiniteList(params),
+    queryFn: ({ pageParam = 0 }) =>
+      fetchOrdersPage({
+        ...params,
+        limit: DEFAULT_PAGE_SIZE,
+        offset: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
   });
 }
 
@@ -86,11 +105,20 @@ export function useUpdateOrderMutation() {
       orderId: string;
       payload: UpdateOrderPayload;
     }) => updateOrder(orderId, payload),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       invalidateOrderCaches(queryClient);
       queryClient.invalidateQueries({
         queryKey: queryKeys.orders.detail(variables.orderId),
       });
+      if (variables.payload.measurements) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
+        queryClient.invalidateQueries({ queryKey: ["customers", "infinite"] });
+        if (data.customerId) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.customers.detail(data.customerId),
+          });
+        }
+      }
     },
   });
 }
@@ -141,9 +169,22 @@ export function useSendReminderMutation() {
   return useMutation({
     mutationFn: (orderId: string) => sendOrderReminder(orderId),
     onSuccess: (_data, orderId) => {
+      invalidateOrderCaches(queryClient);
       queryClient.invalidateQueries({
         queryKey: queryKeys.orders.detail(orderId),
       });
+    },
+  });
+}
+
+export function useMarkReceivableCustomerPaidMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (customerId: string) => markReceivableCustomerPaid(customerId),
+    onSuccess: () => {
+      invalidateOrderCaches(queryClient);
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
     },
   });
 }

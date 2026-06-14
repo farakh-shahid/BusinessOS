@@ -1,4 +1,4 @@
-import { IsBoolean, IsIn, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsIn, IsObject, IsOptional, IsString } from "class-validator";
 
 export class UpdateOrderDto {
   @IsOptional()
@@ -42,10 +42,22 @@ export class UpdateOrderDto {
   dressImageUrl?: string;
 
   @IsOptional()
+  @IsString()
+  dressImagePublicId?: string;
+
+  @IsOptional()
   @IsBoolean()
   isRush?: boolean;
 
   @IsOptional()
   @IsString()
   assignedToName?: string;
+
+  @IsOptional()
+  @IsObject()
+  measurements?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  style?: Record<string, string>;
 }

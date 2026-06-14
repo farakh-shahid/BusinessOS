@@ -15,11 +15,19 @@ interface ShopHeroProps {
   title: string;
   dateLabel?: string;
   badge?: string;
-  icon: LucideIcon;
+  /** Decorative icon on the default variant only. */
+  icon?: LucideIcon;
   isRtl?: boolean;
   className?: string;
   variant?: "default" | "dashboard";
   statusItems?: HeroStatusItem[];
+  /** Dashboard hero: in-production + need-attention counts in one meta line. */
+  dashboardSummary?: {
+    inProduction: number;
+    needAttention: number;
+  };
+  inProductionLabel?: string;
+  needAttentionLabel?: string;
   newOrderLabel?: string;
   newOrderHref?: string;
 }
@@ -34,6 +42,9 @@ export function ShopHero({
   className,
   variant = "default",
   statusItems,
+  dashboardSummary,
+  inProductionLabel,
+  needAttentionLabel,
   newOrderLabel,
   newOrderHref,
 }: ShopHeroProps) {
@@ -42,7 +53,7 @@ export function ShopHero({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-3xl bg-sidebar shadow-lg shadow-sidebar-dark/20",
+        "relative overflow-hidden rounded-[18px] bg-sidebar shadow-lg shadow-sidebar-dark/20",
         !isDashboard &&
           "bg-gradient-to-br from-sidebar via-sidebar-light to-sidebar-dark",
         className,
@@ -81,7 +92,27 @@ export function ShopHero({
             <h1 className="font-display mt-1 text-[1.625rem] font-bold leading-tight tracking-tight text-white sm:text-[1.75rem]">
               {title}
             </h1>
-            {dateLabel && statusItems?.length ? (
+            {dateLabel && dashboardSummary ? (
+              <p
+                className={cn(
+                  "mt-2.5 text-[12.5px] leading-relaxed text-sidebar-text-muted",
+                  isRtl && "text-right",
+                )}
+              >
+                <span className="block sm:inline">{dateLabel}</span>
+                <span className="hidden sm:inline"> · </span>
+                <span className="mt-1 block sm:mt-0 sm:inline">
+                  <strong className="font-bold text-white">
+                    {dashboardSummary.inProduction}
+                  </strong>{" "}
+                  {inProductionLabel} ·{" "}
+                  <strong className="font-bold text-white">
+                    {dashboardSummary.needAttention}
+                  </strong>{" "}
+                  {needAttentionLabel}
+                </span>
+              </p>
+            ) : dateLabel && statusItems?.length ? (
               <p
                 className={cn(
                   "mt-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-sidebar-text-muted",
@@ -105,7 +136,7 @@ export function ShopHero({
             <Link
               href={newOrderHref}
               className={cn(
-                "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] sm:px-6",
+                "inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] sm:w-auto sm:px-6",
                 isRtl && "flex-row-reverse",
               )}
             >
@@ -117,8 +148,8 @@ export function ShopHero({
       ) : (
         <div
           className={cn(
-            "relative flex items-start justify-between gap-4 p-6 sm:p-8",
-            isRtl && "flex-row-reverse",
+            "relative flex flex-col gap-5 p-6 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:p-8",
+            isRtl && "sm:flex-row-reverse",
           )}
         >
           <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
@@ -138,14 +169,27 @@ export function ShopHero({
             ) : null}
           </div>
 
-          <div
-            className={cn(
-              "hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-inner backdrop-blur-sm sm:flex",
-              isRtl && "order-first",
-            )}
-          >
-            <Icon className="h-7 w-7 text-white/75" strokeWidth={1.5} />
-          </div>
+          {newOrderHref && newOrderLabel ? (
+            <Link
+              href={newOrderHref}
+              className={cn(
+                "inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 self-start rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] sm:w-auto sm:px-6",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
+              {newOrderLabel}
+            </Link>
+          ) : Icon ? (
+            <div
+              className={cn(
+                "hidden h-14 w-14 shrink-0 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 shadow-inner backdrop-blur-sm sm:flex",
+                isRtl && "order-first",
+              )}
+            >
+              <Icon className="h-7 w-7 text-white/75" strokeWidth={1.5} />
+            </div>
+          ) : null}
         </div>
       )}
     </div>

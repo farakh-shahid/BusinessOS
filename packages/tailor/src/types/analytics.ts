@@ -40,6 +40,37 @@ export interface WorkflowSnapshot {
   delivered: number;
 }
 
+export interface ReceivablesAgingBucket {
+  key: "current" | "late_1_2w" | "late_2w_plus";
+  amount: number;
+}
+
+export interface DebtorRow {
+  customerId: string;
+  customerName: string;
+  balance: number;
+  daysLate: number;
+}
+
+export interface KarigarOutputRow {
+  name: string;
+  pieces: number;
+  revenue: number;
+}
+
+export interface TopCustomerRow {
+  customerId: string;
+  customerName: string;
+  revenue: number;
+  orderCount: number;
+}
+
+export interface BusiestDayRow {
+  dayKey: number;
+  dayLabel: string;
+  orders: number;
+}
+
 export interface TailorAnalytics {
   shopName: string;
   tenantCreatedAt: string;
@@ -73,4 +104,22 @@ export interface TailorAnalytics {
   currentPeriodLabel: string;
   avgOrderValue: number;
   completionRate: number;
+  /** Calendar month containing anchor (shop-wide snapshot) */
+  currentMonth: PeriodMetrics;
+  currentMonthComparison: {
+    revenueChangePercent: number | null;
+  };
+  /** Last 12 calendar months of booked revenue */
+  yearlyTrend: MonthlyTrendPoint[];
+  receivablesAging: ReceivablesAgingBucket[];
+  receivablesCustomersOwing: number;
+  topDebtors: DebtorRow[];
+  productionPipeline: {
+    orderCount: number;
+    totalValue: number;
+  };
+  busiestDays: BusiestDayRow[];
+  karigarOutput: KarigarOutputRow[];
+  topCustomers: TopCustomerRow[];
+  advanceCollectionRate: number;
 }

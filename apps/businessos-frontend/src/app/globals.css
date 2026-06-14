@@ -49,8 +49,8 @@
   --status-stitching-bg: #f3eeff;
   --status-ready: #12a36a;
   --status-ready-bg: #e7f7ef;
-  --status-delivered: #5a6b86;
-  --status-delivered-bg: #eef1f5;
+  --status-delivered: #12a36a;
+  --status-delivered-bg: #e7f7ef;
   --status-urgent: #e5484d;
   --status-urgent-bg: #fdecee;
 
@@ -175,11 +175,47 @@ body {
   color: var(--foreground);
 }
 
+/* Sticky search / banner toolbar — mobile only (avoid overflow-x on ancestors) */
+@media (max-width: 767px) {
+  .mobile-sticky-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--hairline);
+    background: color-mix(in srgb, var(--background) 96%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .mobile-sticky-toolbar {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 /* Mobile bottom nav — iOS / macOS floating dock glass */
 .mobile-nav-shell {
-  padding-left: max(0.75rem, env(safe-area-inset-left));
-  padding-right: max(0.75rem, env(safe-area-inset-right));
-  padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 .mobile-nav-shell::before {
@@ -201,6 +237,8 @@ body {
 .mobile-nav-dock {
   position: relative;
   isolation: isolate;
+  width: 100%;
+  max-width: 100%;
   overflow: visible;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.9);
@@ -249,10 +287,33 @@ body {
 .mobile-nav-dock-inner {
   position: relative;
   z-index: 1;
+  width: 100%;
+}
+
+.mobile-nav-fab {
+  touch-action: manipulation;
 }
 
 .mobile-nav-dock-inner a {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.mobile-nav-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-bottom-sheet-open] .mobile-nav-shell {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bottom-sheet-footer-actions > .flex {
+  width: 100%;
 }
 
 /* Sidebar active item — dark glass (iOS/macOS selection on navy) */

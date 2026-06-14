@@ -1,4 +1,6 @@
-import { IsIn, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from "class-validator";
+import { Type } from "class-transformer";
+import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 
 export class ListOrdersQueryDto {
   @IsOptional()
@@ -15,11 +17,14 @@ export class ListOrdersQueryDto {
     "in_progress",
     "priority",
     "due_this_week",
+    "booked_today",
+    "booked_last_week",
   ])
   filter?: string;
 
   @IsOptional()
   @IsIn([
+    "workflow",
     "newest",
     "due_asc",
     "due_desc",
@@ -48,4 +53,17 @@ export class ListOrdersQueryDto {
   @IsOptional()
   @IsString()
   assignedTo?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(DEFAULT_PAGE_SIZE)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
 }

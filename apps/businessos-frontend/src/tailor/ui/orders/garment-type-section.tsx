@@ -12,7 +12,12 @@ import type { Dictionary } from "@business-os/i18n";
 import type { BookingGarmentType } from "@business-os/tailor";
 import { cn } from "@/core/presentation/lib/utils";
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
+import { SearchableCombobox } from "@/core/presentation/components/ui/searchable-combobox";
 import { bookingGarmentOptions } from "@/tailor/infrastructure/data/new-order.mock";
+import {
+  WorksheetField,
+  worksheetInputClass,
+} from "@/tailor/ui/orders/worksheet-form-primitives";
 
 const garmentIcons: Record<BookingGarmentType, LucideIcon> = {
   shalwarQameez: Shirt,
@@ -43,6 +48,7 @@ interface GarmentTypeSectionProps {
   value: BookingGarmentType;
   onChange: (garmentType: BookingGarmentType) => void;
   isRtl: boolean;
+  variant?: "default" | "worksheet";
 }
 
 export function GarmentTypeSection({
@@ -50,7 +56,34 @@ export function GarmentTypeSection({
   value,
   onChange,
   isRtl,
+  variant = "default",
 }: GarmentTypeSectionProps) {
+  const options = bookingGarmentOptions.map(({ value: garmentValue, labelKey }) => ({
+    value: garmentValue,
+    label: t.garments[labelKey],
+  }));
+
+  if (variant === "worksheet") {
+    return (
+      <WorksheetField label={t.form.suitType} htmlFor="garment-type">
+        <SearchableCombobox
+          id="garment-type"
+          value={value}
+          onChange={(next) => onChange(next as BookingGarmentType)}
+          options={options}
+          placeholder={t.form.suitType}
+          isRtl={isRtl}
+          searchMinOptions={1}
+          aria-label={t.form.suitType}
+          buttonClassName={cn(
+            worksheetInputClass,
+            "justify-between font-normal text-slate-900",
+          )}
+        />
+      </WorksheetField>
+    );
+  }
+
   return (
     <Card>
       <CardTitle>{t.form.suitType}</CardTitle>

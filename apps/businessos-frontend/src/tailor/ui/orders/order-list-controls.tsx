@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Clock,
   Flame,
+  ListOrdered,
   Sparkles,
 } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
@@ -30,6 +31,7 @@ const sortOptions: {
   labelKey: keyof Dictionary["orderList"];
   icon: ComponentType<{ className?: string }>;
 }[] = [
+  { value: "workflow", labelKey: "sortWorkflow", icon: ListOrdered },
   { value: "newest", labelKey: "sortNewest", icon: Sparkles },
   { value: "due_asc", labelKey: "sortDueAsc", icon: Clock },
   { value: "due_desc", labelKey: "sortDueDesc", icon: ArrowDownWideNarrow },

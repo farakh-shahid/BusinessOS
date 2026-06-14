@@ -110,6 +110,10 @@ export function buildOrderListWhere(
     case "priority":
       where.isRush = true;
       break;
+    case "payment_due":
+      where.status = "DELIVERED";
+      where.balanceDue = { gt: 0 };
+      break;
     case "due_this_week": {
       const localNow = new Date();
       where.deliveryDate = {
@@ -117,6 +121,18 @@ export function buildOrderListWhere(
         lte: endOfWeek(localNow),
       };
       where.status = { notIn: ["DELIVERED", "CANCELLED"] };
+      break;
+    }
+    case "booked_today":
+      where.bookingDate = today;
+      break;
+    case "booked_last_week": {
+      const weekStart = new Date(today);
+      weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+      where.bookingDate = {
+        gte: weekStart,
+        lte: endOfDay(today),
+      };
       break;
     }
     default:

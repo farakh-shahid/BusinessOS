@@ -29,6 +29,7 @@ export interface OrderFullDetail {
   dressCode?: string;
   suitCount: number;
   dressImageUrl?: string;
+  dressImagePublicId?: string;
   bookingDate: string;
   deliveryDate: string;
   fabricSource: "customer" | "shop";
@@ -60,6 +61,51 @@ export interface ReceivableOrder {
   workflowStatus: OrderWorkflowStatus;
   dueDate: string;
   garmentLabel: string;
+}
+
+export interface ReceivableCustomerRow {
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  orderCount: number;
+  totalBalance: number;
+  primaryOrderId: string;
+}
+
+export interface ReceivablesSummary {
+  totalOutstanding: number;
+  customersOwing: number;
+  collectedThisMonth: number;
+}
+
+export interface ReceivablesData {
+  summary: ReceivablesSummary;
+  customers: ReceivableCustomerRow[];
+}
+
+export interface ReceivedSummary {
+  totalReceivedThisMonth: number;
+  customersPaid: number;
+  ordersPaid: number;
+}
+
+export interface ReceivedCustomerRow {
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  orderCount: number;
+  totalReceived: number;
+  primaryOrderId: string;
+}
+
+export interface ReceivedData {
+  summary: ReceivedSummary;
+  customers: ReceivedCustomerRow[];
+}
+
+export interface ReceivablesPageData {
+  receivables: ReceivablesData;
+  received: ReceivedData;
 }
 
 export interface ReminderResult {

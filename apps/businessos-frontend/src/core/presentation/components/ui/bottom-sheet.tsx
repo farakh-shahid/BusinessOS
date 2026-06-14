@@ -23,10 +23,12 @@ export function BottomSheet({
 }: BottomSheetProps) {
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.dataset.bottomSheetOpen = "true";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      delete document.body.dataset.bottomSheetOpen;
     };
   }, [open]);
 
@@ -45,8 +47,8 @@ export function BottomSheet({
         aria-modal="true"
         aria-labelledby="bottom-sheet-title"
         className={cn(
-          "relative flex max-h-[min(88vh,640px)] w-full flex-col bg-white shadow-2xl",
-          "rounded-t-3xl md:max-w-md md:rounded-2xl",
+          "relative flex max-h-[min(85dvh,640px)] w-full flex-col bg-white shadow-2xl",
+          "rounded-t-3xl md:max-w-md md:rounded-2xl md:max-h-[min(88vh,640px)]",
           "animate-in slide-in-from-bottom duration-200 md:zoom-in-95 md:slide-in-from-bottom-0",
         )}
       >
@@ -73,8 +75,8 @@ export function BottomSheet({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer ? (
-          <div className="shrink-0 border-t border-slate-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {footer}
+          <div className="shrink-0 border-t border-slate-100 px-5 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div className="bottom-sheet-footer-actions">{footer}</div>
           </div>
         ) : null}
       </div>

@@ -72,9 +72,112 @@ export interface DashboardStats {
   inProgress: number;
   dueToday: number;
   ready: number;
+  rush: number;
+  overdue: number;
+  /** Delivered orders with outstanding balance. */
+  paymentDue: number;
+  /** Active orders due within the current calendar week. */
+  dueThisWeek: number;
+}
+
+export type NeedsAttentionKind = "rush" | "overdue" | "due_today" | "payment_due";
+
+export interface NeedsAttentionItem {
+  kind: NeedsAttentionKind;
+  count: number;
+  /** Short preview — customer names or garment counts. */
+  detail: string;
+}
+
+export interface DashboardReadyPickupItem {
+  orderId: string;
+  customerName: string;
+  customerInitials: string;
+  /** e.g. "Shalwar Qameez · 2 days" */
+  subtitle: string;
+}
+
+export interface DashboardGarmentMixItem {
+  garmentType: string;
+  garmentLabel: string;
+  count: number;
+  percent: number;
+}
+
+export interface DashboardGarmentMix {
+  totalOrders: number;
+  items: DashboardGarmentMixItem[];
+}
+
+export interface DashboardTailorWorkloadItem {
+  name: string;
+  count: number;
+  isUnassigned?: boolean;
 }
 
 export interface DashboardData {
   stats: DashboardStats;
+  /** Rush, overdue, due today, and delivered-unpaid highlights. */
+  needsAttention: NeedsAttentionItem[];
+  /** Ready orders waiting for customer pickup (preview list). */
+  readyForPickup: DashboardReadyPickupItem[];
+  workload: DashboardWorkload;
+  cash: DashboardCashSummary;
+  dueWeekChart: DashboardDueWeekChart;
+  garmentMix: DashboardGarmentMix;
+  workloadByTailor: DashboardTailorWorkloadItem[];
+  /** In-progress queue: pending, cutting, stitching (recent bookings first). */
   orders: Order[];
+  /** Active orders due within the next 7 days (for sidebar panel). */
+  dueSoonOrders: Order[];
+}
+
+export type DashboardWorkloadStage = "booked" | "cutting" | "stitching";
+
+export interface DashboardWorkload {
+  booked: number;
+  /** Orders whose booking date is today (any status). */
+  bookedToday: number;
+  cutting: number;
+  stitching: number;
+  ready: number;
+  bottleneck: DashboardWorkloadStage;
+}
+
+export interface DashboardCashWeekBucket {
+  /** Week of month (1–5). */
+  week: number;
+  amount: number;
+  isCurrent: boolean;
+}
+
+export interface DashboardCashSummary {
+  collectedThisMonth: number;
+  deliveredThisMonth: number;
+  changePercent: number | null;
+  outstandingBalance: number;
+  /** Cash collected per week of the current month. */
+  weeklyCollected: DashboardCashWeekBucket[];
+}
+
+export type DashboardWeekDayKey =
+  | "sun"
+  | "mon"
+  | "tue"
+  | "wed"
+  | "thu"
+  | "fri"
+  | "sat";
+
+export interface DashboardDueWeekDay {
+  key: DashboardWeekDayKey;
+  count: number;
+  isToday: boolean;
+}
+
+export interface DashboardDueWeekChart {
+  days: DashboardDueWeekDay[];
+  heaviestDay: DashboardWeekDayKey;
+  heaviestCount: number;
+  overdueCount: number;
 }

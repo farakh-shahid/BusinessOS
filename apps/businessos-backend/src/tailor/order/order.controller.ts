@@ -34,6 +34,19 @@ export class OrderController {
     return this.orders.listReceivables(tenantId);
   }
 
+  @Post("receivables/customers/:customerId/mark-paid")
+  markReceivableCustomerPaid(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param("customerId") customerId: string,
+  ) {
+    return this.orders.markReceivableCustomerPaid(
+      tenantId,
+      customerId,
+      user.id,
+    );
+  }
+
   @Get("assignments")
   assignments(@CurrentTenant() tenantId: string) {
     return this.orders.getAssignments(tenantId);

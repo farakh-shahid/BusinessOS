@@ -2,11 +2,39 @@ import type { Order, OrderStatus, OrderWorkflowStatus } from "@business-os/tailo
 import type { OrderListParams } from "./order-list-params";
 import type { Dictionary } from "@business-os/i18n";
 
+function formatIsoDateShort(iso: string, locale: string): string {
+  const parsed = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleDateString(locale === "ur" ? "ur-PK" : "en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function formatOrderDeliveryDateRange(
+  dueFrom: string,
+  dueTo: string,
+  locale: string,
+  t: Dictionary,
+): string {
+  if (dueFrom && dueTo) {
+    if (dueFrom === dueTo) return formatIsoDateShort(dueFrom, locale);
+    return `${formatIsoDateShort(dueFrom, locale)} – ${formatIsoDateShort(dueTo, locale)}`;
+  }
+  if (dueFrom) {
+    return `${t.orderList.dueFrom} ${formatIsoDateShort(dueFrom, locale)}`;
+  }
+  if (dueTo) {
+    return `${t.orderList.dueTo} ${formatIsoDateShort(dueTo, locale)}`;
+  }
+  return "";
+}
+
 export function countActiveOrderFilters(params: OrderListParams): number {
   let count = 0;
   if (params.filter) count += 1;
-  if (params.sort !== "newest") count += 1;
-  if (params.dueFrom || params.dueTo) count += 1;
+  if (params.sort !== "workflow") count += 1;
   if (params.assignedTo) count += 1;
   return count;
 }
@@ -48,7 +76,7 @@ export function resolveDueUrgency(
       labelKey: "delivered",
       emoji: "✓",
       className:
-        "border-status-delivered bg-status-delivered-bg text-status-delivered",
+        "border-status-ready bg-status-ready-bg text-status-ready",
     };
   }
 

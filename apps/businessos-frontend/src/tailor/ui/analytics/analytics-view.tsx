@@ -13,11 +13,17 @@ import {
   Wallet,
 } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
+import type {
+  DailyAnalyticsPoint,
+  GarmentAnalyticsItem,
+  MonthlyTrendPoint,
+} from "@business-os/tailor";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useAnalyticsQuery } from "@/tailor/infrastructure/api/hooks/use-analytics";
 import { AnalyticsCalendarPicker } from "./analytics-calendar-picker";
+import { AnalyticsOverview } from "./analytics-overview";
 import {
   clampAnchorToTenant,
   shiftAnchor,
@@ -27,7 +33,6 @@ import { formatTodayDate, timeGreeting } from "@/tailor/ui/shared/greeting";
 import { ShopHero } from "@/tailor/ui/shared/shop-hero";
 import {
   DualStatCompare,
-  HorizontalBarChart,
   MonthlyTrendChart,
   PeriodCompareCards,
 } from "./analytics-charts";
@@ -201,8 +206,8 @@ export function AnalyticsView() {
 
   useEffect(() => {
     if (!data?.dailyBreakdown.length) return;
-    const enabled = data.dailyBreakdown.find((d) => !d.disabled);
-    if (enabled && !data.dailyBreakdown.some((d) => d.date === selectedDay && !d.disabled)) {
+    const enabled = data.dailyBreakdown.find((d: DailyAnalyticsPoint) => !d.disabled);
+    if (enabled && !data.dailyBreakdown.some((d: DailyAnalyticsPoint) => d.date === selectedDay && !d.disabled)) {
       setSelectedDay(enabled.date);
     }
   }, [data, selectedDay]);
@@ -247,7 +252,7 @@ export function AnalyticsView() {
     exportAnalyticsPdf(analyticsData, exportLabels);
   }
 
-  const chartPoints = analyticsData.dailyBreakdown.map((d) => ({
+  const chartPoints = analyticsData.dailyBreakdown.map((d: DailyAnalyticsPoint) => ({
     label: d.dayLabel,
     sub: d.dateLabel,
     orders: d.orders,
@@ -269,6 +274,22 @@ export function AnalyticsView() {
         icon={BarChart3}
         isRtl={isRtl}
       />
+
+      <AnalyticsOverview
+        data={data}
+        t={t}
+        isRtl={isRtl}
+        onExport={handlePdfExport}
+      />
+
+      <div id="period-drill-down" className={cn("scroll-mt-24 pt-2", isRtl && "text-right")}>
+        <h3 className="text-lg font-bold text-slate-900">
+          {t.analytics.periodDrillDown}
+        </h3>
+        <p className="mt-1 text-sm text-muted-slate">
+          {t.analytics.periodDrillDownHint}
+        </p>
+      </div>
 
       <AnalyticsCalendarPicker
         data={data}
@@ -371,20 +392,10 @@ export function AnalyticsView() {
           <MonthlyTrendChart
             title={t.analytics.revenueTrend}
             subtitle={t.analytics.lastSixMonths}
-            points={data.monthlyTrend.map((m) => ({
+            points={data.monthlyTrend.map((m: MonthlyTrendPoint) => ({
               label: m.monthLabel,
               orders: m.orders,
               revenue: m.revenue,
-            }))}
-          />
-
-          <HorizontalBarChart
-            title={t.analytics.revenueByGarment}
-            subtitle={data.focusLabel ?? data.rangeLabel}
-            items={data.garmentBreakdown.map((g) => ({
-              label: g.garmentLabel,
-              value: g.revenue,
-              subLabel: `${g.count} ${t.analytics.orders.toLowerCase()}`,
             }))}
           />
 
@@ -485,7 +496,7 @@ export function AnalyticsView() {
               <p className="mt-3 text-sm text-slate-500">{t.analytics.noGarmentData}</p>
             ) : (
               <div className="mt-4 space-y-2">
-                {data.topGarments.map((item, index) => (
+                {data.topGarments.map((item: GarmentAnalyticsItem, index: number) => (
                   <div
                     key={item.garmentType}
                     className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2.5"

@@ -8,6 +8,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import type { Dictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { isAdminRole } from "@/core/auth/roles";
 
@@ -52,6 +53,38 @@ export const navItems: NavItem[] = [
     labelKey: "settings",
   },
 ];
+
+export const mobilePrimarySegments: NavItem["segment"][] = [
+  "dashboard",
+  "orders",
+  "customers",
+];
+
+export function getMobilePrimaryNavItems(role?: string | null): NavItem[] {
+  const visible = getVisibleNavItems(role);
+  return mobilePrimarySegments
+    .map((segment) => visible.find((item) => item.segment === segment))
+    .filter((item): item is NavItem => item != null);
+}
+
+export function getMobileMoreNavItems(role?: string | null): NavItem[] {
+  return getVisibleNavItems(role).filter(
+    (item) => !mobilePrimarySegments.includes(item.segment),
+  );
+}
+
+export function mobileNavLabel(labelKey: NavLabelKey, t: Dictionary): string {
+  const shortKey: Partial<Record<NavLabelKey, keyof Dictionary["nav"]>> = {
+    dashboard: "home",
+    customers: "clients",
+    analytics: "stats",
+    receivables: "receivablesShort",
+    assignments: "assignmentsShort",
+    settings: "settingsShort",
+  };
+  const key = shortKey[labelKey] ?? labelKey;
+  return t.nav[key];
+}
 
 export function getVisibleNavItems(role?: string | null): NavItem[] {
   return navItems.filter(

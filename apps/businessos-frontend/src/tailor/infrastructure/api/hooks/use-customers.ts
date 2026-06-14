@@ -1,12 +1,15 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import { queryKeys } from "@/core/infrastructure/api/query-keys";
 import {
   fetchCustomerDetail,
   fetchCustomers,
+  fetchCustomersPage,
   updateCustomer,
 } from "@/tailor/infrastructure/api/customers.api";
+import type { CustomersListParams } from "@/tailor/infrastructure/data/customer-list-filters";
 import {
   createMeasurement,
   updateMeasurement,
@@ -16,7 +19,28 @@ import {
 export function useCustomersQuery() {
   return useQuery({
     queryKey: queryKeys.customers.all,
-    queryFn: fetchCustomers,
+    queryFn: () => fetchCustomers(),
+  });
+}
+
+export function useInfiniteCustomersQuery(
+  params?: CustomersListParams,
+) {
+  const listParams = {
+    q: params?.q?.trim() || undefined,
+    segment: params?.segment || undefined,
+  };
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.customers.infiniteList(listParams),
+    queryFn: ({ pageParam = 0 }) =>
+      fetchCustomersPage({
+        ...listParams,
+        limit: DEFAULT_PAGE_SIZE,
+        offset: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
   });
 }
 
@@ -37,10 +61,11 @@ export function useUpdateCustomerMutation() {
       payload,
     }: {
       customerId: string;
-      payload: { name?: string; phone?: string; email?: string };
+      payload: { name?: string; phone?: string; email?: string; isVip?: boolean };
     }) => updateCustomer(customerId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
+      queryClient.invalidateQueries({ queryKey: ["customers", "infinite"] });
       queryClient.invalidateQueries({
         queryKey: queryKeys.customers.detail(variables.customerId),
       });

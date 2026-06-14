@@ -3,6 +3,7 @@ import { CurrentTenant } from "../../common/decorators/current-tenant.decorator"
 import { JwtAuthGuard } from "../../core/auth/jwt-auth.guard";
 import { CustomerService } from "./customer.service";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
+import { ListCustomersQueryDto } from "./dto/list-customers-query.dto";
 import { SearchCustomersQueryDto } from "./dto/search-customers-query.dto";
 import { UpdateCustomerDto } from "./dto/update-customer.dto";
 
@@ -19,9 +20,25 @@ export class CustomerController {
     return this.customers.search(tenantId, query.q);
   }
 
+  @Get("lookup")
+  lookup(
+    @CurrentTenant() tenantId: string,
+    @Query() query: SearchCustomersQueryDto,
+  ) {
+    return this.customers.lookup(tenantId, query.q);
+  }
+
+  @Get("by-phone")
+  byPhone(@CurrentTenant() tenantId: string, @Query("phone") phone: string) {
+    return this.customers.findByPhone(tenantId, phone);
+  }
+
   @Get()
-  list(@CurrentTenant() tenantId: string) {
-    return this.customers.list(tenantId);
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ListCustomersQueryDto,
+  ) {
+    return this.customers.list(tenantId, query);
   }
 
   @Get(":id")

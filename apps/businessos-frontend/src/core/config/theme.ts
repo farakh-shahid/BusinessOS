@@ -15,7 +15,7 @@ export const themeColors = {
     cutting: "#F4A828",
     stitching: "#8B5CF6",
     ready: "#12A36A",
-    delivered: "#5A6B86",
+    delivered: "#12A36A",
     urgent: "#E5484D",
   },
   sidebar: "#0E1A36",

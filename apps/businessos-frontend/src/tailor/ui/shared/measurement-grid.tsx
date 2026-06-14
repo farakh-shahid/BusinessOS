@@ -2,7 +2,7 @@ import { cn } from "@/core/presentation/lib/utils";
 
 interface MeasurementGridProps {
   items: Array<{ label: string; value: string | number }>;
-  columns?: 2 | 3;
+  columns?: 2 | 3 | 4;
   isRtl?: boolean;
   className?: string;
 }
@@ -20,6 +20,7 @@ export function MeasurementGrid({
       className={cn(
         "grid gap-2",
         columns === 3 && "grid-cols-2 sm:grid-cols-3",
+        columns === 4 && "grid-cols-3 sm:grid-cols-4",
         columns === 2 && "grid-cols-2",
         isRtl && "text-right",
         className,
@@ -28,12 +29,14 @@ export function MeasurementGrid({
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-[10px] bg-background px-2.5 py-2.5 text-center"
+          className="rounded-[11px] border border-hairline bg-background px-3 py-2.5 text-center"
         >
           <p className="font-display text-base font-bold text-foreground">
             {item.value}
           </p>
-          <p className="mt-0.5 text-[10px] text-muted-slate">{item.label}</p>
+          <p className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-muted-slate">
+            {item.label}
+          </p>
         </div>
       ))}
     </div>

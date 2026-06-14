@@ -14,12 +14,16 @@ export function CustomerDetailSkeleton() {
           </div>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton className="h-20 rounded-2xl" />
         <Skeleton className="h-20 rounded-2xl" />
         <Skeleton className="h-20 rounded-2xl" />
         <Skeleton className="h-20 rounded-2xl" />
       </div>
-      <Skeleton className="h-32 rounded-2xl" />
+      <div className="grid gap-6 lg:grid-cols-[1.55fr_1fr]">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
+      </div>
       <Skeleton className="h-48 rounded-2xl" />
     </div>
   );

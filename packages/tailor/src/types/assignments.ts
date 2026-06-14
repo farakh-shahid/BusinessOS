@@ -8,6 +8,7 @@ export interface AssignmentOrderItem {
   workflowStatus: OrderWorkflowStatus;
   dueDate: string;
   garmentLabel: string;
+  isRush: boolean;
 }
 
 export interface AssignmentSummaryRow {
@@ -21,5 +22,6 @@ export interface AssignmentsOverview {
   assignees: string[];
   unassignedOrderCount: number;
   unassignedSuitCount: number;
+  unassignedOrders: AssignmentOrderItem[];
   assignments: AssignmentSummaryRow[];
 }

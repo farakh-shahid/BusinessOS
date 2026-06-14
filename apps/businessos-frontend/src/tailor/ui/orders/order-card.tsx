@@ -17,6 +17,7 @@ import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { AssignedToInput } from "./assigned-to-input";
 import { OrderStatusSelect } from "./order-status-select";
+import { OrderWorkflowStatusBadge } from "./order-workflow-status-badge";
 import { OrderDueChip } from "./order-due-chip";
 import { OrderWorkflowStepper } from "./order-workflow-stepper";
 import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
@@ -88,6 +89,9 @@ export function OrderCard({
     order.workflowStatus !== "cancelled";
   const actionLabel = canMarkReady ? t.orders.markReady : t.orders.sendWhatsApp;
   const controlWidth = "w-full md:w-[10.5rem]";
+  const statusBadge = (
+    <OrderWorkflowStatusBadge workflowStatus={order.workflowStatus} t={t} />
+  );
 
   function handleMarkReady(e: React.MouseEvent) {
     e.preventDefault();
@@ -118,22 +122,59 @@ export function OrderCard({
           </span>
         ) : null}
       </div>
-      <p className="text-xs text-slate-400">#{order.orderNumber}</p>
+      <p
+        className={cn(
+          "flex flex-wrap items-center gap-1.5 text-xs text-slate-400",
+          isRtl && "flex-row-reverse justify-end",
+        )}
+      >
+        <span className="font-display tabular-nums">#{order.orderNumber}</span>
+        <span aria-hidden className="text-slate-300">
+          ·
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1",
+            isRtl && "flex-row-reverse",
+          )}
+        >
+          <CalendarClock className="h-3 w-3 shrink-0" />
+          <span className="font-medium text-slate-500">{order.bookingDate}</span>
+        </span>
+      </p>
     </>
   );
 
   const customerPhoneLink = (
-    <a
-      href={phoneTelHref(order.customerPhone)}
+    <div
       className={cn(
-        "pointer-events-auto relative z-10 flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-2 hover:underline",
+        "pointer-events-auto relative z-10 flex flex-wrap items-center gap-x-2 gap-y-0.5",
         isRtl && "flex-row-reverse justify-end",
       )}
-      onClick={(e) => e.stopPropagation()}
     >
-      <Phone className="h-3.5 w-3.5 shrink-0" />
-      <span dir="ltr">{order.customerPhone}</span>
-    </a>
+      <a
+        href={phoneTelHref(order.customerPhone)}
+        className={cn(
+          "inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-2 hover:underline",
+          isRtl && "flex-row-reverse",
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Phone className="h-3.5 w-3.5 shrink-0" />
+        <span dir="ltr">{order.customerPhone}</span>
+      </a>
+      {order.dressCode ? (
+        <>
+          <span aria-hidden className="text-slate-300">
+            ·
+          </span>
+          <span className="text-xs text-slate-500">
+            <span className="font-medium text-slate-600">{t.form.dressCode}:</span>{" "}
+            {order.dressCode}
+          </span>
+        </>
+      ) : null}
+    </div>
   );
 
   const customerDetailsBlock = (
@@ -147,13 +188,6 @@ export function OrderCard({
         <Shirt className="h-3.5 w-3.5 shrink-0 text-slate-400" />
         <span className="truncate">{order.items}</span>
       </p>
-
-      {order.dressCode ? (
-        <p className="text-xs text-slate-500">
-          <span className="font-medium text-slate-600">{t.form.dressCode}:</span>{" "}
-          {order.dressCode}
-        </p>
-      ) : null}
 
       {!onAssignChange && order.assignedToName ? (
         <p
@@ -178,32 +212,19 @@ export function OrderCard({
   );
 
   const customerInfoColumn = (
-    <div className={cn("min-w-0 flex-1 space-y-1.5", isRtl && "text-right")}>
-      <div className="space-y-1.5">{customerNameBlock}</div>
+    <div className={cn("min-w-0 flex-1 space-y-1", isRtl && "text-right")}>
+      <div className="space-y-1">{customerNameBlock}</div>
       {customerPhoneLink}
-      <div className="space-y-1.5">{customerDetailsBlock}</div>
+      <div className="space-y-1">{customerDetailsBlock}</div>
     </div>
   );
 
   const dateLines = (
     <div
       className={cn(
-        "space-y-1.5 text-xs text-slate-500",
         isRtl ? "text-left md:text-left" : "text-left md:text-right",
       )}
     >
-      <p
-        className={cn(
-          "flex items-center gap-1",
-          isRtl && "flex-row-reverse justify-start md:justify-end",
-        )}
-      >
-        <CalendarClock className="h-3 w-3 shrink-0 text-slate-400" />
-        <span>
-          <span className="text-slate-400">{t.form.bookingDate}:</span>{" "}
-          <span className="font-medium text-slate-600">{order.bookingDate}</span>
-        </span>
-      </p>
       <div
         className={cn(
           "flex flex-wrap items-center gap-2",
@@ -234,7 +255,7 @@ export function OrderCard({
   return (
     <div
       className={cn(
-        "relative w-full overflow-visible rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px] sm:py-4",
+        "relative w-full overflow-visible rounded-2xl border border-hairline bg-card px-4 py-3 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px]",
         statusStripeClass(
           {
             workflowStatus: order.workflowStatus,
@@ -253,7 +274,7 @@ export function OrderCard({
 
       <div className="relative z-[1] pointer-events-none">
       {/* Mobile: stacked layout */}
-      <div className="flex flex-col gap-3 md:hidden">
+      <div className="flex flex-col gap-2.5 md:hidden">
         <div
           className={cn(
             "flex min-w-0 items-start gap-3",
@@ -268,20 +289,21 @@ export function OrderCard({
 
         {(onAssignChange || onStatusChange || onMarkReady) && (
           <div className="space-y-3 border-t border-hairline pt-3">
-            {(onAssignChange || onStatusChange) && (
-              <div className="pointer-events-auto relative z-10 flex flex-col gap-2.5">
-                {onStatusChange ? (
-                  <OrderStatusSelect
-                    orderId={order.id}
-                    workflowStatus={order.workflowStatus}
-                    displayStatus={order.status}
-                    isAdmin={isAdmin}
-                    disabled={statusUpdating}
-                    onChange={onStatusChange}
-                    context="card"
-                    className="w-full"
-                  />
-                ) : null}
+            <div className="pointer-events-auto relative z-10 flex flex-col gap-2.5">
+              {onStatusChange ? (
+                <OrderStatusSelect
+                  orderId={order.id}
+                  workflowStatus={order.workflowStatus}
+                  displayStatus={order.status}
+                  isAdmin={isAdmin}
+                  disabled={statusUpdating}
+                  onChange={onStatusChange}
+                  context="card"
+                  className="w-full"
+                />
+              ) : (
+                statusBadge
+              )}
                 {onAssignChange ? (
                   <AssignedToInput
                     t={t}
@@ -300,7 +322,6 @@ export function OrderCard({
                   />
                 ) : null}
               </div>
-            )}
 
             <div className="space-y-2.5">
               <div className={cn(isRtl && "text-right")}>{dateLines}</div>
@@ -330,7 +351,7 @@ export function OrderCard({
       </div>
 
       {/* Desktop: horizontal row + progress stepper */}
-      <div className="hidden w-full flex-col gap-3 md:flex">
+      <div className="hidden w-full flex-col gap-2.5 md:flex">
         <div
           className={cn(
             "flex w-full items-stretch gap-3",
@@ -371,7 +392,9 @@ export function OrderCard({
                     context="card"
                     className={controlWidth}
                   />
-                ) : null}
+                ) : (
+                  statusBadge
+                )}
 
                 {onAssignChange ? (
                   <AssignedToInput

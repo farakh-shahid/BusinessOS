@@ -120,6 +120,10 @@ export class CreateOrderDto {
   @IsString()
   dressImageUrl?: string;
 
+  @IsOptional()
+  @IsString()
+  dressImagePublicId?: string;
+
   @IsIn(["customer", "shop"])
   fabricSource!: "customer" | "shop";
 

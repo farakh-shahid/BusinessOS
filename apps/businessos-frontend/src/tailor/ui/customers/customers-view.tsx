@@ -1,48 +1,88 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
+import { useDebouncedValue } from "@/core/presentation/hooks/use-debounced-value";
 import { useLocale } from "@/core/i18n/locale-context";
-import { useCustomersQuery } from "@/tailor/infrastructure/api/hooks/use-customers";
+import { useInfiniteCustomersQuery } from "@/tailor/infrastructure/api/hooks/use-customers";
+import type { CustomerListSegment } from "@/tailor/infrastructure/data/customer-list-filters";
 import { CustomerListItem } from "./customer-list-item";
+import { CustomerQuickFilters } from "./customer-quick-filters";
 import { CustomerListSkeleton } from "@/tailor/ui/skeletons";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 export function CustomersView() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
 
-  const [query, setQuery] = useState("");
-  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [segment, setSegment] = useState<CustomerListSegment>("");
+  const debouncedInput = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
 
-  const { data: customers = [], isLoading, isError } = useCustomersQuery();
+  useEffect(() => {
+    setSearchQuery(debouncedInput.trim());
+  }, [debouncedInput]);
 
-  const filteredCustomers = useMemo(() => {
-    const q = submittedQuery.trim().toLowerCase();
-    if (!q) return customers;
+  const listParams = useMemo(
+    () => ({
+      q: searchQuery || undefined,
+      segment: segment || undefined,
+    }),
+    [searchQuery, segment],
+  );
 
-    return customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(q) ||
-        customer.phone.includes(q) ||
-        customer.email?.toLowerCase().includes(q),
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteCustomersQuery(listParams);
+
+  const customers = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: "240px" },
     );
-  }, [customers, submittedQuery]);
 
-  function handleSearch(event: React.FormEvent) {
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, customers.length]);
+
+  function handleSearchSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setSubmittedQuery(query.trim());
+    setSearchQuery(searchInput.trim());
   }
 
   function clearSearch() {
-    setQuery("");
-    setSubmittedQuery("");
+    setSearchInput("");
+    setSearchQuery("");
   }
+
+  const hasActiveSearch = searchQuery.length > 0;
 
   return (
     <>
@@ -52,46 +92,61 @@ export function CustomersView() {
         isRtl={isRtl}
       />
 
-      <form
-        onSubmit={handleSearch}
-        className={cn("mb-5 space-y-3", isRtl && "text-right")}
-      >
-        <div className="relative">
-          <Search
+      <div className="mb-5 space-y-3">
+        <form onSubmit={handleSearchSubmit} className={isRtl ? "text-right" : undefined}>
+          <div
             className={cn(
-              "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400",
-              isRtl ? "right-3" : "left-3",
+              "flex items-center gap-2 rounded-xl border border-hairline bg-card p-1.5 shadow-sm",
+              isRtl && "flex-row-reverse",
             )}
-          />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.customers.searchPlaceholder}
-            className={cn("w-full", isRtl ? "pr-10" : "pl-10")}
-          />
-        </div>
-        <div
-          className={cn(
-            "flex flex-col gap-2 sm:flex-row",
-            isRtl && "sm:flex-row-reverse",
-          )}
-        >
-          <Button type="submit" variant="brand" className="h-11 w-full gap-2 sm:min-w-32 sm:w-auto">
-            <Search className="h-4 w-4 shrink-0" />
-            {t.search.button}
-          </Button>
-          {submittedQuery ? (
+          >
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className={cn(
+                  "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400",
+                  isRtl ? "right-3" : "left-3",
+                )}
+              />
+              <Input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder={t.customers.searchPlaceholder}
+                className={cn(
+                  "border-0 bg-transparent shadow-none focus-visible:ring-0",
+                  isRtl ? "pr-10 pl-3" : "pl-10 pr-3",
+                )}
+              />
+            </div>
             <Button
+              type="submit"
+              variant="brand"
+              className="h-9 shrink-0 gap-1.5 px-3.5 text-sm"
+            >
+              <Search className="h-4 w-4" />
+              {t.search.button}
+            </Button>
+          </div>
+        </form>
+
+        {hasActiveSearch ? (
+          <div className={cn("flex", isRtl && "justify-end")}>
+            <button
               type="button"
-              variant="outline"
-              className="h-11 w-full sm:w-auto"
               onClick={clearSearch}
+              className="text-sm font-semibold text-brand-700 hover:underline"
             >
               {t.customers.showAll}
-            </Button>
-          ) : null}
-        </div>
-      </form>
+            </button>
+          </div>
+        ) : null}
+
+        <CustomerQuickFilters
+          segment={segment}
+          t={t}
+          isRtl={isRtl}
+          onSegmentChange={setSegment}
+        />
+      </div>
 
       {isLoading ? (
         <CustomerListSkeleton />
@@ -99,21 +154,32 @@ export function CustomersView() {
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}
         </div>
-      ) : filteredCustomers.length === 0 ? (
+      ) : customers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-          {submittedQuery ? t.search.noResults : t.customers.empty}
+          {hasActiveSearch || segment ? t.search.noResults : t.customers.empty}
         </div>
       ) : (
         <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {t.customers.customerCount.replace(
               "{count}",
-              String(filteredCustomers.length),
+              String(customers.length),
             )}
+            {hasNextPage ? ` · ${t.customerFilters.loadingMoreHint}` : null}
           </p>
-          {filteredCustomers.map((customer) => (
+          {customers.map((customer) => (
             <CustomerListItem key={customer.id} customer={customer} />
           ))}
+          <div
+            ref={loadMoreRef}
+            className="py-4 text-center text-sm text-muted-slate"
+          >
+            {isFetchingNextPage
+              ? t.orderList.loadMore
+              : hasNextPage
+                ? null
+                : t.orderList.endOfList}
+          </div>
         </section>
       )}
     </>

@@ -35,11 +35,9 @@ export const statusColorClasses: Record<
     stripe: "md:border-l-[5px] md:border-l-status-ready",
   },
   delivered: {
-    badge:
-      "border-2 border-status-delivered bg-status-delivered-bg text-status-delivered",
-    avatar:
-      "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/80",
-    stripe: "md:border-l-[5px] md:border-l-status-delivered",
+    badge: "border-2 border-status-ready bg-status-ready-bg text-status-ready",
+    avatar: "bg-status-ready-bg text-status-ready ring-2 ring-status-ready/80",
+    stripe: "md:border-l-[5px] md:border-l-status-ready",
   },
   overdue: {
     badge: "border-2 border-status-urgent bg-status-urgent-bg text-status-urgent",
@@ -47,11 +45,9 @@ export const statusColorClasses: Record<
     stripe: "md:border-l-[5px] md:border-l-status-urgent",
   },
   cancelled: {
-    badge:
-      "border-2 border-status-delivered/70 bg-status-delivered-bg text-status-delivered",
-    avatar:
-      "bg-status-delivered-bg text-status-delivered ring-2 ring-status-delivered/60",
-    stripe: "md:border-l-[5px] md:border-l-status-urgent",
+    badge: "border-2 border-muted-slate/40 bg-slate-100 text-muted-slate",
+    avatar: "bg-slate-100 text-muted-slate ring-2 ring-muted-slate/50",
+    stripe: "md:border-l-[5px] md:border-l-muted-slate",
   },
 };
 
@@ -95,20 +91,11 @@ export function statusAvatarClass(status: OrderStatus): string {
 }
 
 export function statusStripeClass(
-  options: {
+  _options: {
     displayStatus?: OrderStatus | string;
     workflowStatus?: OrderWorkflowStatus;
   },
-  isRtl = false,
+  _isRtl = false,
 ): string {
-  const stripe =
-    statusColorClasses[resolveWorkflowColorKey(options.workflowStatus)].stripe;
-
-  if (isRtl) {
-    return stripe
-      .replace(/md:border-l-\[5px\]/g, "md:border-r-[5px] md:border-l-0")
-      .replace(/md:border-l-status-/g, "md:border-r-status-");
-  }
-
-  return stripe;
+  return "";
 }

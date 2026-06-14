@@ -5,6 +5,9 @@ export interface ReadyNotificationContext {
   shopName: string;
   locale: "en" | "ur";
   balanceDue?: number;
+  shopAddress?: string;
+  shopPhone?: string;
+  whatsappFooter?: string;
 }
 
 export interface ReminderNotificationContext {
@@ -25,11 +28,39 @@ export function buildReminderMessage(ctx: ReminderNotificationContext): string {
 }
 
 export function buildWhatsAppMessage(ctx: ReadyNotificationContext): string {
+  const balancePart =
+    ctx.balanceDue && ctx.balanceDue > 0
+      ? ctx.locale === "ur"
+        ? `\nباقی رقم: Rs. ${ctx.balanceDue.toLocaleString()}`
+        : `\nBalance due: Rs. ${ctx.balanceDue.toLocaleString()}`
+      : "";
+
+  const addressPart = ctx.shopAddress
+    ? ctx.locale === "ur"
+      ? `\nپتہ: ${ctx.shopAddress}`
+      : `\nAddress: ${ctx.shopAddress}`
+    : "";
+
+  const phonePart = ctx.shopPhone
+    ? ctx.locale === "ur"
+      ? `\nفون: ${ctx.shopPhone}`
+      : `\nPhone: ${ctx.shopPhone}`
+    : "";
+
+  const pickup =
+    ctx.locale === "ur"
+      ? "براہ کرم وصول کرنے کیلئے دکان پر آئیں۔"
+      : "Please visit our shop to pick up your order.";
+
+  const footer = ctx.whatsappFooter?.trim()
+    ? `\n${ctx.whatsappFooter.trim()}`
+    : "";
+
   if (ctx.locale === "ur") {
-    return `السلام علیکم ${ctx.customerName}، آپ کا ${ctx.garmentLabel} تیار ہے۔ براہ کرم وصول کر لیں۔ آرڈر #${ctx.orderNumber} — ${ctx.shopName}`;
+    return `السلام علیکم ${ctx.customerName}،\n\nآپ کا ${ctx.garmentLabel} تیار ہے۔ ${pickup}\n\nآرڈر #${ctx.orderNumber}${balancePart}${addressPart}${phonePart}\n\n— ${ctx.shopName}${footer}`;
   }
 
-  return `Hello ${ctx.customerName}, your ${ctx.garmentLabel} is ready. Kindly pick it up. Order #${ctx.orderNumber} — ${ctx.shopName}`;
+  return `Hello ${ctx.customerName},\n\nYour ${ctx.garmentLabel} is ready. ${pickup}\n\nOrder #${ctx.orderNumber}${balancePart}${addressPart}${phonePart}\n\n— ${ctx.shopName}${footer}`;
 }
 
 export function buildEmailSubject(ctx: ReadyNotificationContext): string {

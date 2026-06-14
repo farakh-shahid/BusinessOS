@@ -10,6 +10,7 @@ import { EmailNotificationService } from "../../core/notifications/email-notific
 import { WhatsAppNotificationService } from "../../core/notifications/whatsapp-notification.service";
 import { buildReminderMessage } from "../../core/notifications/notification.templates";
 import { garmentLabel } from "../common/tailor.mapper";
+import { CloudinaryService } from "../upload/cloudinary.service";
 import type { CreateOrderDto } from "./dto/create-order.dto";
 import type { ListOrdersQueryDto } from "./dto/list-orders-query.dto";
 import type { MarkOrderReadyDto } from "./dto/mark-order-ready.dto";
@@ -25,6 +26,7 @@ export class OrderService {
     private readonly audit: OrderAuditService,
     private readonly whatsapp: WhatsAppNotificationService,
     private readonly email: EmailNotificationService,
+    private readonly cloudinary: CloudinaryService,
   ) {}
 
   getDashboard(tenantId: string) {
@@ -37,6 +39,14 @@ export class OrderService {
 
   listReceivables(tenantId: string) {
     return this.orders.listReceivables(tenantId);
+  }
+
+  markReceivableCustomerPaid(
+    tenantId: string,
+    customerId: string,
+    userId: string,
+  ) {
+    return this.orders.markCustomerBalancesPaid(tenantId, customerId, userId);
   }
 
   getAssignments(tenantId: string) {
@@ -59,8 +69,28 @@ export class OrderService {
     return this.getFullById(tenantId, orderId);
   }
 
-  create(tenantId: string, userId: string, dto: CreateOrderDto) {
-    return this.orders.create(tenantId, userId, dto);
+  async create(tenantId: string, userId: string, dto: CreateOrderDto) {
+    let order = await this.orders.create(tenantId, userId, dto);
+
+    if (dto.dressImagePublicId && this.cloudinary.enabled()) {
+      const tenantName = await this.orders.getTenantName(tenantId);
+      const promoted = await this.cloudinary.promoteDraftToOrder({
+        tenantId,
+        tenantName,
+        orderId: order.id,
+        currentPublicId: dto.dressImagePublicId,
+      });
+
+      if (promoted) {
+        await this.orders.updateDressImage(
+          order.id,
+          promoted.url,
+          promoted.publicId,
+        );
+      }
+    }
+
+    return order;
   }
 
   async updateOrder(
@@ -69,7 +99,28 @@ export class OrderService {
     userId: string,
     dto: UpdateOrderDto,
   ) {
-    const updated = await this.orders.updateOrder(tenantId, orderId, dto);
+    const existing = await this.orders.findFullById(tenantId, orderId);
+
+    const imageRemoved =
+      dto.dressImageUrl !== undefined && !dto.dressImageUrl.trim();
+    const imageChanged =
+      dto.dressImagePublicId !== undefined &&
+      dto.dressImagePublicId !== (existing.dressImagePublicId ?? "");
+
+    const updated = await this.orders.updateOrder(tenantId, orderId, dto, userId);
+
+    if (this.cloudinary.enabled()) {
+      if (imageRemoved && existing.dressImagePublicId) {
+        await this.cloudinary.deleteImage(existing.dressImagePublicId);
+      } else if (
+        imageChanged &&
+        existing.dressImagePublicId &&
+        existing.dressImagePublicId !== updated.dressImagePublicId
+      ) {
+        await this.cloudinary.deleteImage(existing.dressImagePublicId);
+      }
+    }
+
     await this.audit.log(tenantId, orderId, userId, "ORDER_UPDATED", {
       fields: Object.keys(dto),
     });
@@ -185,6 +236,9 @@ export class OrderService {
       shopName: order.tenant.name,
       locale: locale as "en" | "ur",
       balanceDue: Number(order.balanceDue),
+      shopAddress: order.tenant.address ?? undefined,
+      shopPhone: order.tenant.phone ?? undefined,
+      whatsappFooter: order.tenant.whatsappFooter ?? undefined,
     };
 
     const whatsappResult = {

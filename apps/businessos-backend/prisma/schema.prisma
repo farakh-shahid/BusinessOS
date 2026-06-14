@@ -143,6 +143,7 @@ model Customer {
   phone            String
   email            String?
   preferredLocale  LocalePreference @default(EN) @map("preferred_locale")
+  isVip            Boolean          @default(false) @map("is_vip")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
@@ -249,6 +250,7 @@ model Order {
   dressCode        String?      @map("dress_code")
   suitCount        Int          @default(1) @map("suit_count")
   dressImageUrl    String?      @map("dress_image_url") @db.Text
+  dressImagePublicId String?    @map("dress_image_public_id") @db.Text
   bookingDate      DateTime     @default(now()) @map("booking_date") @db.Date
   deliveryDate     DateTime     @map("delivery_date") @db.Date
   measurementsData Json         @default("{}") @map("measurements_data")

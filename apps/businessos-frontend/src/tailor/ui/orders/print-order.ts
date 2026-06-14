@@ -1,42 +1,19 @@
 import type { OrderFullDetail } from "@business-os/tailor";
+import type { TenantSettings } from "@business-os/tailor";
 import type { Dictionary } from "@business-os/i18n";
 import { openHtmlForPrint } from "@/core/presentation/lib/open-html-for-print";
+import { buildOrderReceiptHtml } from "./order-receipt-html";
 
-function formatMoney(amount: number) {
-  return `Rs. ${amount.toLocaleString()}`;
-}
-
-export function printOrderReceipt(order: OrderFullDetail, t: Dictionary) {
-  const rows = [
-    [t.form.customer, order.customerName],
-    [t.form.phone, order.customerPhone],
-    [t.form.garmentType, order.garmentLabel],
-    order.dressCode ? [t.form.dressCode, order.dressCode] : null,
-    [t.form.suitCount, String(order.suitCount)],
-    [t.form.deliveryDate, order.deliveryDate],
-    [t.form.totalPrice, formatMoney(order.totalPrice)],
-    [t.form.advancePaid, formatMoney(order.advancePaid)],
-    [t.form.balanceDue, formatMoney(order.balanceDue)],
-  ].filter(Boolean) as [string, string][];
-
-  const html = `<!DOCTYPE html>
-<html><head><title>#${order.orderNumber}</title>
-<meta charset="utf-8" />
-<style>
-  body { font-family: system-ui, sans-serif; padding: 24px; max-width: 480px; margin: 0 auto; }
-  h1 { font-size: 1.25rem; margin: 0 0 4px; }
-  .muted { color: #64748b; font-size: 0.875rem; margin-bottom: 20px; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 8px 0; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
-  td:first-child { color: #64748b; width: 40%; }
-  td:last-child { font-weight: 600; text-align: right; }
-  @media print { body { padding: 0; } }
-</style></head><body>
-  <h1>${t.orderDetail.receiptTitle}</h1>
-  <p class="muted">#${order.orderNumber} · ${order.dueDate}</p>
-  <table>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>
-</body></html>`;
-
+export function printOrderReceipt(
+  order: OrderFullDetail,
+  t: Dictionary,
+  shop?: Pick<TenantSettings, "name" | "phone" | "email" | "address">,
+) {
+  const html = buildOrderReceiptHtml({
+    order,
+    shop: shop ?? { name: t.appName },
+    t,
+  });
   openHtmlForPrint(html);
 }
 

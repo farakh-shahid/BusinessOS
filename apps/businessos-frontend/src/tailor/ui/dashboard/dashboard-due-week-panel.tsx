@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { Order } from "@business-os/tailor";
+import type { Order, OrderWorkflowStatus } from "@business-os/tailor";
+import type { Dictionary } from "@business-os/i18n";
+import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
-import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { cn } from "@/core/presentation/lib/utils";
+import { useLocale } from "@/core/i18n/locale-context";
+import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 
 interface DashboardDueWeekPanelProps {
   orders: Order[];
@@ -12,58 +15,125 @@ interface DashboardDueWeekPanelProps {
   isRtl?: boolean;
 }
 
-function isDueWithinWeek(dueDateStr: string): boolean {
+function parseDueDateParts(
+  dueDateStr: string,
+  locale: string,
+): { day: string; month: string } {
   const parsed = new Date(dueDateStr);
-  if (Number.isNaN(parsed.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(parsed);
-  due.setHours(0, 0, 0, 0);
-  const diff = Math.round((due.getTime() - today.getTime()) / 86400000);
-  return diff >= 0 && diff <= 7;
+  if (!Number.isNaN(parsed.getTime())) {
+    return {
+      day: String(parsed.getDate()),
+      month: parsed
+        .toLocaleDateString(locale === "ur" ? "ur-PK" : "en-US", {
+          month: "short",
+        })
+        .toUpperCase(),
+    };
+  }
+
+  const match = dueDateStr.match(/^([A-Za-z]+)\s+(\d{1,2})/);
+  if (match) {
+    return {
+      day: match[2],
+      month: match[1].slice(0, 3).toUpperCase(),
+    };
+  }
+
+  return { day: "—", month: "" };
+}
+
+function workflowDotClass(
+  workflowStatus: OrderWorkflowStatus,
+  isRush?: boolean,
+): string {
+  if (isRush) return "bg-status-urgent";
+
+  switch (workflowStatus) {
+    case "pending":
+      return "bg-status-booked";
+    case "cutting":
+      return "bg-status-cutting";
+    case "stitching":
+      return "bg-status-stitching";
+    case "ready":
+      return "bg-status-ready";
+    default:
+      return "bg-muted-slate";
+  }
+}
+
+function orderSubtitle(order: Order, t: Dictionary): string {
+  const garment = order.garmentLabel || order.items.replace(/^\d+\s*x\s*/i, "");
+  if (order.isRush) {
+    return `${garment} · ${t.orderDetail.rush}`;
+  }
+  return garment;
 }
 
 export function DashboardDueWeekPanel({
   orders,
   title,
-  isRtl,
+  isRtl = false,
 }: DashboardDueWeekPanelProps) {
-  const dueSoon = orders
-    .filter(
-      (o) =>
-        o.workflowStatus !== "delivered" &&
-        o.workflowStatus !== "cancelled" &&
-        isDueWithinWeek(o.dueDate),
-    )
-    .slice(0, 6);
+  const { locale } = useLocale();
+  const t = getDictionary(locale);
 
   return (
-    <Card className="p-4 md:p-4">
-      <CardTitle>{title}</CardTitle>
-      {dueSoon.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-slate">—</p>
+    <section className="rounded-2xl border border-hairline bg-card shadow-sm">
+      <div className={cn("px-4 py-4 sm:px-[17px]", isRtl && "text-right")}>
+        <h2 className="font-display text-sm font-bold text-foreground">
+          {title}
+        </h2>
+      </div>
+
+      {orders.length === 0 ? (
+        <p className="px-4 pb-4 text-sm text-muted-slate sm:px-[17px]">—</p>
       ) : (
-        <ul className="mt-3 space-y-0">
-          {dueSoon.map((order) => (
-            <li key={order.id}>
-              <Link
-                href={routes.orderDetail(order.id)}
-                className={cn(
-                  "flex items-center justify-between gap-2 border-b border-hairline py-2.5 text-[13px] transition last:border-b-0 hover:text-brand-700",
-                  isRtl && "flex-row-reverse",
-                )}
-              >
-                <span className="min-w-0 truncate font-medium text-foreground">
-                  {order.customerName}
-                </span>
-                <span className="shrink-0 font-semibold text-muted-slate">
-                  {order.dueDate}
-                </span>
-              </Link>
-            </li>
-          ))}
+        <ul>
+          {orders.map((order) => {
+            const { day, month } = parseDueDateParts(order.dueDate, locale);
+
+            return (
+              <li key={order.id}>
+                <Link
+                  href={routes.orderDetail(order.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 border-b border-hairline px-4 py-2 transition hover:bg-slate-50/80 last:border-b-0 sm:px-[17px]",
+                    isRtl && "flex-row-reverse",
+                  )}
+                >
+                  <div className="w-[38px] shrink-0 text-center">
+                    <div className="font-display text-[15px] font-bold leading-none text-foreground">
+                      {day}
+                    </div>
+                    <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {month}
+                    </div>
+                  </div>
+
+                  <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
+                    <p className="truncate text-xs font-semibold text-foreground">
+                      <PersonNameText name={order.customerName} />
+                    </p>
+                    <p className="truncate text-[10.5px] text-muted-slate">
+                      {orderSubtitle(order, t)}
+                    </p>
+                  </div>
+
+                  <span
+                    className={cn(
+                      "ml-auto h-2 w-2 shrink-0 rounded-full",
+                      workflowDotClass(order.workflowStatus, order.isRush),
+                      isRtl && "ml-0 mr-auto",
+                    )}
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
-    </Card>
+    </section>
   );
 }

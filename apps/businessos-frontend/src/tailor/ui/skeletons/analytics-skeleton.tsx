@@ -15,7 +15,7 @@ function MetricCardSkeleton() {
 export function AnalyticsSkeleton() {
   return (
     <div className="space-y-5" aria-busy aria-label="Loading analytics">
-      <ShopHeroSkeleton />
+      <ShopHeroSkeleton showAction={false} />
       <Skeleton className="h-24 w-full rounded-2xl" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCardSkeleton />

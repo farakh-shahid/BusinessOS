@@ -10,8 +10,11 @@ export type OrderListFilter =
   | "due_today"
   | "in_progress"
   | "priority"
+  | "payment_due"
   | "cancelled"
-  | "due_this_week";
+  | "due_this_week"
+  | "booked_today"
+  | "booked_last_week";
 
 const validFilters: OrderListFilter[] = [
   "",
@@ -24,7 +27,10 @@ const validFilters: OrderListFilter[] = [
   "overdue",
   "due_today",
   "due_this_week",
+  "booked_today",
+  "booked_last_week",
   "priority",
+  "payment_due",
   "cancelled",
   "in_progress",
 ];
@@ -43,6 +49,7 @@ export const orderFilterOptions: OrderListFilter[] = [
   "due_today",
   "due_this_week",
   "priority",
+  "payment_due",
   "pending",
   "cutting",
   "stitching",

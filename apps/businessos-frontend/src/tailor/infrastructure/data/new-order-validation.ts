@@ -1,3 +1,4 @@
+import type { TailorCustomer } from "@business-os/tailor";
 import { isValidPakistanPhone } from "@business-os/shared";
 import {
   getGarmentSchema,
@@ -5,6 +6,7 @@ import {
 } from "@business-os/tailor";
 import type { Dictionary } from "@business-os/i18n";
 import { findInvalidMeasurement } from "@/core/presentation/lib/validate-measurements";
+import { findCustomerByPhone } from "@/tailor/infrastructure/data/customer-phone";
 import type { NewOrderDraft } from "@/tailor/infrastructure/data/new-order.mock";
 
 export type NewOrderFieldErrors = Record<string, string>;
@@ -36,6 +38,7 @@ function labelForMeasurementKey(
 export function validateNewOrderDraft(
   draft: NewOrderDraft,
   t: Dictionary,
+  existingCustomers: TailorCustomer[] = [],
 ): NewOrderValidationResult {
   const fields: NewOrderFieldErrors = {};
   let firstFieldId: string | undefined;
@@ -62,6 +65,8 @@ export function validateNewOrderDraft(
       add("customerPhone", "customer-phone", t.validation.phoneRequired);
     } else if (!isValidPakistanPhone(phone)) {
       add("customerPhone", "customer-phone", t.validation.phoneInvalid);
+    } else if (findCustomerByPhone(existingCustomers, phone)) {
+      add("customerPhone", "customer-phone", t.errors.phoneAlreadyExists);
     }
 
     const email = draft.customerEmail.trim();

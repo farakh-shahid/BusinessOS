@@ -38,8 +38,8 @@ export function OrderWorkflowStatusBadge({
           workflowStatus === "cutting" && "bg-status-cutting",
           workflowStatus === "stitching" && "bg-status-stitching",
           workflowStatus === "ready" && "bg-status-ready",
-          workflowStatus === "delivered" && "bg-status-delivered",
-          workflowStatus === "cancelled" && "bg-status-delivered",
+          workflowStatus === "delivered" && "bg-status-ready",
+          workflowStatus === "cancelled" && "bg-muted-slate",
         )}
         aria-hidden
       />

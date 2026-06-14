@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Mail, Phone } from "lucide-react";
+import { Check, ChevronRight, Mail, Phone } from "lucide-react";
 import type { CustomerListEntry } from "@business-os/tailor";
 import { routes } from "@/core/config/routes";
 import { UserAvatar } from "@/core/presentation/components/ui/user-avatar";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { getDictionary } from "@business-os/i18n";
+import { CustomerStatusChips } from "@/tailor/ui/customers/customer-status-chips";
 
 interface CustomerListItemProps {
   customer: CustomerListEntry;
@@ -34,9 +35,35 @@ export function CustomerListItem({ customer }: CustomerListItemProps) {
       <UserAvatar name={customer.name} size="lg" />
 
       <div className="min-w-0 flex-1">
-        <p className="font-display truncate text-[15px] font-bold text-foreground">
-          {customer.name}
-        </p>
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-2",
+            isRtl && "flex-row-reverse",
+          )}
+        >
+          <p className="font-display truncate text-[15px] font-bold text-foreground">
+            {customer.name}
+          </p>
+          <CustomerStatusChips
+            isVip={customer.isVip ?? false}
+            totalOrders={customer.totalOrders}
+            hasOutstanding={hasBalance}
+            showBalanceChip={false}
+            t={t.customers}
+            className={cn("shrink-0", isRtl && "flex-row-reverse")}
+          />
+          {customer.hasMeasurements ? (
+            <span
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1 rounded-full bg-status-ready-bg px-2 py-0.5 text-[11px] font-semibold text-status-ready",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              {t.customers.measurementsBadge}
+              <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+            </span>
+          ) : null}
+        </div>
         <div
           className={cn(
             "mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-slate sm:text-sm",
