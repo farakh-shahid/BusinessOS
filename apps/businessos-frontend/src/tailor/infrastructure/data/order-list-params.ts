@@ -12,6 +12,10 @@ export type OrderListSort =
   | "booking_desc"
   | "priority";
 
+export type OrderListView = "list" | "board" | "table";
+
+const validViews: OrderListView[] = ["list", "board", "table"];
+
 const validSorts: OrderListSort[] = [
   "newest",
   "due_asc",
@@ -26,6 +30,7 @@ const STORAGE_KEY = "businessos.tailor.orderListParams";
 export interface OrderListParams {
   filter: OrderListFilter;
   sort: OrderListSort;
+  view: OrderListView;
   search: string;
   dueFrom: string;
   dueTo: string;
@@ -35,6 +40,7 @@ export interface OrderListParams {
 export const defaultOrderListParams = (): OrderListParams => ({
   filter: "",
   sort: "newest",
+  view: "list",
   search: "",
   dueFrom: "",
   dueTo: "",
@@ -48,12 +54,20 @@ function parseSort(value: string | null): OrderListSort {
   return "newest";
 }
 
+function parseView(value: string | null): OrderListView {
+  if (value && validViews.includes(value as OrderListView)) {
+    return value as OrderListView;
+  }
+  return "list";
+}
+
 export function parseOrderListParams(
   searchParams: URLSearchParams,
 ): OrderListParams {
   return {
     filter: parseOrderListFilter(searchParams.get("filter")),
     sort: parseSort(searchParams.get("sort")),
+    view: parseView(searchParams.get("view")),
     search: searchParams.get("search")?.trim() ?? "",
     dueFrom: searchParams.get("dueFrom")?.trim() ?? "",
     dueTo: searchParams.get("dueTo")?.trim() ?? "",
@@ -65,6 +79,7 @@ export function hasUrlListParams(searchParams: URLSearchParams): boolean {
   return [
     "filter",
     "sort",
+    "view",
     "search",
     "dueFrom",
     "dueTo",
@@ -83,6 +98,7 @@ export function loadPersistedOrderListParams(): OrderListParams | null {
       ...parsed,
       filter: parseOrderListFilter(parsed.filter ?? null),
       sort: parseSort(parsed.sort ?? null),
+      view: parseView(parsed.view ?? null),
     };
   } catch {
     return null;
@@ -102,6 +118,7 @@ export function buildOrdersListUrl(params: OrderListParams): string {
   const sp = new URLSearchParams();
   if (params.filter) sp.set("filter", params.filter);
   if (params.sort && params.sort !== "newest") sp.set("sort", params.sort);
+  if (params.view && params.view !== "list") sp.set("view", params.view);
   if (params.search) sp.set("search", params.search);
   if (params.dueFrom) sp.set("dueFrom", params.dueFrom);
   if (params.dueTo) sp.set("dueTo", params.dueTo);

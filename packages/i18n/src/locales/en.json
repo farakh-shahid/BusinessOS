@@ -454,7 +454,20 @@
     "dueFrom": "From",
     "dueTo": "To",
     "dateHint": "Optional — leave blank to see all delivery dates",
-    "clearDates": "Show all dates"
+    "clearDates": "Show all dates",
+    "viewList": "List",
+    "viewBoard": "Board",
+    "viewTable": "Table",
+    "boardBooked": "Booked",
+    "columnCustomer": "Customer",
+    "columnOrder": "Order",
+    "columnItem": "Item",
+    "columnStatus": "Status",
+    "columnDue": "Due",
+    "columnBalance": "Balance",
+    "summaryMeta": "{active} active · {rush} rush · {dueToday} due today",
+    "boardEmpty": "No orders in this stage",
+    "tableEmpty": "No orders match your filters"
   },
   "dashboard": {
     "todayQueue": "Today's queue",

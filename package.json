@@ -23,7 +23,9 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate --workspace=businessos-backend",
+    "db:deploy": "npm run prisma:deploy --workspace=businessos-backend",
     "db:seed": "npm run prisma:seed --workspace=businessos-backend",
+    "db:deploy:seed": "npm run db:deploy:seed --workspace=businessos-backend",
     "db:studio": "npm run prisma:studio --workspace=businessos-backend"
   }
 }

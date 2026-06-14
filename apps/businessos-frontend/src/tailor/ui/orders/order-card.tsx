@@ -234,7 +234,7 @@ export function OrderCard({
   return (
     <div
       className={cn(
-        "relative w-full rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px] sm:py-4",
+        "relative w-full overflow-visible rounded-2xl border border-hairline bg-card p-4 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px] sm:py-4",
         statusStripeClass(
           {
             workflowStatus: order.workflowStatus,
@@ -269,7 +269,7 @@ export function OrderCard({
         {(onAssignChange || onStatusChange || onMarkReady) && (
           <div className="space-y-3 border-t border-hairline pt-3">
             {(onAssignChange || onStatusChange) && (
-              <div className="pointer-events-auto relative z-10 flex flex-col gap-2">
+              <div className="pointer-events-auto relative z-10 flex flex-col gap-2.5">
                 {onStatusChange ? (
                   <OrderStatusSelect
                     orderId={order.id}
@@ -279,7 +279,7 @@ export function OrderCard({
                     disabled={statusUpdating}
                     onChange={onStatusChange}
                     context="card"
-                    className={controlWidth}
+                    className="w-full"
                   />
                 ) : null}
                 {onAssignChange ? (
@@ -296,25 +296,33 @@ export function OrderCard({
                     compact
                     showLabel={false}
                     variant="tagged"
-                    className={controlWidth}
+                    className="w-full"
                   />
                 ) : null}
               </div>
             )}
 
-            <div
-              className={cn(
-                "flex items-stretch gap-2",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <div className="min-w-0 flex-1">{dateLines}</div>
+            <div className="space-y-2.5">
+              <div className={cn(isRtl && "text-right")}>{dateLines}</div>
               {onMarkReady ? (
-                <MarkReadyButton
-                  canMarkReady={canMarkReady}
-                  actionLabel={actionLabel}
+                <button
+                  type="button"
                   onClick={handleMarkReady}
-                />
+                  className={cn(
+                    "pointer-events-auto relative z-10 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition-colors",
+                    canMarkReady
+                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "bg-brand-50 text-brand-700 hover:bg-brand-100",
+                    isRtl && "flex-row-reverse",
+                  )}
+                >
+                  {canMarkReady ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                  )}
+                  {actionLabel}
+                </button>
               ) : null}
             </div>
           </div>

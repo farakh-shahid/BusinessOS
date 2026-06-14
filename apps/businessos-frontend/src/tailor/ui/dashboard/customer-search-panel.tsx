@@ -16,9 +16,16 @@ import { CustomerSearchResultsSkeleton } from "@/tailor/ui/skeletons";
 
 interface CustomerSearchPanelProps {
   compactTitle?: string;
+  /** Title rendered externally (e.g. dashboard column header). */
+  hideTitle?: boolean;
+  className?: string;
 }
 
-export function CustomerSearchPanel({ compactTitle }: CustomerSearchPanelProps) {
+export function CustomerSearchPanel({
+  compactTitle,
+  hideTitle = false,
+  className,
+}: CustomerSearchPanelProps) {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
@@ -35,22 +42,27 @@ export function CustomerSearchPanel({ compactTitle }: CustomerSearchPanelProps) 
   }
 
   return (
-    <Card>
-      <CardTitle>{compactTitle ?? t.search.title}</CardTitle>
-      {!compactTitle ? (
+    <Card className={cn(hideTitle && "p-4 md:p-4", className)}>
+      {!hideTitle ? (
+        <CardTitle>{compactTitle ?? t.search.title}</CardTitle>
+      ) : null}
+      {!compactTitle && !hideTitle ? (
         <p className="mt-1 text-sm text-muted-slate">{t.search.subtitle}</p>
       ) : null}
 
-      <form onSubmit={handleSearch} className={cn("mt-4", isRtl && "text-right")}>
+      <form
+        onSubmit={handleSearch}
+        className={cn(hideTitle ? "mt-0" : "mt-4", isRtl && "text-right")}
+      >
         <div
           className={cn(
-            "flex h-11 items-stretch overflow-hidden rounded-xl border border-hairline bg-white shadow-sm transition-shadow focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-100",
+            "flex h-11 items-center overflow-hidden rounded-xl border border-hairline bg-white shadow-sm transition-shadow focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-100",
             isRtl && "flex-row-reverse",
           )}
         >
           <div
             className={cn(
-              "flex min-w-0 flex-1 items-center gap-2.5 px-3",
+              "flex h-full min-w-0 flex-1 items-center gap-2.5 px-3",
               isRtl && "flex-row-reverse",
             )}
           >
@@ -65,20 +77,22 @@ export function CustomerSearchPanel({ compactTitle }: CustomerSearchPanelProps) 
               placeholder={t.search.placeholder}
               aria-label={t.search.placeholder}
               className={cn(
-                "min-w-0 flex-1 border-0 bg-transparent py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm",
+                "min-w-0 flex-1 border-0 bg-transparent py-0 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm",
                 isRtl && "text-right",
               )}
             />
           </div>
-          <Button
+          <button
             type="submit"
-            variant="brand"
             aria-label={t.search.button}
-            className="h-auto min-h-0 shrink-0 rounded-none px-4 sm:min-w-[6.75rem] sm:px-5"
+            className={cn(
+              "inline-flex h-full shrink-0 cursor-pointer items-center justify-center gap-2 bg-brand-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-800 sm:min-w-[6.75rem] sm:px-5",
+              isRtl ? "rounded-l-xl" : "rounded-r-xl",
+            )}
           >
             <Search className="h-4 w-4 shrink-0 sm:hidden" aria-hidden />
             <span className="hidden sm:inline">{t.search.button}</span>
-          </Button>
+          </button>
         </div>
       </form>
 

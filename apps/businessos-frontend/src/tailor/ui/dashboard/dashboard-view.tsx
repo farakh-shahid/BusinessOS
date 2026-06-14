@@ -3,6 +3,7 @@
 import type { DashboardStats, Order } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
+import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useDashboardQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
@@ -70,19 +71,30 @@ export function DashboardView() {
         newOrderLabel={t.nav.newOrder}
       />
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_310px]">
-        <section>
-          <SectionHeader
-            title={t.dashboard.todayQueue}
-            linkHref={routes.orders}
-            linkLabel={t.orders.viewAll}
-            isRtl={isRtl}
-          />
-          <OrderList orders={data.orders} />
-        </section>
+      <div className="mt-6 grid gap-x-4 gap-y-3 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
+        <SectionHeader
+          title={t.dashboard.todayQueue}
+          linkHref={routes.orders}
+          linkLabel={t.orders.viewAll}
+          isRtl={isRtl}
+          className="mb-0 xl:col-start-1 xl:row-start-1"
+        />
 
-        <aside className="hidden space-y-4 xl:block">
-          <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
+        <h2
+          className={cn(
+            "hidden font-display text-base font-bold text-foreground xl:col-start-2 xl:row-start-1 xl:block",
+            isRtl && "text-right",
+          )}
+        >
+          {t.dashboard.findCustomer}
+        </h2>
+
+        <div className="min-w-0 xl:col-start-1 xl:row-start-2">
+          <OrderList orders={data.orders} />
+        </div>
+
+        <aside className="hidden space-y-4 xl:col-start-2 xl:row-start-2 xl:block">
+          <CustomerSearchPanel hideTitle />
           <DashboardDueWeekPanel
             orders={data.orders}
             title={t.dashboard.dueThisWeek}

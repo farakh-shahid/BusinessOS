@@ -22,6 +22,7 @@ interface OrderQuickFiltersProps {
   isRtl: boolean;
   onFilterChange: (filter: OrderListFilter) => void;
   onOpenSheet: () => void;
+  trailing?: React.ReactNode;
 }
 
 export function OrderQuickFilters({
@@ -30,6 +31,7 @@ export function OrderQuickFilters({
   isRtl,
   onFilterChange,
   onOpenSheet,
+  trailing,
 }: OrderQuickFiltersProps) {
   const activeCount = countActiveOrderFilters(params);
 
@@ -65,33 +67,42 @@ export function OrderQuickFilters({
         ) : null}
       </button>
 
-      <div className="-mx-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div
-          className={cn(
-            "flex w-max min-w-full gap-2 px-1",
-            isRtl && "flex-row-reverse",
-          )}
-        >
-          {QUICK_FILTERS.map((key) => {
-            const active = isQuickActive(key);
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          isRtl && "flex-row-reverse",
+        )}
+      >
+        <div className="-mx-1 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            className={cn(
+              "flex w-max min-w-full gap-2 px-1",
+              isRtl && "flex-row-reverse",
+            )}
+          >
+            {QUICK_FILTERS.map((key) => {
+              const active = isQuickActive(key);
 
-            return (
-              <button
-                key={key || "all"}
-                type="button"
-                onClick={() => onFilterChange(key)}
-                className={cn(
-                  "shrink-0 cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
-                  active
-                    ? "border-brand-700 bg-brand-700 text-white shadow-sm"
-                    : "border-hairline bg-card text-foreground hover:border-brand-200",
-                )}
-              >
-                {quickLabel(key)}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={key || "all"}
+                  type="button"
+                  onClick={() => onFilterChange(key)}
+                  className={cn(
+                    "shrink-0 cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
+                    active
+                      ? "border-brand-700 bg-brand-700 text-white shadow-sm"
+                      : "border-hairline bg-card text-foreground hover:border-brand-200",
+                  )}
+                >
+                  {quickLabel(key)}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {trailing ? <div className="shrink-0">{trailing}</div> : null}
       </div>
     </div>
   );

@@ -455,7 +455,20 @@
     "dueFrom": "سے",
     "dueTo": "تک",
     "dateHint": "اختیاری — سب دیکھنے کے لیے خالی چھوڑیں",
-    "clearDates": "تمام تاریخیں"
+    "clearDates": "تمام تاریخیں",
+    "viewList": "فہرست",
+    "viewBoard": "بورڈ",
+    "viewTable": "جدول",
+    "boardBooked": "بک شدہ",
+    "columnCustomer": "گاہک",
+    "columnOrder": "آرڈر",
+    "columnItem": "لباس",
+    "columnStatus": "حالت",
+    "columnDue": "واجب",
+    "columnBalance": "بیلنس",
+    "summaryMeta": "{active} فعال · {rush} فوری · {dueToday} آج واجب",
+    "boardEmpty": "اس مرحلے میں کوئی آرڈر نہیں",
+    "tableEmpty": "آپ کے فلٹر سے کوئی آرڈر نہیں ملا"
   },
   "dashboard": {
     "todayQueue": "آج کی قطار",

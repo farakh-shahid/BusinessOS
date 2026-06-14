@@ -37,6 +37,8 @@ export interface Order {
   isRush?: boolean;
   /** Optional stitcher / tailor assigned to work on this order */
   assignedToName?: string;
+  /** Outstanding balance (list + table views) */
+  balanceDue?: number;
 }
 
 export interface OrderDetail extends Order {

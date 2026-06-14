@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
@@ -18,10 +19,15 @@ import {
   parseOrderListParams,
   persistOrderListParams,
   type OrderListParams,
+  type OrderListView,
 } from "@/tailor/infrastructure/data/order-list-params";
+import { computeOrderListSummary } from "@/tailor/infrastructure/data/order-list-ui";
 import { OrderQuickFilters } from "@/tailor/ui/orders/order-quick-filters";
 import { OrderFiltersSheet } from "@/tailor/ui/orders/order-filters-sheet";
 import { OrderList } from "@/tailor/ui/orders/order-list";
+import { OrderBoardView } from "@/tailor/ui/orders/order-board-view";
+import { OrderTableView } from "@/tailor/ui/orders/order-table-view";
+import { OrderViewSwitcher } from "@/tailor/ui/orders/order-view-switcher";
 import { OrderListSkeleton } from "@/tailor/ui/skeletons";
 import { BackLink } from "@/tailor/ui/shared/back-link";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
@@ -92,13 +98,33 @@ export function OrdersView() {
     patchParams({ search: searchInput.trim() });
   }
 
+  function handleViewChange(view: OrderListView) {
+    patchParams({ view });
+  }
+
+  const summary = computeOrderListSummary(orders);
+  const summaryText = t.orderList.summaryMeta
+    .replace("{active}", String(summary.active))
+    .replace("{rush}", String(summary.rush))
+    .replace("{dueToday}", String(summary.dueToday));
+
   return (
     <>
       <BackLink href={routes.dashboard} label={t.nav.dashboard} isRtl={isRtl} />
 
       <PageHeader
         title={t.orders.allOrders}
+        subtitle={!isLoading && !isError ? summaryText : undefined}
         isRtl={isRtl}
+        actions={
+          <Link
+            href={routes.newOrder}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800"
+          >
+            <Plus className="h-4 w-4" />
+            {t.nav.newOrder}
+          </Link>
+        }
         meta={
           params.assignedTo ? (
             <p className="inline-flex max-w-full min-w-0 items-baseline gap-1 text-sm text-muted-slate">
@@ -149,6 +175,14 @@ export function OrdersView() {
           isRtl={isRtl}
           onFilterChange={handleFilterChange}
           onOpenSheet={() => setSheetOpen(true)}
+          trailing={
+            <OrderViewSwitcher
+              view={params.view}
+              t={t}
+              isRtl={isRtl}
+              onChange={handleViewChange}
+            />
+          }
         />
       </div>
 
@@ -168,6 +202,10 @@ export function OrdersView() {
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
             {t.common.error}
           </div>
+        ) : params.view === "board" ? (
+          <OrderBoardView orders={orders} t={t} isRtl={isRtl} />
+        ) : params.view === "table" ? (
+          <OrderTableView orders={orders} t={t} isRtl={isRtl} />
         ) : (
           <OrderList orders={orders} showViewAll={false} />
         )}

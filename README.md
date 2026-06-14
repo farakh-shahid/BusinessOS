@@ -41,6 +41,9 @@ cp apps/businessos-backend/.env.example apps/businessos-backend/.env
 npm install
 npm run db:migrate    # name: init
 npm run db:seed
+
+# Remote / Vercel (Neon) — migrations + demo seed in one step:
+# DATABASE_URL="postgresql://..." npm run db:deploy:seed
 ```
 
 Seed creates:

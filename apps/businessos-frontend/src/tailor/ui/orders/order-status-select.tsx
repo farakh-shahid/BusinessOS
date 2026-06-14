@@ -81,14 +81,14 @@ export function OrderStatusSelect({
       stopClickPropagation
       searchMinOptions={8}
       className={cn(
-        isCard ? "w-[10rem]" : "w-full sm:w-56",
+        isCard ? "w-full sm:w-[10rem]" : "w-full sm:w-56",
         className,
       )}
-      menuClassName={isCard ? "min-w-[12rem]" : "min-w-[14rem]"}
+      menuClassName={isCard ? "min-w-[min(100vw-1.5rem,14rem)] sm:min-w-[12rem]" : "min-w-[14rem]"}
       buttonClassName={cn(
         "rounded-lg font-semibold",
         isCard
-          ? "text-[10px] font-bold uppercase tracking-wide"
+          ? "min-h-11 text-xs font-bold uppercase tracking-wide sm:min-h-9 sm:py-1.5"
           : "h-10 text-sm normal-case",
         tone,
       )}

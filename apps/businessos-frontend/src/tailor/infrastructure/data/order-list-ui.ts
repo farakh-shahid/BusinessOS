@@ -1,5 +1,6 @@
-import type { OrderStatus } from "@business-os/tailor";
+import type { Order, OrderStatus, OrderWorkflowStatus } from "@business-os/tailor";
 import type { OrderListParams } from "./order-list-params";
+import type { Dictionary } from "@business-os/i18n";
 
 export function countActiveOrderFilters(params: OrderListParams): number {
   let count = 0;
@@ -107,4 +108,54 @@ export function phoneTelHref(phone: string): string {
     return `tel:+92${digits.slice(1)}`;
   }
   return `tel:${digits || phone}`;
+}
+
+const ACTIVE_WORKFLOW: OrderWorkflowStatus[] = [
+  "pending",
+  "cutting",
+  "stitching",
+  "ready",
+];
+
+export function isActiveWorkflowStatus(status: OrderWorkflowStatus): boolean {
+  return ACTIVE_WORKFLOW.includes(status);
+}
+
+export function computeOrderListSummary(orders: Order[]) {
+  const active = orders.filter((order) =>
+    isActiveWorkflowStatus(order.workflowStatus),
+  );
+  return {
+    active: active.length,
+    rush: active.filter((order) => order.isRush).length,
+    dueToday: active.filter((order) => order.status === "due_today").length,
+  };
+}
+
+export function formatOrderDueShort(order: Order, t: Dictionary): string {
+  if (order.status === "due_today") return t.orderDue.due_today;
+  if (order.status === "overdue") return t.orderDue.overdue;
+  return order.dueDate;
+}
+
+export const boardColumnOrder: OrderWorkflowStatus[] = [
+  "pending",
+  "cutting",
+  "stitching",
+  "ready",
+];
+
+export function boardColumnBorderClass(status: OrderWorkflowStatus): string {
+  switch (status) {
+    case "pending":
+      return "border-t-status-booked";
+    case "cutting":
+      return "border-t-status-cutting";
+    case "stitching":
+      return "border-t-status-stitching";
+    case "ready":
+      return "border-t-status-ready";
+    default:
+      return "border-t-hairline";
+  }
 }

@@ -38,7 +38,7 @@ export function DashboardDueWeekPanel({
     .slice(0, 6);
 
   return (
-    <Card>
+    <Card className="p-4 md:p-4">
       <CardTitle>{title}</CardTitle>
       {dueSoon.length === 0 ? (
         <p className="mt-3 text-sm text-muted-slate">—</p>

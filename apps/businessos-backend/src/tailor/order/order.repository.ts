@@ -639,6 +639,7 @@ export class OrderRepository {
     status: Parameters<typeof resolveDisplayStatus>[0];
     deliveryDate: Date;
     isRush: boolean;
+    balanceDue: { toString(): string } | number;
     customer: { name: string; phone: string };
   }): Order {
     const count = order.suitCount > 0 ? order.suitCount : 1;
@@ -659,6 +660,7 @@ export class OrderRepository {
       dueDate: formatDueDate(order.deliveryDate),
       isRush: order.isRush,
       assignedToName: order.assignedToName ?? undefined,
+      balanceDue: Number(order.balanceDue),
     };
   }
 
