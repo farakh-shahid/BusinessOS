@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Eye } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
 import type { CustomerDetail } from "@business-os/tailor";
 import {
@@ -29,6 +30,9 @@ import {
   WorksheetField,
   worksheetInputClass,
 } from "@/tailor/ui/orders/worksheet-form-primitives";
+import { MeasurementCardDialog } from "@/tailor/ui/orders/measurement-card-dialog";
+import { measurementCardDataFromCustomer } from "@/tailor/ui/orders/measurement-card-data";
+import { Button } from "@/core/presentation/components/ui/button";
 
 interface CustomerSavedMeasurementsCardProps {
   data: CustomerDetail;
@@ -44,6 +48,7 @@ export function CustomerSavedMeasurementsCard({
   const savedTypes = listSavedGarmentTypes(data);
   const [garmentType, setGarmentType] =
     useState<BookingGarmentType>("shalwarQameez");
+  const [cardOpen, setCardOpen] = useState(false);
 
   const saved = findSavedMeasurement(
     { ...data, savedMeasurements: data.savedMeasurements ?? [] },
@@ -77,9 +82,31 @@ export function CustomerSavedMeasurementsCard({
     label: t.garments[labelKey],
   }));
 
+  const measurementCardData = useMemo(
+    () => measurementCardDataFromCustomer(data, garmentType, t),
+    [data, garmentType, t],
+  );
+
   return (
+    <>
     <Card className="border-hairline">
-      <CardTitle>{t.customers.savedMeasurements}</CardTitle>
+      <div
+        className={cn(
+          "flex flex-wrap items-start justify-between gap-3",
+          isRtl && "flex-row-reverse",
+        )}
+      >
+        <CardTitle>{t.customers.savedMeasurements}</CardTitle>
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-1.5 text-sm"
+          onClick={() => setCardOpen(true)}
+        >
+          <Eye className="h-4 w-4" />
+          {t.receipt.viewMeasurementCard}
+        </Button>
+      </div>
 
       <div className="mt-4 space-y-3">
         <WorksheetField
@@ -186,5 +213,10 @@ export function CustomerSavedMeasurementsCard({
         ) : null}
       </div>
     </Card>
+    <MeasurementCardDialog
+      data={cardOpen ? measurementCardData : null}
+      onClose={() => setCardOpen(false)}
+    />
+    </>
   );
 }

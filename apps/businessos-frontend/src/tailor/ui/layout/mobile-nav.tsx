@@ -191,7 +191,7 @@ export function MobileNav() {
 
             <MobileBottomNavLink
               href={navPath("customers")}
-              label={t.nav.clients}
+              label={t.nav.customers}
               icon={Users}
               active={isNavActive(pathname, "customers")}
             />

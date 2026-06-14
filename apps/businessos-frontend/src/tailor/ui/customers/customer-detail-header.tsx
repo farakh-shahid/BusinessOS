@@ -112,35 +112,44 @@ export function CustomerDetailHeader({
 
         <div
           className={cn(
-            "flex shrink-0 flex-wrap gap-2 max-md:grid max-md:w-full max-md:grid-cols-2",
+            "flex shrink-0 flex-wrap gap-2 max-md:grid max-md:w-full max-md:grid-cols-2 max-md:items-stretch max-md:gap-2",
             isRtl && "flex-row-reverse justify-end",
           )}
         >
           <a
             href={`tel:${customer.phone}`}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 max-md:w-full"
+            className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:gap-2 sm:px-4 sm:text-sm max-md:w-full"
           >
-            <Phone className="h-4 w-4" />
+            <Phone className="h-4 w-4 shrink-0" />
             {t.customers.call}
           </a>
           <a
             href={whatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 max-md:w-full"
+            className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:gap-2 sm:px-4 sm:text-sm max-md:w-full"
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4 shrink-0" />
             {t.customers.whatsApp}
           </a>
-          <Link href={routes.customerEdit(customer.id)} className="max-md:w-full">
-            <Button variant="outline" className="gap-2 max-md:w-full">
-              <Pencil className="h-4 w-4" />
+          <Link
+            href={routes.customerEdit(customer.id)}
+            className="max-md:flex max-md:w-full"
+          >
+            <Button
+              variant="outline"
+              className="h-11 w-full gap-1.5 whitespace-nowrap px-3 text-xs sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <Pencil className="h-4 w-4 shrink-0" />
               {t.customers.editCustomer}
             </Button>
           </Link>
-          <Link href={routes.newOrderForCustomer(customer.id)} className="max-md:w-full">
-            <Button className="gap-2 max-md:w-full">
-              <Plus className="h-4 w-4" />
+          <Link
+            href={routes.newOrderForCustomer(customer.id)}
+            className="max-md:flex max-md:w-full"
+          >
+            <Button className="h-11 w-full gap-1.5 whitespace-nowrap px-3 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+              <Plus className="h-4 w-4 shrink-0" />
               {t.search.placeOrderAgain}
             </Button>
           </Link>

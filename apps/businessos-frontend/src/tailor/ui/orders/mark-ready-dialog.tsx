@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, MessageCircle, Mail, X } from "lucide-react";
+import { AlertTriangle, FileText, MessageCircle, Mail, X } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import type { OrderWorkflowStatus } from "@business-os/tailor";
 import { Button } from "@/core/presentation/components/ui/button";
@@ -14,6 +14,11 @@ import {
   useMarkOrderReadyMutation,
   useOrderDetailQuery,
 } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { useSettingsQuery } from "@/tailor/infrastructure/api/hooks/use-settings";
+import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
+import { buildOrderReceiptHtml } from "./order-receipt-html";
+import { buildOrderDocumentWhatsAppCaption } from "./order-receipt-messages";
+import { sendOrderHtmlAsPdfWhatsAppWithFeedback } from "./order-document-whatsapp-feedback";
 
 interface MarkReadyDialogProps {
   orderId: string | null;
@@ -30,9 +35,12 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
   const isRtl = locale === "ur";
 
   const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
+  const { data: user } = useMeQuery();
+  const { data: settings } = useSettingsQuery();
   const markReady = useMarkOrderReadyMutation();
 
   const [sendWhatsApp, setSendWhatsApp] = useState(true);
+  const [sendReceiptPdf, setSendReceiptPdf] = useState(true);
   const [sendEmail, setSendEmail] = useState(false);
   const [emailNotes, setEmailNotes] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -40,10 +48,21 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
   useEffect(() => {
     if (!orderId) return;
     setSendWhatsApp(true);
+    setSendReceiptPdf(true);
     setSendEmail(false);
     setEmailNotes("");
     setFeedback(null);
   }, [orderId]);
+
+  const shop = useMemo(
+    () => ({
+      name: settings?.name ?? user?.tenantName ?? t.appName,
+      phone: settings?.phone,
+      email: settings?.email,
+      address: settings?.address,
+    }),
+    [settings, user?.tenantName, t.appName],
+  );
 
   if (!orderId) return null;
 
@@ -90,6 +109,33 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
           messages.push(t.orders.emailNotFoundAddCustomer);
         } else if (result.notifications.email.reason === "smtp_send_failed") {
           messages.push(t.orders.emailFailed);
+        }
+      }
+
+      if (sendReceiptPdf) {
+        try {
+          const receiptHtml = buildOrderReceiptHtml({ order, shop, t });
+          const pdfMessage = await sendOrderHtmlAsPdfWhatsAppWithFeedback({
+            orderId,
+            orderNumber: order.orderNumber,
+            documentType: "receipt",
+            html: receiptHtml,
+            customerPhone: order.customerPhone,
+            caption: buildOrderDocumentWhatsAppCaption(
+              {
+                customerName: order.customerName,
+                orderNumber: order.orderNumber,
+                shopName: shop.name,
+                whatsappFooter: settings?.whatsappFooter,
+              },
+              "receipt",
+              locale,
+            ),
+            t,
+          });
+          messages.push(pdfMessage);
+        } catch {
+          messages.push(t.receipt.whatsappPdfFailed);
         }
       }
 
@@ -198,6 +244,34 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
                     {t.orders.sendWhatsApp}
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500">{t.orders.sendWhatsAppHint}</p>
+                </div>
+              </label>
+
+              <label
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3",
+                  isRtl && "flex-row-reverse",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={sendReceiptPdf}
+                  onChange={(e) => setSendReceiptPdf(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300"
+                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 font-medium text-slate-900",
+                      isRtl && "flex-row-reverse",
+                    )}
+                  >
+                    <FileText className="h-4 w-4 text-brand-700" />
+                    {t.orders.sendReceiptPdf}
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {t.orders.sendReceiptPdfHint}
+                  </p>
                 </div>
               </label>
 

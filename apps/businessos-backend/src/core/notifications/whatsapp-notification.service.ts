@@ -80,6 +80,116 @@ export class WhatsAppNotificationService {
     return this.sendMessage(phone, message, template);
   }
 
+  async sendDocument(params: {
+    phone: string;
+    caption: string;
+    filename: string;
+    fallbackMessage: string;
+    pdfBuffer: Buffer;
+  }): Promise<WhatsAppSendResult> {
+    const whatsappUrl = buildWhatsAppUrl(params.phone, params.fallbackMessage);
+
+    if (isWhatsAppCloudConfigured()) {
+      try {
+        const mediaId = await this.uploadMetaWhatsAppMedia(
+          params.pdfBuffer,
+          params.filename,
+        );
+        await this.sendDocumentViaMetaCloud({
+          phone: params.phone,
+          caption: params.caption,
+          mediaId,
+          filename: params.filename,
+        });
+        return { sent: true, method: "meta_cloud", whatsappUrl };
+      } catch (error) {
+        this.logger.warn(
+          "Meta WhatsApp document send failed, falling back to client share",
+          error,
+        );
+      }
+    }
+
+    return {
+      sent: false,
+      method: "wa_me_link",
+      whatsappUrl,
+      reason: "attach_pdf_locally",
+    };
+  }
+
+  private async uploadMetaWhatsAppMedia(
+    pdfBuffer: Buffer,
+    filename: string,
+  ): Promise<string> {
+    const { token, phoneNumberId, apiVersion } = notificationConfig.whatsappCloud;
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append(
+      "file",
+      new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" }),
+      filename,
+    );
+
+    const response = await fetch(
+      `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/media`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      },
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Meta media upload failed: ${response.status} ${text}`);
+    }
+
+    const json = (await response.json()) as { id?: string };
+    if (!json.id) {
+      throw new Error("Meta media upload response missing id");
+    }
+
+    return json.id;
+  }
+
+  private async sendDocumentViaMetaCloud(params: {
+    phone: string;
+    caption: string;
+    mediaId: string;
+    filename: string;
+  }) {
+    const { token, phoneNumberId, apiVersion } = notificationConfig.whatsappCloud;
+    const to = normalizePhoneForWhatsApp(params.phone);
+    const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
+
+    const payload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "document",
+      document: {
+        id: params.mediaId,
+        filename: params.filename,
+        caption: params.caption,
+      },
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Meta WhatsApp Cloud API error: ${response.status} ${text}`);
+    }
+  }
+
   private async sendViaMetaCloud(
     phone: string,
     message: string,

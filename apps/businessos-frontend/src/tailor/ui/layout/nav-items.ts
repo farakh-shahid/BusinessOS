@@ -76,7 +76,6 @@ export function getMobileMoreNavItems(role?: string | null): NavItem[] {
 export function mobileNavLabel(labelKey: NavLabelKey, t: Dictionary): string {
   const shortKey: Partial<Record<NavLabelKey, keyof Dictionary["nav"]>> = {
     dashboard: "home",
-    customers: "clients",
     analytics: "stats",
     receivables: "receivablesShort",
     assignments: "assignmentsShort",

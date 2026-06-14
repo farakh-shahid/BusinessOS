@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import {
+  ChevronRight,
+  MessageCircle,
+  Pencil,
+  Receipt,
+  Ruler,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import type { OrderFullDetail, OrderWorkflowStatus } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
@@ -27,7 +36,8 @@ import { DeliverDialog } from "./deliver-dialog";
 import { EditOrderDialog } from "./edit-order-dialog";
 import { MarkReadyDialog } from "./mark-ready-dialog";
 import { OrderReceiptDialog } from "./order-receipt-dialog";
-import { printMeasurementCard } from "./print-order";
+import { MeasurementCardDialog } from "./measurement-card-dialog";
+import { measurementCardDataFromOrder } from "./measurement-card-data";
 import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 import { BackLink } from "@/tailor/ui/shared/back-link";
@@ -35,7 +45,6 @@ import { MeasurementGrid } from "@/tailor/ui/shared/measurement-grid";
 import { buildWhatsAppUrl } from "./order-receipt-messages";
 import { OrderDetailPanel } from "./order-detail-panel";
 import {
-  nextWorkflowStage,
   OrderDetailInteractiveStepper,
 } from "./order-detail-interactive-stepper";
 
@@ -131,34 +140,45 @@ function formatRs(amount: number): string {
   return `Rs ${Math.round(amount).toLocaleString()}`;
 }
 
-function DetailActionButton({
-  children,
+function OrderQuickAction({
+  icon: Icon,
+  label,
   onClick,
-  variant = "secondary",
   disabled,
-  className,
+  href,
+  isRtl,
 }: {
-  children: React.ReactNode;
+  icon: LucideIcon;
+  label: string;
   onClick?: () => void;
-  variant?: "primary" | "ready" | "secondary";
   disabled?: boolean;
-  className?: string;
+  href?: string;
+  isRtl?: boolean;
 }) {
+  const className = cn(
+    "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border border-hairline bg-card px-2 py-2.5 text-center transition hover:bg-slate-50 disabled:opacity-60",
+    isRtl && "text-right",
+  );
+  const content = (
+    <>
+      <Icon className="h-[18px] w-[18px] shrink-0 text-accent-500" strokeWidth={2} />
+      <span className="text-[11px] font-semibold leading-tight text-foreground">
+        {label}
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[12.5px] font-semibold transition disabled:opacity-60",
-        variant === "primary" && "bg-accent-500 text-white hover:brightness-105",
-        variant === "ready" && "bg-status-ready text-white hover:brightness-105",
-        variant === "secondary" &&
-          "border border-hairline bg-card text-foreground hover:bg-slate-50",
-        className,
-      )}
-    >
-      {children}
+    <button type="button" onClick={onClick} disabled={disabled} className={className}>
+      {content}
     </button>
   );
 }
@@ -180,6 +200,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const [editFocusPayment, setEditFocusPayment] = useState(false);
   const [markReadyOpen, setMarkReadyOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [measurementOpen, setMeasurementOpen] = useState(false);
   const [deliverOpen, setDeliverOpen] = useState(false);
 
   function openEditDialog(focusPayment = false) {
@@ -222,7 +243,6 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   } as const;
   const chip = WORKFLOW_CHIP[order.workflowStatus];
   const daysLeft = daysUntilDelivery(order.deliveryDate);
-  const nextStage = nextWorkflowStage(order.workflowStatus);
   const unitRate = Math.round(order.totalPrice / Math.max(order.suitCount, 1));
   const paidAmount = order.totalPrice - order.balanceDue;
   const whatsAppUrl = buildWhatsAppUrl(
@@ -356,88 +376,99 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
           <div
             className={cn(
-              "flex flex-wrap items-center gap-2",
-              isRtl && "flex-row-reverse",
+              "flex shrink-0 flex-col items-end gap-2",
+              isRtl && "items-start",
             )}
           >
-            <span
+            <div
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
-                chip.wrap,
+                "flex flex-wrap items-center justify-end gap-2",
+                isRtl && "flex-row-reverse justify-start",
               )}
             >
-              <span className={cn("h-1.5 w-1.5 rounded-full", chip.dot)} />
-              {t.orderStatus[chip.labelKey]}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-status-cutting-bg px-3 py-1.5 text-xs font-semibold text-[#9c6a10]">
-              📅 {dueChipLabel}
-            </span>
-            {order.balanceDue > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600">
-                {t.orderDetail.balanceDueChip.replace(
-                  "{amount}",
-                  order.balanceDue.toLocaleString(),
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
+                  chip.wrap,
                 )}
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full", chip.dot)} />
+                {t.orderStatus[chip.labelKey]}
               </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-status-cutting-bg px-3 py-1.5 text-xs font-semibold text-[#9c6a10]">
+                📅 {dueChipLabel}
+              </span>
+              {order.balanceDue > 0 ? (
+                <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600">
+                  {t.orderDetail.balanceDueChip.replace(
+                    "{amount}",
+                    order.balanceDue.toLocaleString(),
+                  )}
+                </span>
+              ) : null}
+            </div>
+            {order.canMarkReady ? (
+              <button
+                type="button"
+                onClick={() => setMarkReadyOpen(true)}
+                className="inline-flex items-center justify-center gap-1 rounded-[9px] border border-status-ready/25 bg-status-ready-bg px-2.5 py-1.5 text-[11.5px] font-semibold text-status-ready transition hover:bg-status-ready/10"
+              >
+                ✓ {t.orders.markReady}
+              </button>
             ) : null}
           </div>
         </div>
 
-        <div
-          className={cn(
-            "mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4",
-            isRtl && "flex-row-reverse",
-          )}
-        >
-          {nextStage && statusEditable ? (
-            <DetailActionButton
-              variant="primary"
-              onClick={() => void handleStatusChange(nextStage)}
-              disabled={updateStatus.isPending}
-            >
-              {t.orderDetail.advanceTo.replace(
-                "{stage}",
-                stepperLabels[nextStage],
-              )}{" "}
-              →
-            </DetailActionButton>
-          ) : null}
-          {order.canMarkReady ? (
-            <DetailActionButton
-              variant="ready"
-              onClick={() => setMarkReadyOpen(true)}
-            >
-              ✓ {t.orders.markReady}
-            </DetailActionButton>
-          ) : null}
-          <DetailActionButton variant="secondary" onClick={() => setReceiptOpen(true)}>
-            🧾 {t.receipt.viewReceipt}
-          </DetailActionButton>
-          <DetailActionButton
-            variant="secondary"
-            onClick={() => printMeasurementCard(order, t)}
-          >
-            📐 {t.print.measurements}
-          </DetailActionButton>
-          <DetailActionButton
-            variant="secondary"
-            onClick={() => void handleReminder()}
-            disabled={sendReminder.isPending}
-          >
-            💬 {t.orderDetail.sendReminder}
-          </DetailActionButton>
-          <Link href={routes.customerDetail(order.customerId)}>
-            <DetailActionButton variant="secondary">
-              👁 {t.orderDetail.customerView}
-            </DetailActionButton>
-          </Link>
+        <div className="mt-4 border-t border-hairline pt-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <OrderQuickAction
+              icon={Receipt}
+              label={t.orderDetail.quickReceipt}
+              onClick={() => setReceiptOpen(true)}
+              isRtl={isRtl}
+            />
+            <OrderQuickAction
+              icon={Ruler}
+              label={t.orderDetail.quickMeasurements}
+              onClick={() => setMeasurementOpen(true)}
+              isRtl={isRtl}
+            />
+            <OrderQuickAction
+              icon={MessageCircle}
+              label={t.orderDetail.quickReminder}
+              onClick={() => void handleReminder()}
+              disabled={sendReminder.isPending}
+              isRtl={isRtl}
+            />
+            {canEdit ? (
+              <OrderQuickAction
+                icon={Pencil}
+                label={t.orderDetail.quickEdit}
+                onClick={() => openEditDialog(false)}
+                isRtl={isRtl}
+              />
+            ) : (
+              <OrderQuickAction
+                icon={UserRound}
+                label={t.orderDetail.customerView}
+                href={routes.customerDetail(order.customerId)}
+                isRtl={isRtl}
+              />
+            )}
+          </div>
+
           {canEdit ? (
-            <DetailActionButton
-              variant="secondary"
-              onClick={() => openEditDialog(false)}
+            <Link
+              href={routes.customerDetail(order.customerId)}
+              className={cn(
+                "inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-700 hover:text-brand-800",
+                isRtl && "flex-row-reverse",
+              )}
             >
-              ✏️ {t.orderDetail.editOrder}
-            </DetailActionButton>
+              <UserRound className="h-3.5 w-3.5" />
+              {t.orderDetail.viewCustomerProfile}
+              <ChevronRight className={cn("h-3.5 w-3.5", isRtl && "rotate-180")} />
+            </Link>
           ) : null}
         </div>
       </OrderDetailPanel>
@@ -533,10 +564,10 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
             action={
               <button
                 type="button"
-                onClick={() => printMeasurementCard(order, t)}
+                onClick={() => setMeasurementOpen(true)}
                 className="text-[11.5px] font-semibold text-accent-500 hover:text-accent-600"
               >
-                📐 {t.print.measurements}
+                📐 {t.receipt.viewMeasurementCard}
               </button>
             }
           >
@@ -753,6 +784,10 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       <OrderReceiptDialog
         orderId={receiptOpen ? orderId : null}
         onClose={() => setReceiptOpen(false)}
+      />
+      <MeasurementCardDialog
+        data={measurementOpen ? measurementCardDataFromOrder(order) : null}
+        onClose={() => setMeasurementOpen(false)}
       />
       <DeliverDialog
         orderId={deliverOpen ? orderId : null}

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type {
   MarkReadyResult,
+  OrderDocumentWhatsAppResult,
   OrderFullDetail,
   ReminderResult,
 } from "@business-os/tailor";
@@ -8,7 +9,13 @@ import type { UserRole } from "../../generated/prisma/client";
 import { notificationConfig } from "../../config/notification.config";
 import { EmailNotificationService } from "../../core/notifications/email-notification.service";
 import { WhatsAppNotificationService } from "../../core/notifications/whatsapp-notification.service";
-import { buildReminderMessage } from "../../core/notifications/notification.templates";
+import {
+  buildReminderMessage,
+  buildOrderDocumentWhatsAppCaption,
+  buildOrderDocumentWhatsAppFallbackMessage,
+  orderDocumentFilename,
+  type OrderDocumentType,
+} from "../../core/notifications/notification.templates";
 import { garmentLabel } from "../common/tailor.mapper";
 import { CloudinaryService } from "../upload/cloudinary.service";
 import type { CreateOrderDto } from "./dto/create-order.dto";
@@ -303,6 +310,52 @@ export class OrderService {
         whatsapp: whatsappResult,
         email: emailResult,
       },
+    };
+  }
+
+  async sendDocumentWhatsApp(
+    tenantId: string,
+    orderId: string,
+    userId: string,
+    file: Express.Multer.File,
+    documentType: OrderDocumentType,
+  ): Promise<OrderDocumentWhatsAppResult> {
+    const order = await this.orders.findById(tenantId, orderId);
+
+    const locale = order.customer.preferredLocale === "UR" ? "ur" : "en";
+    const docCtx = {
+      customerName: order.customer.name,
+      orderNumber: order.orderNumber,
+      shopName: order.tenant.name,
+      locale: locale as "en" | "ur",
+      documentType,
+      whatsappFooter: order.tenant.whatsappFooter ?? undefined,
+    };
+
+    const caption = buildOrderDocumentWhatsAppCaption(docCtx);
+    const fallbackMessage = buildOrderDocumentWhatsAppFallbackMessage(docCtx);
+    const filename = orderDocumentFilename(documentType, order.orderNumber);
+
+    const wa = await this.whatsapp.sendDocument({
+      phone: order.customer.phone,
+      caption,
+      filename,
+      fallbackMessage,
+      pdfBuffer: file.buffer,
+    });
+
+    await this.audit.log(tenantId, orderId, userId, "ORDER_UPDATED", {
+      documentType,
+      via: "whatsapp_pdf",
+      method: wa.method,
+      sent: wa.sent,
+    });
+
+    return {
+      sent: wa.sent,
+      method: wa.method,
+      whatsappUrl: wa.whatsappUrl,
+      reason: wa.reason,
     };
   }
 }

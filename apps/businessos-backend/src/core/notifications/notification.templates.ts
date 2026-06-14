@@ -125,3 +125,59 @@ export function buildWhatsAppUrl(phone: string, message: string): string {
   const normalized = normalizePhoneForWhatsApp(phone);
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
+
+export type OrderDocumentType = "receipt" | "measurements";
+
+export interface OrderDocumentWhatsAppContext {
+  customerName: string;
+  orderNumber: string;
+  shopName: string;
+  locale: "en" | "ur";
+  documentType: OrderDocumentType;
+  documentUrl?: string;
+  whatsappFooter?: string;
+}
+
+export function buildOrderDocumentWhatsAppCaption(
+  ctx: OrderDocumentWhatsAppContext,
+): string {
+  const footer = ctx.whatsappFooter?.trim()
+    ? `\n\n${ctx.whatsappFooter.trim()}`
+    : "";
+
+  if (ctx.documentType === "receipt") {
+    if (ctx.locale === "ur") {
+      return `السلام علیکم ${ctx.customerName}،\n\nآپ کی آرڈر رسید (${ctx.orderNumber}) منسلک ہے۔\n\n— ${ctx.shopName}${footer}`;
+    }
+    return `Hello ${ctx.customerName},\n\nPlease find your order receipt for #${ctx.orderNumber} attached.\n\n— ${ctx.shopName}${footer}`;
+  }
+
+  if (ctx.locale === "ur") {
+    return `السلام علیکم ${ctx.customerName}،\n\nآپ کی پیمائش (${ctx.orderNumber}) منسلک ہے۔\n\n— ${ctx.shopName}${footer}`;
+  }
+  return `Hello ${ctx.customerName},\n\nPlease find your measurement card for order #${ctx.orderNumber} attached.\n\n— ${ctx.shopName}${footer}`;
+}
+
+export function buildOrderDocumentWhatsAppFallbackMessage(
+  ctx: Omit<OrderDocumentWhatsAppContext, "documentUrl">,
+): string {
+  const caption = buildOrderDocumentWhatsAppCaption({
+    ...ctx,
+    documentUrl: "",
+  });
+
+  if (ctx.locale === "ur") {
+    return `${caption}\n\n(PDF فائل منسلک کریں)`;
+  }
+  return `${caption}\n\n(Please attach the PDF file.)`;
+}
+
+export function orderDocumentFilename(
+  documentType: OrderDocumentType,
+  orderNumber: string,
+): string {
+  const safe = orderNumber.replace(/[^\w-]+/g, "-");
+  return documentType === "receipt"
+    ? `receipt-${safe}.pdf`
+    : `measurements-${safe}.pdf`;
+}

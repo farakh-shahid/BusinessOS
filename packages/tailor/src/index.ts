@@ -36,6 +36,10 @@ export type {
   ReceivablesPageData,
   ReminderResult,
 } from "./types/order-extended";
+export type {
+  OrderDocumentType,
+  OrderDocumentWhatsAppResult,
+} from "./types/order-document";
 export type { TenantSettings, StaffMember } from "./types/settings";
 export type {
   MeasurementFields,

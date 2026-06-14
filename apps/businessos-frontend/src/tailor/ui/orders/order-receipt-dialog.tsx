@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, MessageCircle, Printer, X } from "lucide-react";
+import { Download, Loader2, MessageCircle, Printer, X } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { Button } from "@/core/presentation/components/ui/button";
 import { cn } from "@/core/presentation/lib/utils";
@@ -12,7 +12,8 @@ import { useOrderDetailQuery } from "@/tailor/infrastructure/api/hooks/use-order
 import { useSettingsQuery } from "@/tailor/infrastructure/api/hooks/use-settings";
 import { DialogContentSkeleton } from "@/tailor/ui/skeletons";
 import { buildOrderReceiptHtml } from "./order-receipt-html";
-import { buildOrderReceiptWhatsAppMessage, buildWhatsAppUrl } from "./order-receipt-messages";
+import { buildOrderReceiptWhatsAppMessage, buildOrderDocumentWhatsAppCaption, buildWhatsAppUrl } from "./order-receipt-messages";
+import { sendOrderHtmlAsPdfWhatsAppWithFeedback } from "./order-document-whatsapp-feedback";
 
 interface OrderReceiptDialogProps {
   orderId: string | null;
@@ -34,6 +35,7 @@ export function OrderReceiptDialog({
   const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
   const { data: settings } = useSettingsQuery();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [sendingPdf, setSendingPdf] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
@@ -63,12 +65,43 @@ export function OrderReceiptDialog({
     openHtmlForPrint(receiptHtml);
   }
 
-  function handleWhatsApp() {
+  function handleWhatsAppText() {
     if (!order) return;
     const message = buildOrderReceiptWhatsAppMessage(order, shop, locale);
     const url = buildWhatsAppUrl(order.customerPhone, message);
     window.open(url, "_blank", "noopener,noreferrer");
     setFeedback(t.receipt.whatsappOpened);
+  }
+
+  async function handleWhatsAppPdf() {
+    if (!order || !receiptHtml) return;
+    setSendingPdf(true);
+    setFeedback(null);
+    try {
+      const message = await sendOrderHtmlAsPdfWhatsAppWithFeedback({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        documentType: "receipt",
+        html: receiptHtml,
+        customerPhone: order.customerPhone,
+        caption: buildOrderDocumentWhatsAppCaption(
+          {
+            customerName: order.customerName,
+            orderNumber: order.orderNumber,
+            shopName: shop.name,
+            whatsappFooter: shop.whatsappFooter,
+          },
+          "receipt",
+          locale,
+        ),
+        t,
+      });
+      setFeedback(message);
+    } catch {
+      setFeedback(t.receipt.whatsappPdfFailed);
+    } finally {
+      setSendingPdf(false);
+    }
   }
 
   return (
@@ -134,29 +167,46 @@ export function OrderReceiptDialog({
         {order && (
           <div
             className={cn(
-              "flex shrink-0 flex-col gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row",
+              "grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex sm:flex-row",
               isRtl && "sm:flex-row-reverse",
             )}
           >
             <Button
               variant="outline"
-              className="flex-1 gap-2"
+              className="h-11 gap-1.5 whitespace-nowrap px-2 text-xs sm:flex-1 sm:gap-2 sm:px-3 sm:text-sm"
               onClick={handlePrint}
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4 shrink-0" />
               {t.receipt.downloadPdf}
             </Button>
             <Button
               variant="outline"
-              className="flex-1 gap-2"
+              className="h-11 gap-1.5 whitespace-nowrap px-2 text-xs sm:flex-1 sm:gap-2 sm:px-3 sm:text-sm"
               onClick={handlePrint}
             >
-              <Printer className="h-4 w-4" />
+              <Printer className="h-4 w-4 shrink-0" />
               {t.print.receipt}
             </Button>
-            <Button className="flex-1 gap-2" onClick={handleWhatsApp}>
-              <MessageCircle className="h-4 w-4" />
-              {t.receipt.sendWhatsApp}
+            <Button
+              variant="outline"
+              className="h-11 gap-1.5 whitespace-nowrap px-2 text-xs sm:flex-1 sm:gap-2 sm:px-3 sm:text-sm"
+              onClick={handleWhatsAppText}
+              disabled={sendingPdf}
+            >
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              {t.receipt.sendWhatsAppText}
+            </Button>
+            <Button
+              className="h-11 gap-1.5 whitespace-nowrap px-2 text-xs sm:flex-1 sm:gap-2 sm:px-3 sm:text-sm"
+              onClick={() => void handleWhatsAppPdf()}
+              disabled={sendingPdf}
+            >
+              {sendingPdf ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              ) : (
+                <MessageCircle className="h-4 w-4 shrink-0" />
+              )}
+              {sendingPdf ? t.receipt.sendingPdf : t.receipt.sendWhatsAppPdf}
             </Button>
           </div>
         )}

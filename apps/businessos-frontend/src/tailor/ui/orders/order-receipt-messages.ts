@@ -88,3 +88,30 @@ export function buildOrderReceiptWhatsAppMessage(
 
   return lines.filter(Boolean).join("\n");
 }
+
+export function buildOrderDocumentWhatsAppCaption(
+  params: {
+    customerName: string;
+    orderNumber: string;
+    shopName: string;
+    whatsappFooter?: string;
+  },
+  documentType: "receipt" | "measurements",
+  locale: "en" | "ur",
+): string {
+  const footer = params.whatsappFooter?.trim()
+    ? `\n\n${params.whatsappFooter.trim()}`
+    : "";
+
+  if (documentType === "receipt") {
+    if (locale === "ur") {
+      return `السلام علیکم ${params.customerName}،\n\nآپ کی آرڈر رسید (${params.orderNumber}) منسلک ہے۔\n\n— ${params.shopName}${footer}`;
+    }
+    return `Hello ${params.customerName},\n\nPlease find your order receipt for #${params.orderNumber} attached.\n\n— ${params.shopName}${footer}`;
+  }
+
+  if (locale === "ur") {
+    return `السلام علیکم ${params.customerName}،\n\nآپ کی پیمائش (${params.orderNumber}) منسلک ہے۔\n\n— ${params.shopName}${footer}`;
+  }
+  return `Hello ${params.customerName},\n\nPlease find your measurement card for order #${params.orderNumber} attached.\n\n— ${params.shopName}${footer}`;
+}

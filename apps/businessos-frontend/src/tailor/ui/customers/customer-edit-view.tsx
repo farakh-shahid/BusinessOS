@@ -152,7 +152,7 @@ export function CustomerEditView({ customerId }: CustomerEditViewProps) {
         payload: {
           name: name.trim(),
           phone: phone.trim(),
-          email: email.trim(),
+          email: email.trim() || undefined,
           isVip,
         },
       });
