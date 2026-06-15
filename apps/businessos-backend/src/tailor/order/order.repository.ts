@@ -394,6 +394,26 @@ export class OrderRepository {
     };
   }
 
+  async findReadyOrdersForAssignee(
+    tenantId: string,
+    assigneeName: string,
+  ): Promise<Order[]> {
+    const name = assigneeName.trim();
+    if (!name) return [];
+
+    const rows = await this.prisma.order.findMany({
+      where: {
+        tenantId,
+        status: OrderStatus.READY,
+        assignedToName: name,
+      },
+      include: { customer: true },
+      orderBy: { updatedAt: "asc" },
+    });
+
+    return rows.map((order) => this.toOrderDto(order));
+  }
+
   async list(
     tenantId: string,
     query?: ListOrdersQueryDto,

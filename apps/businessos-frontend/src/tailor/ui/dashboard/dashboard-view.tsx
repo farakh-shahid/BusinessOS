@@ -152,7 +152,9 @@ export function DashboardView() {
           ) : (
             <DashboardQueueList
               orders={queueOrders}
-              showViewAll={stats.inProgress > queueOrders.length}
+              showViewAll={
+                stats.inProgress + stats.ready > queueOrders.length
+              }
             />
           )}
         </div>

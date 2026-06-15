@@ -5,11 +5,29 @@ function filterOrders(orders: Order[], assigneeName: string): Order[] {
   return orders.filter((order) => orderAssignedToUser(order, assigneeName));
 }
 
+function mergeAssigneeQueueOrders(
+  inProgress: Order[],
+  ready: Order[],
+): Order[] {
+  const seen = new Set(inProgress.map((order) => order.id));
+  const merged = [...inProgress];
+  for (const order of ready) {
+    if (!seen.has(order.id)) {
+      merged.push(order);
+      seen.add(order.id);
+    }
+  }
+  return merged;
+}
+
 export function filterDashboardForAssignee(
   data: DashboardData,
   assigneeName: string,
+  assigneeReadyOrders: Order[] = [],
 ): DashboardData {
-  const orders = filterOrders(data.orders, assigneeName);
+  const inProgress = filterOrders(data.orders, assigneeName);
+  const ready = filterOrders(assigneeReadyOrders, assigneeName);
+  const orders = mergeAssigneeQueueOrders(inProgress, ready);
   const dueSoonOrders = filterOrders(data.dueSoonOrders, assigneeName);
 
   const inProgressStatuses = new Set(["pending", "cutting", "stitching"]);

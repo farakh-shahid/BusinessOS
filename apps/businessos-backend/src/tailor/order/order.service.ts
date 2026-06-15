@@ -54,7 +54,11 @@ export class OrderService {
     let data = await this.orders.getDashboard(tenantId);
 
     if (shouldScopeOrdersToAssignee(user.role)) {
-      data = filterDashboardForAssignee(data, user.name);
+      const readyOrders = await this.orders.findReadyOrdersForAssignee(
+        tenantId,
+        user.name,
+      );
+      data = filterDashboardForAssignee(data, user.name, readyOrders);
     }
 
     return shouldHideFinancials(user.role)
