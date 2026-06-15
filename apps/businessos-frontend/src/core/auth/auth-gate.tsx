@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/core/auth/auth-storage";
 import { routes } from "@/core/config/routes";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
-import { AppLoadingSkeleton } from "@/tailor/ui/skeletons";
+import { AppLoadingScreen } from "@/core/presentation/components/app-loading-screen";
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export function AuthGate({ children }: AuthGateProps) {
   }, [isError, router]);
 
   if (!ready || !hasToken || isLoading) {
-    return <AppLoadingSkeleton />;
+    return <AppLoadingScreen />;
   }
 
   return <>{children}</>;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { isAdminRole } from "@/core/auth/roles";
 import { routes } from "@/core/config/routes";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
-import { AppLoadingSkeleton } from "@/tailor/ui/skeletons";
+import { AppLoadingScreen } from "@/core/presentation/components/app-loading-screen";
 
 interface AdminGateProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ export function AdminGate({ children }: AdminGateProps) {
   }, [isLoading, user, router]);
 
   if (isLoading || !user) {
-    return <AppLoadingSkeleton />;
+    return <AppLoadingScreen />;
   }
 
   if (!isAdminRole(user.role)) {

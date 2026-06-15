@@ -26,4 +26,4 @@ export {
   ReceivablesSummarySkeleton,
   StaffListSkeleton,
 } from "./list-page-skeletons";
-export { NewOrderFormSkeleton, AppLoadingSkeleton } from "./form-skeleton";
+export { NewOrderFormSkeleton } from "./form-skeleton";
