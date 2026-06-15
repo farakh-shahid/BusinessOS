@@ -9,7 +9,11 @@ import { Input } from "@/core/presentation/components/ui/input";
 import { Textarea } from "@/core/presentation/components/ui/textarea";
 import { Card, CardTitle } from "@/core/presentation/components/ui/card";
 import { resolveMediaUrl, uploadDressImage } from "@/tailor/infrastructure/api/upload.api";
-import { readDressImageFile, type NewOrderDraft } from "@/tailor/infrastructure/data/new-order.mock";
+import {
+  dressImageUploadErrorKey,
+  prepareDressImageForUpload,
+  type NewOrderDraft,
+} from "@/tailor/infrastructure/data/new-order.mock";
 import { AssignedToInput } from "./assigned-to-input";
 import { FormFieldError } from "@/core/presentation/components/ui/form-field-error";
 import type { NewOrderFieldErrors } from "@/tailor/infrastructure/data/new-order-validation";
@@ -46,6 +50,7 @@ export function OrderDetailsSection({
 }: OrderDetailsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const isWorksheet = variant === "worksheet";
 
   const advance = Number(draft.advancePaid) || 0;
@@ -55,20 +60,24 @@ export function OrderDetailsSection({
   async function handleImageSelect(file: File | undefined) {
     if (!file) return;
     setImageError(null);
+    setImageUploading(true);
     try {
-      await readDressImageFile(file);
+      const prepared = await prepareDressImageForUpload(file);
       const uploadOptions =
         draft.customerMode === "existing" && draft.customerId
           ? { customerId: draft.customerId }
           : { draftKey: draft.draftUploadKey };
-      const { url, publicId } = await uploadDressImage(file, uploadOptions);
+      const { url, publicId } = await uploadDressImage(prepared, uploadOptions);
       onChange({ dressImageUrl: url, dressImagePublicId: publicId });
     } catch (err) {
-      if (err instanceof Error && err.message === "image_too_large") {
+      const key = dressImageUploadErrorKey(err);
+      if (key === "image_too_large") {
         setImageError(t.form.dressImageTooLarge);
       } else {
         setImageError(t.form.dressImageInvalid);
       }
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -263,14 +272,15 @@ export function OrderDetailsSection({
             ) : (
               <button
                 type="button"
+                disabled={imageUploading}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "mt-1 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800",
+                  "mt-1 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800 disabled:cursor-wait disabled:opacity-60",
                   isRtl && "flex-row-reverse",
                 )}
               >
                 <ImagePlus className="h-5 w-5" />
-                {t.form.dressImageUpload}
+                {imageUploading ? t.form.dressImagePreparing : t.form.dressImageUpload}
               </button>
             )}
             {imageError ? (
@@ -320,14 +330,15 @@ export function OrderDetailsSection({
             ) : (
               <button
                 type="button"
+                disabled={imageUploading}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800",
+                  "mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800 disabled:cursor-wait disabled:opacity-60",
                   isRtl && "flex-row-reverse",
                 )}
               >
                 <ImagePlus className="h-5 w-5" />
-                {t.form.dressImageUpload}
+                {imageUploading ? t.form.dressImagePreparing : t.form.dressImageUpload}
               </button>
             )}
             {imageError && (

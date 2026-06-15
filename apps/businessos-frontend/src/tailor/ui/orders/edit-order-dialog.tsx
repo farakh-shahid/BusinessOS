@@ -28,8 +28,8 @@ import { editMeasurementsPanelClass } from "@/tailor/ui/orders/worksheet-form-pr
 import { AssignedToInput } from "./assigned-to-input";
 import {
   bookingGarmentOptions,
-  readDressImageFile,
-  validateDressImageFile,
+  dressImageUploadErrorKey,
+  prepareDressImageForUpload,
 } from "@/tailor/infrastructure/data/new-order.mock";
 import {
   resolveMediaUrl,
@@ -99,6 +99,7 @@ export function EditOrderDialog({
   const [dressImageUrl, setDressImageUrl] = useState("");
   const [dressImagePublicId, setDressImagePublicId] = useState("");
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const [isRush, setIsRush] = useState(false);
   const [assignedToName, setAssignedToName] = useState("");
   const [editMeasurementsOpen, setEditMeasurementsOpen] = useState(false);
@@ -162,21 +163,24 @@ export function EditOrderDialog({
   async function handleImageSelect(file: File | undefined) {
     if (!file) return;
     setImageError(null);
+    setImageUploading(true);
     try {
-      validateDressImageFile(file);
-      await readDressImageFile(file);
-      const { url, publicId } = await uploadDressImage(file, {
+      const prepared = await prepareDressImageForUpload(file);
+      const { url, publicId } = await uploadDressImage(prepared, {
         orderId,
         customerId,
       });
       setDressImageUrl(url);
       setDressImagePublicId(publicId);
     } catch (err) {
-      if (err instanceof Error && err.message === "image_too_large") {
+      const key = dressImageUploadErrorKey(err);
+      if (key === "image_too_large") {
         setImageError(t.form.dressImageTooLarge);
       } else {
         setImageError(t.form.dressImageInvalid);
       }
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -347,14 +351,17 @@ export function EditOrderDialog({
                 ) : (
                   <button
                     type="button"
+                    disabled={imageUploading}
                     onClick={() => fileInputRef.current?.click()}
                     className={cn(
-                      "mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800",
+                      "mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-800 disabled:cursor-wait disabled:opacity-60",
                       isRtl && "flex-row-reverse",
                     )}
                   >
                     <ImagePlus className="h-5 w-5" />
-                    {t.form.dressImageUpload}
+                    {imageUploading
+                      ? t.form.dressImagePreparing
+                      : t.form.dressImageUpload}
                   </button>
                 )}
                 {imageError ? (

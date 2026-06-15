@@ -77,30 +77,8 @@ export const emptyNewOrderDraft = (): NewOrderDraft => ({
   assignedToName: "",
 });
 
-export const MAX_DRESS_IMAGE_BYTES = 5_000_000;
-
-export function validateDressImageFile(file: File): void {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("invalid_image");
-  }
-  if (file.size > MAX_DRESS_IMAGE_BYTES) {
-    throw new Error("image_too_large");
-  }
-}
-
-export async function readDressImageFile(file: File): Promise<string> {
-  validateDressImageFile(file);
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("read_failed"));
-      }
-    };
-    reader.onerror = () => reject(new Error("read_failed"));
-    reader.readAsDataURL(file);
-  });
-}
+export {
+  MAX_DRESS_IMAGE_BYTES,
+  prepareDressImageForUpload,
+  dressImageUploadErrorKey,
+} from "./dress-image-prepare";
