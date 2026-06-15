@@ -144,11 +144,6 @@ export function LoginForm() {
           <h2 className="font-display text-[26px] font-bold tracking-[-0.01em] text-foreground">
             {t.auth.welcomeBack}
           </h2>
-          <p className="mt-1.5 text-sm text-muted-slate">
-            {t.auth.signInToPrefix}{" "}
-            <b className="font-semibold text-foreground">{t.auth.demoShopName}</b>
-          </p>
-
           <button
             type="button"
             disabled

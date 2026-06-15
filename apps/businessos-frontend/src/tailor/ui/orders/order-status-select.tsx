@@ -15,7 +15,7 @@ interface OrderStatusSelectProps {
   orderId: string;
   workflowStatus: OrderWorkflowStatus;
   displayStatus: string;
-  isAdmin: boolean;
+  userRole?: string | null;
   disabled?: boolean;
   onChange: (orderId: string, status: OrderWorkflowStatus) => void;
   /** `card` = narrow badge on order rows; `detail` = full-width on order detail header */
@@ -27,7 +27,7 @@ export function OrderStatusSelect({
   orderId,
   workflowStatus,
   displayStatus,
-  isAdmin,
+  userRole,
   disabled,
   onChange,
   context = "card",
@@ -37,8 +37,8 @@ export function OrderStatusSelect({
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const isCard = context === "card";
-  const editable = canEditOrderStatus(workflowStatus, isAdmin) && !disabled;
-  const statusOptions = workflowOptionsForRole(isAdmin);
+  const editable = canEditOrderStatus(workflowStatus, userRole) && !disabled;
+  const statusOptions = workflowOptionsForRole(userRole);
 
   const tone = statusBadgeClass({
     workflowStatus,

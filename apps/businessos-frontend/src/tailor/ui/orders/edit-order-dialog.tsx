@@ -41,6 +41,7 @@ interface EditOrderDialogProps {
   open: boolean;
   onClose: () => void;
   assigneeSuggestions?: string[];
+  assigneeWorkload?: Record<string, number>;
   focusPayment?: boolean;
 }
 
@@ -76,6 +77,7 @@ export function EditOrderDialog({
   open,
   onClose,
   assigneeSuggestions = [],
+  assigneeWorkload,
   focusPayment = false,
 }: EditOrderDialogProps) {
   const { locale } = useLocale();
@@ -276,6 +278,7 @@ export function EditOrderDialog({
                 value={assignedToName}
                 onChange={setAssignedToName}
                 suggestions={assigneeSuggestions}
+                assigneeWorkload={assigneeWorkload}
                 isRtl={isRtl}
               />
               <div>

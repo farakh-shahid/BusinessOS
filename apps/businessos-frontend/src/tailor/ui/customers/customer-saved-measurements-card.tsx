@@ -21,11 +21,9 @@ import {
 } from "@/tailor/infrastructure/data/customer-measurement-patch";
 import { bookingGarmentOptions } from "@/tailor/infrastructure/data/new-order.mock";
 import { resolveGarmentStyle } from "@/tailor/infrastructure/data/style-field-display";
-import {
-  SavedMeasurementsChart,
-  savedMeasurementsStatusMessage,
-} from "@/tailor/ui/measurements/saved-measurements-chart";
+import { savedMeasurementsStatusMessage } from "@/tailor/ui/measurements/saved-measurements-chart";
 import { SavedStylePreferencesChart } from "@/tailor/ui/measurements/saved-style-preferences-chart";
+import { GroupedMeasurementGrid } from "@/tailor/ui/shared/grouped-measurement-grid";
 import {
   WorksheetField,
   worksheetInputClass,
@@ -166,10 +164,11 @@ export function CustomerSavedMeasurementsCard({
           {(t.garments as Record<string, string>)[garmentType]} · {statusMessage}
         </p>
 
-        <SavedMeasurementsChart
+        <GroupedMeasurementGrid
           garmentType={garmentType}
           measurements={measurements}
           t={t}
+          isRtl={isRtl}
         />
 
         <div className="border-t border-hairline pt-4">

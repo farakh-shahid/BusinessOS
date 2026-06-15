@@ -32,6 +32,13 @@ export const queryKeys = {
       dueFrom?: string;
       dueTo?: string;
     }) => ["orders", "infinite", params ?? {}] as const,
+    filterCounts: (params?: {
+      customerId?: string;
+      search?: string;
+      assignedTo?: string;
+      dueFrom?: string;
+      dueTo?: string;
+    }) => ["orders", "filter-counts", params ?? {}] as const,
     receivables: ["orders", "receivables"] as const,
     assignments: ["orders", "assignments"] as const,
     detail: (id: string) => ["orders", id] as const,

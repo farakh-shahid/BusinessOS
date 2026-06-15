@@ -34,7 +34,10 @@ export function PersonNameText({
     >
       <span className={cn("shrink-0", firstClassName)}>{first}</span>
       {rest ? (
-        <span className={cn("min-w-0 truncate", restClassName)}>{rest}</span>
+        <>
+          <span aria-hidden> </span>
+          <span className={cn("min-w-0 truncate", restClassName)}>{rest.trim()}</span>
+        </>
       ) : null}
     </span>
   );

@@ -10,6 +10,7 @@ interface SidebarNavLinkProps {
   icon: LucideIcon;
   active: boolean;
   isRtl?: boolean;
+  compact?: boolean;
 }
 
 export function SidebarNavLink({
@@ -18,30 +19,46 @@ export function SidebarNavLink({
   icon: Icon,
   active,
   isRtl,
+  compact = false,
 }: SidebarNavLinkProps) {
   return (
     <Link
       href={href}
+      title={compact ? label : undefined}
+      aria-label={compact ? label : undefined}
       className={cn(
-        "sidebar-nav-link group flex items-center gap-3 rounded-2xl text-sm font-semibold transition-all duration-200",
+        "sidebar-nav-link group flex items-center rounded-2xl text-sm font-semibold transition-all duration-200",
+        compact ? "justify-center px-2 py-3" : "gap-3",
         active
-          ? "sidebar-nav-glass px-4 py-3.5 text-white"
-          : "px-3 py-3 text-sidebar-text-muted hover:bg-white/[0.05] hover:text-white/90",
-        isRtl && "flex-row-reverse",
+          ? cn(
+              "sidebar-nav-glass text-white",
+              compact ? "px-2 py-3" : "px-4 py-3.5",
+            )
+          : compact
+            ? "px-2 py-3 text-sidebar-text-muted hover:bg-white/[0.05] hover:text-white/90"
+            : "px-3 py-3 text-sidebar-text-muted hover:bg-white/[0.05] hover:text-white/90",
+        isRtl && !compact && "flex-row-reverse",
       )}
     >
-      {active ? (
+      {active && !compact ? (
         <span
           className="relative z-[1] h-8 w-1.5 shrink-0 rounded-full bg-accent-500 shadow-[0_0_12px_rgba(255,106,43,0.45)]"
           aria-hidden
         />
       ) : (
         <Icon
-          className="relative z-[1] h-[18px] w-[18px] shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
-          strokeWidth={2}
+          className={cn(
+            "relative z-[1] h-[18px] w-[18px] shrink-0 transition-opacity",
+            active
+              ? "text-accent-400 opacity-100"
+              : "opacity-70 group-hover:opacity-100",
+          )}
+          strokeWidth={active ? 2.5 : 2}
         />
       )}
-      <span className="relative z-[1] truncate">{label}</span>
+      {!compact ? (
+        <span className="relative z-[1] truncate">{label}</span>
+      ) : null}
     </Link>
   );
 }

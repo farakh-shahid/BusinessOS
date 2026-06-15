@@ -19,7 +19,7 @@ export class StaffService {
 
   async list(tenantId: string) {
     const users = await this.prisma.user.findMany({
-      where: { tenantId },
+      where: { tenantId, isActive: true },
       orderBy: { createdAt: "asc" },
     });
     return users.map((u) => ({
@@ -106,8 +106,39 @@ export class StaffService {
       name: updated.name,
       email: updated.email ?? undefined,
       phone: updated.phone ?? undefined,
-      role: updated.role,
+      role: updated.role === "SUPER_ADMIN" ? "ADMIN" : updated.role,
       createdAt: updated.createdAt.toISOString(),
     };
+  }
+
+  async revokeAccess(tenantId: string, userId: string, actorUserId: string) {
+    if (userId === actorUserId) {
+      throw new ForbiddenException("You cannot revoke your own access");
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, isActive: true },
+    });
+    if (!user) throw new NotFoundException("Staff member not found");
+
+    if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+      const adminCount = await this.prisma.user.count({
+        where: {
+          tenantId,
+          isActive: true,
+          role: { in: ["ADMIN", "SUPER_ADMIN"] },
+        },
+      });
+      if (adminCount <= 1) {
+        throw new BadRequestException("Cannot revoke the last admin account");
+      }
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+
+    return { revoked: true };
   }
 }

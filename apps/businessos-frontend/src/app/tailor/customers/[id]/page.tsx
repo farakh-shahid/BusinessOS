@@ -1,3 +1,4 @@
+import { AdminGate } from "@/core/auth/admin-gate";
 import { CustomerDetailView } from "@/tailor/ui/customers/customer-detail-view";
 
 interface CustomerDetailPageProps {
@@ -6,5 +7,9 @@ interface CustomerDetailPageProps {
 
 export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
   const { id } = await params;
-  return <CustomerDetailView customerId={id} />;
+  return (
+    <AdminGate>
+      <CustomerDetailView customerId={id} />
+    </AdminGate>
+  );
 }

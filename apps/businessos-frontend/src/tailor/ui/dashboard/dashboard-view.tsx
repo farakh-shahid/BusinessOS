@@ -4,6 +4,7 @@ import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
+import { isAdminRole, canCreateOrders } from "@/core/auth/roles";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useDashboardQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { formatTodayDate, timeGreeting } from "@/tailor/ui/shared/greeting";
@@ -25,13 +26,13 @@ import { NeedsAttentionPanel } from "@/tailor/ui/dashboard/needs-attention-panel
 import { DashboardQueueList } from "@/tailor/ui/dashboard/dashboard-queue-list";
 import { DashboardSkeleton } from "@/tailor/ui/skeletons";
 
-const QUEUE_PREVIEW_COUNT = 4;
-
 export function DashboardView() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const { data: user } = useMeQuery();
+  const isAdmin = isAdminRole(user?.role);
+  const showNewOrder = canCreateOrders(user?.role);
   const { data, isLoading, isError } = useDashboardQuery();
 
   const shopName = user?.tenantName ?? t.appName;
@@ -49,8 +50,7 @@ export function DashboardView() {
     );
   }
 
-  const { stats } = data;
-  const queuePreview = data.orders.slice(0, QUEUE_PREVIEW_COUNT);
+  const { stats, orders: queueOrders } = data;
 
   return (
     <>
@@ -70,16 +70,22 @@ export function DashboardView() {
             title={shopName}
             dateLabel={formatTodayDate(locale)}
             isRtl={isRtl}
-            newOrderHref={routes.newOrder}
-            newOrderLabel={t.nav.newOrder}
+            newOrderHref={showNewOrder ? routes.newOrder : undefined}
+            newOrderLabel={showNewOrder ? t.nav.newOrder : undefined}
           />
 
-          <CustomerSearchMobileHeader className="xl:hidden" />
+          {isAdmin ? (
+            <CustomerSearchMobileHeader className="xl:hidden" />
+          ) : null}
         </div>
 
-        <CustomerSearchMobileResults className="mt-4 xl:hidden" />
+        {isAdmin ? (
+          <CustomerSearchMobileResults className="mt-4 xl:hidden" />
+        ) : null}
       </CustomerSearchMobileShell>
 
+      {isAdmin ? (
+      <>
       <div className="hidden md:block">
         <DashboardSectionLabel isRtl={isRtl}>
           {t.dashboard.prioritiesSection}
@@ -130,6 +136,8 @@ export function DashboardView() {
           />
         </div>
       </div>
+      </>
+      ) : null}
 
       <DashboardSectionLabel isRtl={isRtl}>
         {t.dashboard.todayQueue}
@@ -137,26 +145,28 @@ export function DashboardView() {
 
       <div className="grid gap-3.5 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
         <div className="min-w-0">
-          {queuePreview.length === 0 ? (
+          {queueOrders.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
               {t.dashboard.queueEmpty}
             </div>
           ) : (
             <DashboardQueueList
-              orders={queuePreview}
-              showViewAll={data.orders.length > QUEUE_PREVIEW_COUNT}
+              orders={queueOrders}
+              showViewAll={stats.inProgress > queueOrders.length}
             />
           )}
         </div>
 
-        <aside className="hidden space-y-3.5 xl:block">
-          <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
-          <DashboardDueWeekPanel
-            orders={data.dueSoonOrders}
-            title={t.dashboard.dueThisWeek}
-            isRtl={isRtl}
-          />
-        </aside>
+        {isAdmin ? (
+          <aside className="hidden space-y-3.5 xl:block">
+            <CustomerSearchPanel compactTitle={t.dashboard.findCustomer} />
+            <DashboardDueWeekPanel
+              orders={data.dueSoonOrders}
+              title={t.dashboard.dueThisWeek}
+              isRtl={isRtl}
+            />
+          </aside>
+        ) : null}
       </div>
     </>
   );

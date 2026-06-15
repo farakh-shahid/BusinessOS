@@ -157,6 +157,20 @@ export const DOCUMENT_PRINT_BASE_CSS = `
     justify-content: space-between;
     gap: 16px;
   }
+  .msection {
+    margin-bottom: 14px;
+  }
+  .msection:last-child {
+    margin-bottom: 0;
+  }
+  .msection-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
   .mgrid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;

@@ -15,10 +15,13 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { CurrentTenant } from "../../common/decorators/current-tenant.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
 import type { AuthUser } from "../../common/types/auth-user.type";
 import { JwtAuthGuard } from "../../core/auth/jwt-auth.guard";
+import { RolesGuard } from "../../core/auth/roles.guard";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { ListOrdersQueryDto } from "./dto/list-orders-query.dto";
+import { OrderFilterCountsQueryDto } from "./dto/order-filter-counts-query.dto";
 import { MarkOrderReadyDto } from "./dto/mark-order-ready.dto";
 import { SendOrderDocumentQueryDto } from "./dto/send-order-document-query.dto";
 import { UpdateOrderDto } from "./dto/update-order.dto";
@@ -33,16 +36,23 @@ export class OrderController {
   constructor(private readonly orders: OrderService) {}
 
   @Get("dashboard")
-  dashboard(@CurrentTenant() tenantId: string) {
-    return this.orders.getDashboard(tenantId);
+  dashboard(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.orders.getDashboard(tenantId, user);
   }
 
   @Get("receivables")
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPER_ADMIN")
   receivables(@CurrentTenant() tenantId: string) {
     return this.orders.listReceivables(tenantId);
   }
 
   @Post("receivables/customers/:customerId/mark-paid")
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPER_ADMIN")
   markReceivableCustomerPaid(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
@@ -56,18 +66,37 @@ export class OrderController {
   }
 
   @Get("assignments")
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPER_ADMIN")
   assignments(@CurrentTenant() tenantId: string) {
     return this.orders.getAssignments(tenantId);
   }
 
+  @Get("filter-counts")
+  filterCounts(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: OrderFilterCountsQueryDto,
+  ) {
+    return this.orders.getQuickFilterCounts(tenantId, query, user);
+  }
+
   @Get()
-  list(@CurrentTenant() tenantId: string, @Query() query: ListOrdersQueryDto) {
-    return this.orders.list(tenantId, query);
+  list(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListOrdersQueryDto,
+  ) {
+    return this.orders.list(tenantId, query, user);
   }
 
   @Get(":id")
-  getById(@CurrentTenant() tenantId: string, @Param("id") id: string) {
-    return this.orders.getFullById(tenantId, id);
+  getById(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+  ) {
+    return this.orders.getFullById(tenantId, id, user);
   }
 
   @Post()
@@ -76,7 +105,7 @@ export class OrderController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateOrderDto,
   ) {
-    return this.orders.create(tenantId, user.id, dto);
+    return this.orders.create(tenantId, user.id, dto, user.role);
   }
 
   @Patch(":id")
@@ -86,7 +115,7 @@ export class OrderController {
     @Param("id") id: string,
     @Body() dto: UpdateOrderDto,
   ) {
-    return this.orders.updateOrder(tenantId, id, user.id, dto);
+    return this.orders.updateOrder(tenantId, id, user.id, dto, user);
   }
 
   @Patch(":id/status")
@@ -96,7 +125,7 @@ export class OrderController {
     @Param("id") id: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.orders.updateStatus(tenantId, id, user.id, user.role, dto);
+    return this.orders.updateStatus(tenantId, id, user.id, user, dto);
   }
 
   @Post(":id/reminder")
@@ -105,7 +134,7 @@ export class OrderController {
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
   ) {
-    return this.orders.sendReminder(tenantId, id, user.id);
+    return this.orders.sendReminder(tenantId, id, user.id, user);
   }
 
   @Patch(":id/mark-ready")
@@ -115,7 +144,7 @@ export class OrderController {
     @Param("id") id: string,
     @Body() dto: MarkOrderReadyDto,
   ) {
-    return this.orders.markReady(tenantId, id, user.id, dto);
+    return this.orders.markReady(tenantId, id, user.id, dto, user);
   }
 
   @Post(":id/documents/whatsapp")
@@ -149,6 +178,7 @@ export class OrderController {
       user.id,
       file,
       query.type,
+      user,
     );
   }
 }

@@ -18,6 +18,7 @@ interface OrderBoardViewProps {
   orders: Order[];
   t: Dictionary;
   isRtl?: boolean;
+  className?: string;
 }
 
 function columnTitle(
@@ -28,7 +29,12 @@ function columnTitle(
   return t.orderStatus[status];
 }
 
-export function OrderBoardView({ orders, t, isRtl }: OrderBoardViewProps) {
+export function OrderBoardView({
+  orders,
+  t,
+  isRtl,
+  className,
+}: OrderBoardViewProps) {
   const boardOrders = orders.filter((order) =>
     isActiveWorkflowStatus(order.workflowStatus),
   );
@@ -36,8 +42,9 @@ export function OrderBoardView({ orders, t, isRtl }: OrderBoardViewProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin] lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0",
+        "flex min-h-0 gap-3 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:thin] lg:grid lg:grid-cols-4 lg:overflow-hidden",
         isRtl && "flex-row-reverse lg:direction-rtl",
+        className,
       )}
     >
       {boardColumnOrder.map((status) => {
@@ -48,11 +55,11 @@ export function OrderBoardView({ orders, t, isRtl }: OrderBoardViewProps) {
         return (
           <div
             key={status}
-            className="min-w-[185px] flex-1 rounded-[13px] border border-hairline bg-card p-[11px] lg:min-w-0"
+            className="flex h-full min-h-0 min-w-[185px] flex-1 flex-col rounded-[13px] border border-hairline bg-card p-[11px] lg:min-w-0"
           >
             <div
               className={cn(
-                "mb-2.5 flex items-center justify-between border-b border-hairline pb-2 text-[11.5px] font-bold text-foreground",
+                "mb-2.5 flex shrink-0 items-center justify-between border-b border-hairline pb-2 text-[11.5px] font-bold text-foreground",
                 isRtl && "flex-row-reverse",
               )}
             >
@@ -62,7 +69,7 @@ export function OrderBoardView({ orders, t, isRtl }: OrderBoardViewProps) {
               </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]">
               {columnOrders.length === 0 ? (
                 <p className="px-1 py-2 text-[11px] text-muted-slate">
                   {t.orderList.boardEmpty}

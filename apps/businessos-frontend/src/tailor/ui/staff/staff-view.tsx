@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
@@ -16,10 +16,12 @@ import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import {
   useCreateStaffMutation,
+  useRevokeStaffMutation,
   useStaffQuery,
   useUpdateStaffMutation,
 } from "@/tailor/infrastructure/api/hooks/use-staff";
 import { StaffListSkeleton } from "@/tailor/ui/skeletons";
+import { RevokeAccessDialog } from "./revoke-access-dialog";
 
 function staffContactLabel(member: {
   email?: string;
@@ -31,6 +33,16 @@ function staffContactLabel(member: {
   return member.email ?? member.phone ?? "—";
 }
 
+type StaffRole = "ADMIN" | "STAFF" | "TAILOR";
+
+function staffRoleLabel(role: StaffRole, t: ReturnType<typeof getDictionary>) {
+  if (role === "ADMIN") return t.staff.roleAdmin;
+  if (role === "TAILOR") return t.staff.roleTailor;
+  return t.staff.roleStaff;
+}
+
+const STAFF_ROLE_OPTIONS: StaffRole[] = ["STAFF", "TAILOR", "ADMIN"];
+
 export function StaffView() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
@@ -39,14 +51,19 @@ export function StaffView() {
   const { data: staff = [], isLoading, isError } = useStaffQuery();
   const createStaff = useCreateStaffMutation();
   const updateStaff = useUpdateStaffMutation();
+  const revokeStaff = useRevokeStaffMutation();
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"ADMIN" | "STAFF">("STAFF");
+  const [role, setRole] = useState<StaffRole>("STAFF");
   const [error, setError] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   async function handleCreate() {
     setError(null);
@@ -79,7 +96,7 @@ export function StaffView() {
 
   async function handleRoleChange(
     staffId: string,
-    nextRole: "ADMIN" | "STAFF",
+    nextRole: StaffRole,
     currentName: string,
   ) {
     if (staffId === currentUser?.id) return;
@@ -89,6 +106,17 @@ export function StaffView() {
         staffId,
         payload: { name: currentName, role: nextRole },
       });
+    } catch (err) {
+      setError(resolveApiErrorMessage(err, t));
+    }
+  }
+
+  async function handleRevokeConfirm() {
+    if (!revokeTarget || revokeTarget.id === currentUser?.id) return;
+    setError(null);
+    try {
+      await revokeStaff.mutateAsync(revokeTarget.id);
+      setRevokeTarget(null);
     } catch (err) {
       setError(resolveApiErrorMessage(err, t));
     }
@@ -172,11 +200,11 @@ export function StaffView() {
               <SearchableCombobox
                 id="staff-role"
                 value={role}
-                onChange={(value) => setRole(value as "ADMIN" | "STAFF")}
-                options={[
-                  { value: "STAFF", label: t.staff.roleStaff },
-                  { value: "ADMIN", label: t.staff.roleAdmin },
-                ]}
+                onChange={(value) => setRole(value as StaffRole)}
+                options={STAFF_ROLE_OPTIONS.map((value) => ({
+                  value,
+                  label: staffRoleLabel(value, t),
+                }))}
                 placeholder={t.staff.role}
                 emptyMessage={t.form.noOptions}
                 isRtl={isRtl}
@@ -249,37 +277,64 @@ export function StaffView() {
                       isRtl && "text-right sm:text-center",
                     )}
                   >
-                    {member.role === "ADMIN"
-                      ? t.staff.roleAdmin
-                      : t.staff.roleStaff}
+                    {staffRoleLabel(member.role, t)}
                   </div>
                 ) : (
-                  <SearchableCombobox
-                    value={member.role}
-                    onChange={(value) =>
-                      handleRoleChange(
-                        member.id,
-                        value as "ADMIN" | "STAFF",
-                        member.name,
-                      )
-                    }
-                    disabled={updateStaff.isPending}
-                    className="sm:w-44"
-                    options={[
-                      { value: "STAFF", label: t.staff.roleStaff },
-                      { value: "ADMIN", label: t.staff.roleAdmin },
-                    ]}
-                    placeholder={t.staff.role}
-                    emptyMessage={t.form.noOptions}
-                    isRtl={isRtl}
-                    aria-label={t.staff.role}
-                  />
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 sm:flex-row sm:items-center",
+                      isRtl && "sm:flex-row-reverse",
+                    )}
+                  >
+                    <SearchableCombobox
+                      value={member.role}
+                      onChange={(value) =>
+                        handleRoleChange(
+                          member.id,
+                          value as StaffRole,
+                          member.name,
+                        )
+                      }
+                      disabled={updateStaff.isPending}
+                      className="sm:w-44"
+                      options={STAFF_ROLE_OPTIONS.map((value) => ({
+                        value,
+                        label: staffRoleLabel(value, t),
+                      }))}
+                      placeholder={t.staff.role}
+                      emptyMessage={t.form.noOptions}
+                      isRtl={isRtl}
+                      aria-label={t.staff.role}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-1.5 border-rose-200 px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                      disabled={revokeStaff.isPending}
+                      onClick={() =>
+                        setRevokeTarget({
+                          id: member.id,
+                          name: member.name,
+                        })
+                      }
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t.staff.revokeAccess}
+                    </Button>
+                  </div>
                 )}
               </li>
             );
           })}
         </ul>
       )}
+
+      <RevokeAccessDialog
+        memberName={revokeTarget?.name ?? null}
+        isPending={revokeStaff.isPending}
+        onClose={() => setRevokeTarget(null)}
+        onConfirm={() => void handleRevokeConfirm()}
+      />
     </>
   );
 }

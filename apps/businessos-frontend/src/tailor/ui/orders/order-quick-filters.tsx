@@ -2,24 +2,17 @@
 
 import { CalendarDays, SlidersHorizontal, X } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
+import type { OrderListQuickFilterCounts } from "@business-os/tailor";
 import { cn } from "@/core/presentation/lib/utils";
 import type { OrderListFilter } from "@/tailor/infrastructure/data/order-filters";
+import { orderQuickFilterOptions } from "@/tailor/infrastructure/data/order-filters";
 import {
   countActiveOrderFilters,
   formatOrderDeliveryDateRange,
+  quickFilterCount,
 } from "@/tailor/infrastructure/data/order-list-ui";
 import type { OrderListParams } from "@/tailor/infrastructure/data/order-list-params";
 import { useLocale } from "@/core/i18n/locale-context";
-
-const QUICK_FILTERS: OrderListFilter[] = [
-  "",
-  "booked_today",
-  "booked_last_week",
-  "overdue",
-  "due_today",
-  "ready",
-  "delivered",
-];
 
 interface OrderQuickFiltersProps {
   params: OrderListParams;
@@ -30,6 +23,9 @@ interface OrderQuickFiltersProps {
   onOpenDateSheet: () => void;
   onClearDeliveryDates: () => void;
   trailing?: React.ReactNode;
+  /** When true, show circular count badges (list view only). */
+  showFilterCounts?: boolean;
+  filterCounts?: OrderListQuickFilterCounts;
 }
 
 export function OrderQuickFilters({
@@ -41,6 +37,8 @@ export function OrderQuickFilters({
   onOpenDateSheet,
   onClearDeliveryDates,
   trailing,
+  showFilterCounts = false,
+  filterCounts,
 }: OrderQuickFiltersProps) {
   const { locale } = useLocale();
   const activeCount = countActiveOrderFilters(params);
@@ -154,8 +152,12 @@ export function OrderQuickFilters({
               isRtl && "flex-row-reverse",
             )}
           >
-            {QUICK_FILTERS.map((key) => {
+            {orderQuickFilterOptions.map((key) => {
               const active = isQuickActive(key);
+              const count =
+                showFilterCounts && filterCounts
+                  ? quickFilterCount(filterCounts, key)
+                  : null;
 
               return (
                 <button
@@ -163,13 +165,26 @@ export function OrderQuickFilters({
                   type="button"
                   onClick={() => onFilterChange(key)}
                   className={cn(
-                    "shrink-0 cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
+                    "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition-colors",
                     active
                       ? "border-brand-700 bg-brand-700 text-white shadow-sm"
                       : "border-hairline bg-card text-foreground hover:border-brand-200",
+                    isRtl && "flex-row-reverse",
                   )}
                 >
-                  {quickLabel(key)}
+                  <span>{quickLabel(key)}</span>
+                  {count !== null ? (
+                    <span
+                      className={cn(
+                        "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+                        active
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-100 text-slate-600",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}

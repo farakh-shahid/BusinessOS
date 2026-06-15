@@ -314,7 +314,7 @@ export class CustomerRepository {
 
     if (existingByPhone) {
       throw new BadRequestException(
-        "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+        "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.",
       );
     }
 
@@ -338,7 +338,7 @@ export class CustomerRepository {
         error.code === "P2002"
       ) {
         throw new BadRequestException(
-          "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+          "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.",
         );
       }
       throw error;

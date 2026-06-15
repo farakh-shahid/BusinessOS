@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
+import { canCreateOrders } from "@/core/auth/roles";
 import { cn } from "@/core/presentation/lib/utils";
 import { Input } from "@/core/presentation/components/ui/input";
 import { useDebouncedValue } from "@/core/presentation/hooks/use-debounced-value";
 import { useLocale } from "@/core/i18n/locale-context";
-import { useInfiniteOrdersQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { useInfiniteOrdersQuery, useOrderFilterCountsQuery } from "@/tailor/infrastructure/api/hooks/use-orders";
 import type { OrderListFilter } from "@/tailor/infrastructure/data/order-filters";
 import {
   buildOrdersListUrl,
@@ -33,6 +34,7 @@ import { OrderListSkeleton } from "@/tailor/ui/skeletons";
 import { BackLink } from "@/tailor/ui/shared/back-link";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
+import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -42,6 +44,8 @@ export function OrdersView() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
+  const { data: user } = useMeQuery();
+  const showNewOrder = canCreateOrders(user?.role);
   const hydrated = useRef(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dateSheetOpen, setDateSheetOpen] = useState(false);
@@ -87,6 +91,13 @@ export function OrdersView() {
     dueTo: params.dueTo || undefined,
   };
 
+  const filterCountParams = {
+    search: params.search || undefined,
+    assignedTo: params.assignedTo || undefined,
+    dueFrom: params.dueFrom || undefined,
+    dueTo: params.dueTo || undefined,
+  };
+
   const {
     data,
     isLoading,
@@ -95,6 +106,11 @@ export function OrdersView() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteOrdersQuery(listParams);
+
+  const { data: filterCounts } = useOrderFilterCountsQuery(
+    filterCountParams,
+    params.view === "list",
+  );
 
   const orders = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -179,13 +195,15 @@ export function OrdersView() {
         subtitle={!isLoading && !isError ? summaryText : undefined}
         isRtl={isRtl}
         actions={
+          showNewOrder ? (
           <Link
             href={routes.newOrder}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800"
+            className="hidden min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800 md:inline-flex"
           >
             <Plus className="h-4 w-4" />
             {t.nav.newOrder}
           </Link>
+          ) : undefined
         }
         meta={
           params.assignedTo ? (
@@ -224,6 +242,8 @@ export function OrdersView() {
           onOpenSheet={() => setSheetOpen(true)}
           onOpenDateSheet={() => setDateSheetOpen(true)}
           onClearDeliveryDates={handleClearDeliveryDates}
+          showFilterCounts={params.view === "list"}
+          filterCounts={filterCounts}
           trailing={
             <OrderViewSwitcher
               view={params.view}
@@ -253,7 +273,13 @@ export function OrdersView() {
         onApply={handleDeliveryDatesApply}
       />
 
-      <div className="mt-4">
+      <div
+        className={cn(
+          "mt-4",
+          params.view === "board" &&
+            "flex min-h-0 flex-col",
+        )}
+      >
         {isLoading ? (
           <OrderListSkeleton count={5} />
         ) : isError ? (
@@ -261,22 +287,44 @@ export function OrdersView() {
             {t.common.error}
           </div>
         ) : params.view === "board" ? (
-          <OrderBoardView orders={orders} t={t} isRtl={isRtl} />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <OrderBoardView
+              orders={orders}
+              t={t}
+              isRtl={isRtl}
+              className="h-[calc(100dvh-27.5rem)] min-h-[14rem] max-h-[calc(100dvh-27.5rem)] sm:h-[calc(100dvh-26rem)] sm:max-h-[calc(100dvh-26rem)] md:h-[calc(100dvh-14.5rem)] md:max-h-[calc(100dvh-14.5rem)] lg:h-[calc(100dvh-13rem)] lg:max-h-[calc(100dvh-13rem)]"
+            />
+            {orders.length > 0 ? (
+              <div
+                ref={loadMoreRef}
+                className="shrink-0 py-2 text-center text-xs text-muted-slate"
+              >
+                {isFetchingNextPage
+                  ? t.orderList.loadMore
+                  : hasNextPage
+                    ? null
+                    : t.orderList.endOfList}
+              </div>
+            ) : null}
+          </div>
         ) : params.view === "table" ? (
           <OrderTableView orders={orders} t={t} isRtl={isRtl} />
         ) : (
           <OrderList orders={orders} showViewAll={false} />
         )}
 
-        {!isLoading && !isError && orders.length > 0 && (
-          <div ref={loadMoreRef} className="py-6 text-center text-sm text-muted-slate">
-            {isFetchingNextPage
-              ? t.orderList.loadMore
-              : hasNextPage
-                ? null
-                : t.orderList.endOfList}
-          </div>
-        )}
+        {!isLoading &&
+          !isError &&
+          orders.length > 0 &&
+          params.view !== "board" && (
+            <div ref={loadMoreRef} className="py-6 text-center text-sm text-muted-slate">
+              {isFetchingNextPage
+                ? t.orderList.loadMore
+                : hasNextPage
+                  ? null
+                  : t.orderList.endOfList}
+            </div>
+          )}
       </div>
     </>
   );

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -40,5 +41,14 @@ export class StaffController {
     @Body() dto: UpdateStaffDto,
   ) {
     return this.staff.update(tenantId, id, dto, user.id);
+  }
+
+  @Delete(":id")
+  revoke(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+  ) {
+    return this.staff.revokeAccess(tenantId, id, user.id);
   }
 }

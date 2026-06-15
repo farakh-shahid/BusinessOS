@@ -154,3 +154,14 @@ export function buildOrderListWhere(
 
   return where;
 }
+
+/** Quick filters shown on the orders list toolbar — keep in sync with frontend. */
+export const ORDER_QUICK_FILTER_KEYS = [
+  "",
+  "booked_today",
+  "booked_last_week",
+  "overdue",
+  "due_today",
+  "ready",
+  "delivered",
+] as const;

@@ -9,7 +9,17 @@ interface OrderWorkflowStatusBadgeProps {
   workflowStatus: OrderWorkflowStatus;
   t: Dictionary;
   className?: string;
+  size?: "default" | "compact";
 }
+
+const COMPACT_STATUS_BADGE: Record<OrderWorkflowStatus, string> = {
+  pending: "bg-status-booked-bg text-status-booked",
+  cutting: "bg-status-cutting-bg text-[#9A6800]",
+  stitching: "bg-status-stitching-bg text-status-stitching",
+  ready: "bg-status-ready-bg text-status-ready",
+  delivered: "bg-status-ready-bg text-status-ready",
+  cancelled: "bg-slate-100 text-muted-slate",
+};
 
 function statusLabel(
   workflowStatus: OrderWorkflowStatus,
@@ -22,18 +32,26 @@ export function OrderWorkflowStatusBadge({
   workflowStatus,
   t,
   className,
+  size = "default",
 }: OrderWorkflowStatusBadgeProps) {
+  const compact = size === "compact";
+
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-        statusBadgeClass({ workflowStatus }),
+        "inline-flex shrink-0 items-center rounded-full",
+        compact
+          ? "gap-1 uppercase tracking-wide leading-none"
+          : "gap-1.5 px-2.5 py-1 text-[11px] font-semibold",
+        !compact && statusBadgeClass({ workflowStatus }),
+        compact && COMPACT_STATUS_BADGE[workflowStatus],
         className,
       )}
     >
       <span
         className={cn(
-          "h-1.5 w-1.5 shrink-0 rounded-full",
+          "shrink-0 rounded-full",
+          compact ? "h-2 w-2" : "h-1.5 w-1.5",
           workflowStatus === "pending" && "bg-status-booked",
           workflowStatus === "cutting" && "bg-status-cutting",
           workflowStatus === "stitching" && "bg-status-stitching",

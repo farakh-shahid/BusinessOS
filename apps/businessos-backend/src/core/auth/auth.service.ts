@@ -37,6 +37,10 @@ export class AuthService {
       throw new UnauthorizedException("Invalid login or password");
     }
 
+    if (!user.isActive) {
+      throw new UnauthorizedException("Account access has been revoked");
+    }
+
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
       throw new UnauthorizedException("Invalid login or password");

@@ -4,6 +4,7 @@ import type {
   MarkReadyResult,
   Order,
   OrderFullDetail,
+  OrderListQuickFilterCounts,
   PaginatedList,
   ReceivablesPageData,
   ReminderResult,
@@ -31,6 +32,11 @@ export interface OrdersQueryParams {
   limit?: number;
   offset?: number;
 }
+
+export type OrderFilterCountsParams = Pick<
+  OrdersQueryParams,
+  "search" | "assignedTo" | "dueFrom" | "dueTo" | "customerId"
+>;
 
 export interface UpdateOrderPayload {
   deliveryDate?: string;
@@ -73,6 +79,25 @@ function ordersQueryString(params?: OrdersQueryParams) {
   if (params?.offset !== undefined) search.set("offset", String(params.offset));
   const qs = search.toString();
   return qs ? `?${qs}` : "";
+}
+
+function filterCountsQueryString(params?: OrderFilterCountsParams) {
+  const search = new URLSearchParams();
+  if (params?.customerId) search.set("customerId", params.customerId);
+  if (params?.search?.trim()) search.set("search", params.search.trim());
+  if (params?.assignedTo?.trim()) {
+    search.set("assignedTo", params.assignedTo.trim());
+  }
+  if (params?.dueFrom?.trim()) search.set("dueFrom", params.dueFrom.trim());
+  if (params?.dueTo?.trim()) search.set("dueTo", params.dueTo.trim());
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function fetchOrderFilterCounts(params?: OrderFilterCountsParams) {
+  return apiFetch<OrderListQuickFilterCounts>(
+    `/tailor/orders/filter-counts${filterCountsQueryString(params)}`,
+  );
 }
 
 export function fetchAssignments() {

@@ -36,6 +36,40 @@ function measurementLabel(key: string, t: Dictionary): string {
   return key.replace(/([A-Z])/g, " $1").trim().toUpperCase();
 }
 
+const MEASUREMENT_GROUP_ORDER = ["body", "upper", "lower"] as const;
+
+const measurementGroupTitleKeys: Record<
+  (typeof MEASUREMENT_GROUP_ORDER)[number],
+  keyof Dictionary["orderDetail"]
+> = {
+  body: "measurementGroupUpperBody",
+  upper: "measurementGroupLengths",
+  lower: "measurementGroupLowerBody",
+};
+
+function buildMeasurementGridCells(
+  fields: ReturnType<typeof getGarmentSchema>["measurementFields"],
+  measurements: MeasurementCardData["measurements"],
+  t: Dictionary,
+): string[] {
+  const gridCells = fields.map((field) => {
+    const label = measurementLabel(field.labelKey, t);
+    const value = formatMeasurementValue(measurements[field.key]);
+    const valueHtml = value
+      ? `<div class="v">${escapeHtml(value)}</div>`
+      : `<div class="mblank"></div>`;
+    return `<div class="mcell"><div class="l">${escapeHtml(label)}</div>${valueHtml}</div>`;
+  });
+
+  while (gridCells.length % 3 !== 0) {
+    gridCells.push(
+      `<div class="mcell"><div class="l">&nbsp;</div><div class="mblank"></div></div>`,
+    );
+  }
+
+  return gridCells;
+}
+
 function buildSpecialNotes(data: MeasurementCardData, t: Dictionary): string {
   const lines: string[] = [];
 
@@ -76,18 +110,20 @@ export function buildMeasurementCardHtml({
   }),
 }: MeasurementCardHtmlInput): string {
   const schema = getGarmentSchema(normalizeBookingGarmentType(data.garmentType));
-  const gridCells = schema.measurementFields.map((field) => {
-    const label = measurementLabel(field.labelKey, t);
-    const value = formatMeasurementValue(data.measurements[field.key]);
-    const valueHtml = value
-      ? `<div class="v">${escapeHtml(value)}</div>`
-      : `<div class="mblank"></div>`;
-    return `<div class="mcell"><div class="l">${escapeHtml(label)}</div>${valueHtml}</div>`;
-  });
+  const measurementSections = MEASUREMENT_GROUP_ORDER.map((group) => {
+    const fields = schema.measurementFields.filter(
+      (field) => (field.group ?? "body") === group,
+    );
+    if (fields.length === 0) return "";
 
-  while (gridCells.length % 3 !== 0) {
-    gridCells.push(`<div class="mcell"><div class="l">&nbsp;</div><div class="mblank"></div></div>`);
-  }
+    const title = String(t.orderDetail[measurementGroupTitleKeys[group]]);
+    const gridCells = buildMeasurementGridCells(fields, data.measurements, t);
+
+    return `<div class="msection">
+      <div class="msection-title">${escapeHtml(title)}</div>
+      <div class="mgrid">${gridCells.join("")}</div>
+    </div>`;
+  }).join("");
 
   const specialNotes = buildSpecialNotes(data, t);
   const tagline = (shop.address ?? t.appTagline).toUpperCase();
@@ -136,9 +172,7 @@ export function buildMeasurementCardHtml({
 
   <div class="units-note">${escapeHtml(t.receipt.measurementCardUnits)}</div>
 
-  <div class="mgrid">
-    ${gridCells.join("")}
-  </div>
+  ${measurementSections}
 
   <div style="margin-top:16px">
     <div class="notes-label">${escapeHtml(t.receipt.measurementCardSpecialNotes)}</div>

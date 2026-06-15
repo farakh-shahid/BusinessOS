@@ -4,7 +4,7 @@ import type { OrderWorkflowStatus } from "@business-os/tailor";
 import { Check } from "lucide-react";
 import { cn } from "@/core/presentation/lib/utils";
 
-const STEP_KEYS = ["pending", "cutting", "stitching", "ready"] as const;
+const STEP_KEYS = ["pending", "cutting", "stitching", "ready", "delivered"] as const;
 type StepKey = (typeof STEP_KEYS)[number];
 
 const STEP_COUNT = STEP_KEYS.length;
@@ -75,7 +75,7 @@ export function OrderWorkflowStepper({
 
       <div
         className={cn(
-          "relative grid w-full grid-cols-4",
+          "relative grid w-full grid-cols-5",
           isRtl && "[direction:rtl]",
         )}
       >
@@ -109,7 +109,7 @@ export function OrderWorkflowStepper({
               </span>
               <span
                 className={cn(
-                  "w-full px-0.5 text-center text-[10.5px] font-semibold leading-tight",
+                  "w-full px-0.5 text-center text-[9.5px] font-semibold leading-tight sm:text-[10.5px]",
                   current && "text-accent-500",
                   done && "text-foreground",
                   (upcoming || cancelled) && "text-muted-slate",

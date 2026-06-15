@@ -5,6 +5,7 @@ import { queryKeys } from "@/core/infrastructure/api/query-keys";
 import {
   createStaff,
   fetchStaff,
+  revokeStaffAccess,
   updateStaff,
   type CreateStaffPayload,
   type UpdateStaffPayload,
@@ -39,6 +40,17 @@ export function useUpdateStaffMutation() {
       staffId: string;
       payload: UpdateStaffPayload;
     }) => updateStaff(staffId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+    },
+  });
+}
+
+export function useRevokeStaffMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (staffId: string) => revokeStaffAccess(staffId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
     },

@@ -126,6 +126,9 @@ export function OrderTableView({ orders, t, isRtl }: OrderTableViewProps) {
                   <span aria-hidden className="mx-1 text-slate-300">
                     ·
                   </span>
+                  <span className="text-[10px] font-medium text-slate-400">
+                    {t.orderList.boardBooked}
+                  </span>{" "}
                   <span className="font-medium text-slate-600">{order.bookingDate}</span>
                 </td>
                 <td

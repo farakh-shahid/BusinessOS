@@ -39,6 +39,8 @@ export interface Order {
   assignedToName?: string;
   /** Outstanding balance (list + table views) */
   balanceDue?: number;
+  /** Whether the customer is marked VIP */
+  customerIsVip?: boolean;
 }
 
 export interface OrderDetail extends Order {
@@ -126,7 +128,7 @@ export interface DashboardData {
   dueWeekChart: DashboardDueWeekChart;
   garmentMix: DashboardGarmentMix;
   workloadByTailor: DashboardTailorWorkloadItem[];
-  /** In-progress queue: pending, cutting, stitching (recent bookings first). */
+  /** Priority queue preview (rush + nearest due, capped). */
   orders: Order[];
   /** Active orders due within the next 7 days (for sidebar panel). */
   dueSoonOrders: Order[];
@@ -181,3 +183,15 @@ export interface DashboardDueWeekChart {
   heaviestCount: number;
   overdueCount: number;
 }
+
+/** Quick-filter keys on the orders list toolbar (matches UI chips). */
+export type OrderListQuickFilterKey =
+  | "all"
+  | "booked_today"
+  | "booked_last_week"
+  | "overdue"
+  | "due_today"
+  | "ready"
+  | "delivered";
+
+export type OrderListQuickFilterCounts = Record<OrderListQuickFilterKey, number>;

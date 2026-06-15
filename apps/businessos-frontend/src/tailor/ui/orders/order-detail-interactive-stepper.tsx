@@ -104,7 +104,7 @@ export function OrderDetailInteractiveStepper({
               </span>
               <span
                 className={cn(
-                  "text-xs font-semibold",
+                  "max-w-[4.25rem] truncate text-center text-[10px] font-semibold leading-tight sm:max-w-none sm:text-xs",
                   current && "text-accent-500",
                   done && "text-foreground",
                   (upcoming || cancelled) && "text-muted-slate",

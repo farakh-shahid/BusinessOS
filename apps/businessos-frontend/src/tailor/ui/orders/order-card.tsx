@@ -20,18 +20,26 @@ import { OrderStatusSelect } from "./order-status-select";
 import { OrderWorkflowStatusBadge } from "./order-workflow-status-badge";
 import { OrderDueChip } from "./order-due-chip";
 import { OrderWorkflowStepper } from "./order-workflow-stepper";
-import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
-import { statusStripeClass } from "@/tailor/infrastructure/data/order-status-colors";
+import {
+  getOrderCardSurfaceClass,
+  phoneTelHref,
+} from "@/tailor/infrastructure/data/order-list-ui";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
+import { CustomerStatusChip } from "@/tailor/ui/customers/customer-status-chips";
+
+const mobileInlineChipClass =
+  "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide leading-none";
 
 interface OrderCardProps {
   order: Order;
   isAdmin?: boolean;
+  userRole?: string | null;
   statusUpdating?: boolean;
   href: string;
   onMarkReady?: (orderId: string) => void;
   onStatusChange?: (orderId: string, status: OrderWorkflowStatus) => void;
   assigneeSuggestions?: string[];
+  assigneeWorkload?: Record<string, number>;
   onAssignChange?: (orderId: string, assignedToName: string) => void | Promise<void>;
   assignmentUpdating?: boolean;
 }
@@ -72,11 +80,13 @@ function MarkReadyButton({
 export function OrderCard({
   order,
   isAdmin = false,
+  userRole,
   statusUpdating,
   href,
   onMarkReady,
   onStatusChange,
   assigneeSuggestions = [],
+  assigneeWorkload,
   onAssignChange,
   assignmentUpdating = false,
 }: OrderCardProps) {
@@ -89,6 +99,9 @@ export function OrderCard({
     order.workflowStatus !== "cancelled";
   const actionLabel = canMarkReady ? t.orders.markReady : t.orders.sendWhatsApp;
   const controlWidth = "w-full md:w-[10.5rem]";
+  const cardSurfaceClass = getOrderCardSurfaceClass(order);
+  const isDelivered = order.workflowStatus === "delivered";
+  const showMobileStatusDropdown = Boolean(onStatusChange) && !isDelivered;
   const statusBadge = (
     <OrderWorkflowStatusBadge workflowStatus={order.workflowStatus} t={t} />
   );
@@ -108,18 +121,38 @@ export function OrderCard({
         )}
       >
         <p className="truncate font-display font-bold text-slate-900">
-          {order.customerName}
+          <PersonNameText name={order.customerName} />
         </p>
+        {order.customerIsVip ? (
+          <CustomerStatusChip
+            variant="vip"
+            label={t.customers.tagVip}
+            className={cn(
+              mobileInlineChipClass,
+              "border border-amber-200/80 bg-amber-50 text-amber-800",
+            )}
+          />
+        ) : null}
         {order.isRush ? (
           <span
             className={cn(
-              "inline-flex shrink-0 items-center gap-0.5 rounded-full bg-status-urgent-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-urgent",
+              mobileInlineChipClass,
+              "bg-status-urgent-bg text-status-urgent",
               isRtl && "flex-row-reverse",
             )}
           >
             <Zap className="h-2.5 w-2.5" />
             {t.orderDetail.rush}
           </span>
+        ) : null}
+        <OrderDueChip order={order} t={t} isRtl={isRtl} size="compact" />
+        {isDelivered ? (
+          <OrderWorkflowStatusBadge
+            workflowStatus="delivered"
+            t={t}
+            size="compact"
+            className={cn(mobileInlineChipClass, "md:hidden")}
+          />
         ) : null}
       </div>
       <p
@@ -139,6 +172,9 @@ export function OrderCard({
           )}
         >
           <CalendarClock className="h-3 w-3 shrink-0" />
+          <span className="text-[10px] font-medium text-slate-400">
+            {t.orderList.boardBooked}
+          </span>
           <span className="font-medium text-slate-500">{order.bookingDate}</span>
         </span>
       </p>
@@ -219,28 +255,12 @@ export function OrderCard({
     </div>
   );
 
-  const dateLines = (
-    <div
-      className={cn(
-        isRtl ? "text-left md:text-left" : "text-left md:text-right",
-      )}
-    >
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-2",
-          isRtl && "flex-row-reverse justify-start md:justify-end",
-        )}
-      >
-        <OrderDueChip order={order} t={t} isRtl={isRtl} />
-      </div>
-    </div>
-  );
-
   const stepperLabels = {
     pending: t.status.pending,
     cutting: t.status.cutting,
     stitching: t.status.stitching,
     ready: t.status.ready,
+    delivered: t.status.delivered,
   } as const;
 
   const progressStepper = (
@@ -252,17 +272,31 @@ export function OrderCard({
     />
   );
 
+  const assignInput = onAssignChange ? (
+    <AssignedToInput
+      t={t}
+      value={order.assignedToName ?? ""}
+      onChange={() => {}}
+      onCommit={(assignedToName) => onAssignChange(order.id, assignedToName)}
+      suggestions={assigneeSuggestions}
+      assigneeWorkload={assigneeWorkload}
+      isRtl={isRtl}
+      disabled={assignmentUpdating}
+      compact
+      showLabel={false}
+      variant="tagged"
+      className="w-full"
+    />
+  ) : null;
+
+  const mobileHasFooter =
+    showMobileStatusDropdown || (!isDelivered && onAssignChange) || onMarkReady;
+
   return (
     <div
       className={cn(
-        "relative w-full overflow-visible rounded-2xl border border-hairline bg-card px-4 py-3 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px]",
-        statusStripeClass(
-          {
-            workflowStatus: order.workflowStatus,
-            displayStatus: order.status,
-          },
-          isRtl,
-        ),
+        "relative w-full overflow-visible rounded-2xl border bg-card px-4 py-3 shadow-sm transition-shadow hover:shadow-[0_8px_22px_rgba(14,26,54,0.07)] sm:px-[18px]",
+        cardSurfaceClass,
         isRtl && "text-right",
       )}
     >
@@ -285,46 +319,29 @@ export function OrderCard({
           {customerInfoColumn}
         </div>
 
-        {progressStepper}
+        {isDelivered && onAssignChange ? (
+          <div className="pointer-events-auto relative z-10">{assignInput}</div>
+        ) : null}
 
-        {(onAssignChange || onStatusChange || onMarkReady) && (
+        {mobileHasFooter ? (
           <div className="space-y-3 border-t border-hairline pt-3">
             <div className="pointer-events-auto relative z-10 flex flex-col gap-2.5">
-              {onStatusChange ? (
+              {showMobileStatusDropdown ? (
                 <OrderStatusSelect
                   orderId={order.id}
                   workflowStatus={order.workflowStatus}
                   displayStatus={order.status}
-                  isAdmin={isAdmin}
+                  userRole={userRole}
                   disabled={statusUpdating}
-                  onChange={onStatusChange}
+                  onChange={onStatusChange!}
                   context="card"
                   className="w-full"
                 />
-              ) : (
-                statusBadge
-              )}
-                {onAssignChange ? (
-                  <AssignedToInput
-                    t={t}
-                    value={order.assignedToName ?? ""}
-                    onChange={() => {}}
-                    onCommit={(assignedToName) =>
-                      onAssignChange(order.id, assignedToName)
-                    }
-                    suggestions={assigneeSuggestions}
-                    isRtl={isRtl}
-                    disabled={assignmentUpdating}
-                    compact
-                    showLabel={false}
-                    variant="tagged"
-                    className="w-full"
-                  />
-                ) : null}
-              </div>
+              ) : null}
+              {!isDelivered && onAssignChange ? assignInput : null}
+            </div>
 
             <div className="space-y-2.5">
-              <div className={cn(isRtl && "text-right")}>{dateLines}</div>
               {onMarkReady ? (
                 <button
                   type="button"
@@ -347,7 +364,7 @@ export function OrderCard({
               ) : null}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Desktop: horizontal row + progress stepper */}
@@ -386,7 +403,7 @@ export function OrderCard({
                     orderId={order.id}
                     workflowStatus={order.workflowStatus}
                     displayStatus={order.status}
-                    isAdmin={isAdmin}
+                    userRole={userRole}
                     disabled={statusUpdating}
                     onChange={onStatusChange}
                     context="card"
@@ -405,6 +422,7 @@ export function OrderCard({
                       onAssignChange(order.id, assignedToName)
                     }
                     suggestions={assigneeSuggestions}
+      assigneeWorkload={assigneeWorkload}
                     isRtl={isRtl}
                     disabled={assignmentUpdating}
                     compact
@@ -413,8 +431,6 @@ export function OrderCard({
                     className={controlWidth}
                   />
                 ) : null}
-
-                {dateLines}
               </div>
 
               {onMarkReady ? (

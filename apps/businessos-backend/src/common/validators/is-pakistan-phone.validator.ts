@@ -1,7 +1,6 @@
 import { isValidPakistanPhone } from "@business-os/shared";
 import {
   registerDecorator,
-  type ValidationArguments,
   type ValidationOptions,
   ValidatorConstraint,
   type ValidatorConstraintInterface,
@@ -13,16 +12,13 @@ export class IsPakistanPhoneConstraint implements ValidatorConstraintInterface {
     return typeof value === "string" && isValidPakistanPhone(value);
   }
 
-  defaultMessage(args: ValidationArguments): string {
-    return `${args.property} must be a valid Pakistani phone number (e.g. 03001234567)`;
+  defaultMessage(): string {
+    return "Enter a valid mobile number (e.g. 03001234567)";
   }
 }
 
 export function IsPakistanPhone(validationOptions?: ValidationOptions) {
-  return function registerPakistanPhoneValidator(
-    object: object,
-    propertyName: string,
-  ) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName,

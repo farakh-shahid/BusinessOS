@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -14,9 +14,11 @@ import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
 import { routes } from "@/core/config/routes";
+import { canCreateOrders } from "@/core/auth/roles";
 import { resolveApiErrorMessage } from "@/core/presentation/lib/resolve-api-error";
 import { useToast } from "@/core/presentation/components/ui/toast";
 import { useLocale } from "@/core/i18n/locale-context";
+import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import {
   useCustomerDetailQuery,
 } from "@/tailor/infrastructure/api/hooks/use-customers";
@@ -25,6 +27,7 @@ import {
   useAssignmentsQuery,
   useCreateOrderMutation,
 } from "@/tailor/infrastructure/api/hooks/use-orders";
+import { buildAssigneeWorkloadMap } from "@/tailor/infrastructure/data/assignee-workload";
 import {
   patchFromCustomerDetail,
   resetDressFieldsForNewOrder,
@@ -59,9 +62,21 @@ export function NewOrderForm() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
+  const { data: user, isLoading: userLoading } = useMeQuery();
   const { showError, showSuccess } = useToast();
+
+  useEffect(() => {
+    if (userLoading) return;
+    if (user && !canCreateOrders(user.role)) {
+      router.replace(routes.orders);
+    }
+  }, [user, userLoading, router]);
   const createOrder = useCreateOrderMutation();
   const { data: assignments } = useAssignmentsQuery();
+  const assigneeWorkload = useMemo(
+    () => buildAssigneeWorkloadMap(assignments),
+    [assignments],
+  );
   const [draft, setDraft] = useState<NewOrderDraft>(emptyNewOrderDraft);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<NewOrderFieldErrors>({});
@@ -260,6 +275,7 @@ export function NewOrderForm() {
             onChange={patch}
             isRtl={isRtl}
             assigneeSuggestions={assignments?.assignees ?? []}
+            assigneeWorkload={assigneeWorkload}
             fieldErrors={fieldErrors}
             variant="worksheet"
             fieldPlacement="primary"
@@ -307,6 +323,7 @@ export function NewOrderForm() {
           onChange={patch}
           isRtl={isRtl}
           assigneeSuggestions={assignments?.assignees ?? []}
+          assigneeWorkload={assigneeWorkload}
           fieldErrors={fieldErrors}
           variant="worksheet"
           fieldPlacement="secondary"

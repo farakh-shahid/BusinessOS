@@ -1,4 +1,11 @@
-import type { Order, OrderStatus, OrderWorkflowStatus } from "@business-os/tailor";
+import type {
+  Order,
+  OrderListQuickFilterCounts,
+  OrderListQuickFilterKey,
+  OrderStatus,
+  OrderWorkflowStatus,
+} from "@business-os/tailor";
+import type { OrderListFilter } from "./order-filters";
 import type { OrderListParams } from "./order-list-params";
 import type { Dictionary } from "@business-os/i18n";
 
@@ -80,12 +87,50 @@ export function resolveDueUrgency(
     };
   }
 
+  const parsed = new Date(dueDateStr);
+  if (!Number.isNaN(parsed.getTime())) {
+    const diff = daysBetween(new Date(), parsed);
+    if (diff < 0) {
+      return {
+        key: "overdue",
+        labelKey: "overdue",
+        emoji: "🔴",
+        className: "border-rose-400 bg-rose-100 text-rose-700",
+      };
+    }
+    if (diff === 0) {
+      return {
+        key: "due_today",
+        labelKey: "due_today",
+        emoji: "🔥",
+        className: "border-status-urgent bg-status-urgent-bg text-status-urgent",
+      };
+    }
+    if (diff === 1) {
+      return {
+        key: "due_tomorrow",
+        labelKey: "due_tomorrow",
+        emoji: "🔴",
+        className:
+          "border-status-urgent/70 bg-status-urgent-bg text-status-urgent",
+      };
+    }
+    if (diff >= 2 && diff <= 7) {
+      return {
+        key: "due_soon",
+        labelKey: "due_soon",
+        emoji: "📅",
+        className: "border-status-cutting bg-status-cutting-bg text-[#9A6800]",
+      };
+    }
+  }
+
   if (displayStatus === "overdue") {
     return {
       key: "overdue",
       labelKey: "overdue",
       emoji: "🔴",
-      className: "border-status-urgent bg-status-urgent-bg text-status-urgent",
+      className: "border-rose-400 bg-rose-100 text-rose-700",
     };
   }
 
@@ -98,26 +143,7 @@ export function resolveDueUrgency(
     };
   }
 
-  const parsed = new Date(dueDateStr);
   if (Number.isNaN(parsed.getTime())) return null;
-
-  const diff = daysBetween(new Date(), parsed);
-  if (diff === 1) {
-    return {
-      key: "due_tomorrow",
-      labelKey: "due_tomorrow",
-      emoji: "🔴",
-      className: "border-status-urgent/70 bg-status-urgent-bg text-status-urgent",
-    };
-  }
-  if (diff >= 2 && diff <= 7) {
-    return {
-      key: "due_soon",
-      labelKey: "due_soon",
-      emoji: "📅",
-      className: "border-status-cutting bg-status-cutting-bg text-[#9A6800]",
-    };
-  }
 
   return {
     key: "due_later",
@@ -158,6 +184,59 @@ export function computeOrderListSummary(orders: Order[]) {
     rush: active.filter((order) => order.isRush).length,
     dueToday: active.filter((order) => order.status === "due_today").length,
   };
+}
+
+/** Rose highlight for overdue in-progress orders. */
+export const OVERDUE_ORDER_SURFACE_CLASS =
+  "border-rose-300 bg-rose-50/50 ring-1 ring-rose-200/80";
+
+/** Muted surface for cancelled orders (wins over overdue card styling). */
+export const CANCELLED_ORDER_SURFACE_CLASS =
+  "border-slate-200 bg-slate-50/90 ring-1 ring-slate-200/70";
+
+export function isOrderOverdue(
+  order: Pick<Order, "dueDate" | "workflowStatus"> & {
+    status: Order["status"] | string;
+  },
+): boolean {
+  if (
+    order.workflowStatus === "cancelled" ||
+    order.workflowStatus === "delivered"
+  ) {
+    return false;
+  }
+  const urgency = resolveDueUrgency(
+    order.dueDate,
+    order.status as Order["status"],
+    false,
+  );
+  return urgency?.key === "overdue";
+}
+
+/** Card border/background: cancelled → slate, active overdue → rose, else default. */
+export function getOrderCardSurfaceClass(
+  order: Pick<Order, "dueDate" | "workflowStatus"> & {
+    status: Order["status"] | string;
+  },
+): string {
+  if (order.workflowStatus === "cancelled") {
+    return CANCELLED_ORDER_SURFACE_CLASS;
+  }
+  if (isOrderOverdue(order)) {
+    return OVERDUE_ORDER_SURFACE_CLASS;
+  }
+  return "border-hairline";
+}
+
+export function quickFilterCount(
+  counts: OrderListQuickFilterCounts,
+  filter: OrderListFilter,
+): number {
+  if (filter === "") return counts.all;
+  if (filter in counts) {
+    return counts[filter as Exclude<OrderListQuickFilterKey, "all">];
+  }
+  return 0;
 }
 
 export function formatOrderDueShort(order: Order, t: Dictionary): string {

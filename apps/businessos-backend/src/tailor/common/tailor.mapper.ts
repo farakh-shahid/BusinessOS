@@ -105,8 +105,6 @@ export function resolveDisplayStatus(
   if (status === "DELIVERED") return "delivered";
   if (status === "CANCELLED") return "cancelled";
   if (status === "READY") return "ready";
-  if (status === "CUTTING") return "cutting";
-  if (status === "STITCHING") return "stitching";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -115,6 +113,9 @@ export function resolveDisplayStatus(
 
   if (due < today) return "overdue";
   if (due.getTime() === today.getTime()) return "due_today";
+
+  if (status === "CUTTING") return "cutting";
+  if (status === "STITCHING") return "stitching";
   return "pending";
 }
 

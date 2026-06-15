@@ -6,6 +6,7 @@ import {
   MinLength,
   ValidateIf,
 } from "class-validator";
+import { IsPakistanPhone } from "../../../common/validators/is-pakistan-phone.validator";
 
 export class CreateStaffDto {
   @IsString()
@@ -18,15 +19,15 @@ export class CreateStaffDto {
 
   @ValidateIf((dto: CreateStaffDto) => !dto.email?.trim())
   @IsString()
-  @MinLength(7)
+  @IsPakistanPhone()
   phone?: string;
 
   @IsString()
   @MinLength(8)
   password!: string;
 
-  @IsIn(["ADMIN", "STAFF"])
-  role!: "ADMIN" | "STAFF";
+  @IsIn(["ADMIN", "STAFF", "TAILOR"])
+  role!: "ADMIN" | "STAFF" | "TAILOR";
 }
 
 export class UpdateStaffDto {
@@ -34,6 +35,6 @@ export class UpdateStaffDto {
   @MinLength(2)
   name!: string;
 
-  @IsIn(["ADMIN", "STAFF"])
-  role!: "ADMIN" | "STAFF";
+  @IsIn(["ADMIN", "STAFF", "TAILOR"])
+  role!: "ADMIN" | "STAFF" | "TAILOR";
 }

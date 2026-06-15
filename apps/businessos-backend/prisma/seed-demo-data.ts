@@ -764,7 +764,12 @@ export async function seedDemoTailorData(
   for (const member of STAFF) {
     await prisma.user.upsert({
       where: { email: member.email },
-      update: { name: member.name, tenantId: DEMO_TENANT_ID, role: UserRole.STAFF },
+      update: {
+        name: member.name,
+        tenantId: DEMO_TENANT_ID,
+        role: UserRole.STAFF,
+        phone: member.phone,
+      },
       create: {
         id: member.id,
         name: member.name,

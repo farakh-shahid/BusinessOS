@@ -26,8 +26,8 @@ export function OrderDetailPanel({
       {title ? (
         <div
           className={cn(
-            "mb-3 flex items-center justify-between gap-3",
-            isRtl && "flex-row-reverse",
+            "mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3",
+            isRtl && "sm:flex-row-reverse",
           )}
         >
           <h2 className="font-display text-[15px] font-bold text-foreground">

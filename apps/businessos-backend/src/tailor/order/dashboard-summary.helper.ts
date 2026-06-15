@@ -269,7 +269,16 @@ export function buildDashboardGarmentMix(
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
-  const totalOrders = orders.length;
+  return buildDashboardGarmentMixFromCounts(counts, labelForGarment, otherLabel);
+}
+
+export function buildDashboardGarmentMixFromCounts(
+  counts: Map<string, number>,
+  labelForGarment: (type: string) => string = (type) =>
+    garmentLabel(toGarmentType(type)),
+  otherLabel = "Other",
+): DashboardGarmentMix {
+  const totalOrders = [...counts.values()].reduce((sum, count) => sum + count, 0);
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   const top = sorted.slice(0, 4);
   const restCount = sorted.slice(4).reduce((sum, [, count]) => sum + count, 0);
@@ -309,6 +318,14 @@ export function buildDashboardTailorWorkload(
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
 
+  return buildDashboardTailorWorkloadFromCounts(counts, unassigned, unassignedLabel);
+}
+
+export function buildDashboardTailorWorkloadFromCounts(
+  counts: Map<string, number>,
+  unassigned: number,
+  unassignedLabel = "Unassigned",
+): DashboardTailorWorkloadItem[] {
   const assigned: DashboardTailorWorkloadItem[] = [...counts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)

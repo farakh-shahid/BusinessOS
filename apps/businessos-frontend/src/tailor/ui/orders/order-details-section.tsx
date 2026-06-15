@@ -26,6 +26,7 @@ interface OrderDetailsSectionProps {
   onChange: (patch: Partial<NewOrderDraft>) => void;
   isRtl: boolean;
   assigneeSuggestions?: string[];
+  assigneeWorkload?: Record<string, number>;
   fieldErrors?: NewOrderFieldErrors;
   variant?: "default" | "worksheet";
   /** Worksheet layout: primary = qty & dates; secondary = rest; all = full card (default). */
@@ -38,6 +39,7 @@ export function OrderDetailsSection({
   onChange,
   isRtl,
   assigneeSuggestions = [],
+  assigneeWorkload,
   fieldErrors = {},
   variant = "default",
   fieldPlacement = "all",
@@ -502,6 +504,7 @@ export function OrderDetailsSection({
           value={draft.assignedToName}
           onChange={(assignedToName) => onChange({ assignedToName })}
           suggestions={assigneeSuggestions}
+          assigneeWorkload={assigneeWorkload}
           isRtl={isRtl}
         />
       </div>

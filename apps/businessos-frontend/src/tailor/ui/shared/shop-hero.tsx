@@ -136,7 +136,7 @@ export function ShopHero({
             <Link
               href={newOrderHref}
               className={cn(
-                "inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] sm:w-auto sm:px-6",
+                "hidden shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] md:inline-flex md:w-auto md:px-6",
                 isRtl && "flex-row-reverse",
               )}
             >
@@ -173,7 +173,7 @@ export function ShopHero({
             <Link
               href={newOrderHref}
               className={cn(
-                "inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 self-start rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] sm:w-auto sm:px-6",
+                "hidden shrink-0 cursor-pointer items-center justify-center gap-2 self-start rounded-2xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-105 active:scale-[0.98] md:inline-flex md:w-auto md:px-6",
                 isRtl && "flex-row-reverse",
               )}
             >

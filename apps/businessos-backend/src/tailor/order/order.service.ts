@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ForbiddenException } from "@nestjs/common";
 import type {
   MarkReadyResult,
   OrderDocumentWhatsAppResult,
@@ -6,6 +6,14 @@ import type {
   ReminderResult,
 } from "@business-os/tailor";
 import type { UserRole } from "../../generated/prisma/client";
+import type { AuthUser } from "../../common/types/auth-user.type";
+import {
+  canCreateOrders,
+  isTailorRole,
+  orderAssignedToUser,
+  shouldHideFinancials,
+  shouldScopeOrdersToAssignee,
+} from "../../common/utils/user-role.util";
 import { notificationConfig } from "../../config/notification.config";
 import { EmailNotificationService } from "../../core/notifications/email-notification.service";
 import { WhatsAppNotificationService } from "../../core/notifications/whatsapp-notification.service";
@@ -20,10 +28,16 @@ import { garmentLabel } from "../common/tailor.mapper";
 import { CloudinaryService } from "../upload/cloudinary.service";
 import type { CreateOrderDto } from "./dto/create-order.dto";
 import type { ListOrdersQueryDto } from "./dto/list-orders-query.dto";
+import type { OrderFilterCountsQueryDto } from "./dto/order-filter-counts-query.dto";
 import type { MarkOrderReadyDto } from "./dto/mark-order-ready.dto";
 import type { UpdateOrderDto } from "./dto/update-order.dto";
 import type { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import { OrderAuditService } from "./order-audit.service";
+import {
+  sanitizeDashboardForStaff,
+  sanitizeOrderFullDetailForStaff,
+} from "./dashboard-staff-sanitize.helper";
+import { filterDashboardForAssignee } from "./dashboard-tailor-filter.helper";
 import { OrderRepository } from "./order.repository";
 
 @Injectable()
@@ -36,12 +50,30 @@ export class OrderService {
     private readonly cloudinary: CloudinaryService,
   ) {}
 
-  getDashboard(tenantId: string) {
-    return this.orders.getDashboard(tenantId);
+  async getDashboard(tenantId: string, user: AuthUser) {
+    let data = await this.orders.getDashboard(tenantId);
+
+    if (shouldScopeOrdersToAssignee(user.role)) {
+      data = filterDashboardForAssignee(data, user.name);
+    }
+
+    return shouldHideFinancials(user.role)
+      ? sanitizeDashboardForStaff(data)
+      : data;
   }
 
-  list(tenantId: string, query?: ListOrdersQueryDto) {
-    return this.orders.list(tenantId, query);
+  list(tenantId: string, query: ListOrdersQueryDto | undefined, user: AuthUser) {
+    const scopedQuery = this.scopeListQueryForUser(query, user);
+    return this.orders.list(tenantId, scopedQuery);
+  }
+
+  getQuickFilterCounts(
+    tenantId: string,
+    query: OrderFilterCountsQueryDto | undefined,
+    user: AuthUser,
+  ) {
+    const scopedQuery = this.scopeFilterCountsQueryForUser(query, user);
+    return this.orders.getQuickFilterCounts(tenantId, scopedQuery);
   }
 
   listReceivables(tenantId: string) {
@@ -63,20 +95,30 @@ export class OrderService {
   async getFullById(
     tenantId: string,
     orderId: string,
+    user?: AuthUser,
   ): Promise<OrderFullDetail> {
     const order = await this.orders.findFullById(tenantId, orderId);
+    this.assertTailorOrderAccess(order, user);
+
     const [auditLog, payments] = await Promise.all([
       this.audit.listForOrder(tenantId, orderId),
       this.orders.getPaymentsWithUsers(tenantId, orderId),
     ]);
-    return this.orders.toOrderFullDetail(order, auditLog, payments);
+    const detail = this.orders.toOrderFullDetail(order, auditLog, payments);
+    return user && shouldHideFinancials(user.role)
+      ? sanitizeOrderFullDetailForStaff(detail)
+      : detail;
   }
 
-  getById(tenantId: string, orderId: string) {
-    return this.getFullById(tenantId, orderId);
+  getById(tenantId: string, orderId: string, user?: AuthUser) {
+    return this.getFullById(tenantId, orderId, user);
   }
 
-  async create(tenantId: string, userId: string, dto: CreateOrderDto) {
+  async create(tenantId: string, userId: string, dto: CreateOrderDto, userRole: UserRole) {
+    if (!canCreateOrders(userRole)) {
+      throw new ForbiddenException("You cannot create orders");
+    }
+
     let order = await this.orders.create(tenantId, userId, dto);
 
     if (dto.dressImagePublicId && this.cloudinary.enabled()) {
@@ -105,8 +147,14 @@ export class OrderService {
     orderId: string,
     userId: string,
     dto: UpdateOrderDto,
+    user?: AuthUser,
   ) {
+    if (user && !canCreateOrders(user.role)) {
+      throw new ForbiddenException("You cannot edit orders");
+    }
+
     const existing = await this.orders.findFullById(tenantId, orderId);
+    this.assertTailorOrderAccess(existing, user);
 
     const imageRemoved =
       dto.dressImageUrl !== undefined && !dto.dressImageUrl.trim();
@@ -135,21 +183,27 @@ export class OrderService {
       this.audit.listForOrder(tenantId, orderId),
       this.orders.getPaymentsWithUsers(tenantId, orderId),
     ]);
-    return this.orders.toOrderFullDetail(updated, auditLog, payments);
+    const detail = this.orders.toOrderFullDetail(updated, auditLog, payments);
+    return user && shouldHideFinancials(user.role)
+      ? sanitizeOrderFullDetailForStaff(detail)
+      : detail;
   }
 
   async updateStatus(
     tenantId: string,
     orderId: string,
     userId: string,
-    userRole: UserRole,
+    user: AuthUser,
     dto: UpdateOrderStatusDto,
   ) {
+    const order = await this.orders.findById(tenantId, orderId);
+    this.assertTailorOrderAccess(order, user);
+
     const result = await this.orders.updateStatus(
       tenantId,
       orderId,
       userId,
-      userRole,
+      user.role,
       dto,
     );
 
@@ -172,8 +226,10 @@ export class OrderService {
     tenantId: string,
     orderId: string,
     userId: string,
+    user: AuthUser,
   ): Promise<ReminderResult> {
     const order = await this.orders.findFullById(tenantId, orderId);
+    this.assertTailorOrderAccess(order, user);
     const locale = order.customer.preferredLocale === "UR" ? "ur" : "en";
     const garment = garmentLabel(order.garmentType);
     const due = order.deliveryDate.toLocaleDateString("en-PK");
@@ -223,7 +279,11 @@ export class OrderService {
     orderId: string,
     userId: string,
     dto: MarkOrderReadyDto,
+    user: AuthUser,
   ): Promise<MarkReadyResult> {
+    const existing = await this.orders.findFullById(tenantId, orderId);
+    this.assertTailorOrderAccess(existing, user);
+
     const sendWhatsApp = dto.sendWhatsApp !== false;
     const sendEmail = dto.sendEmail === true;
 
@@ -319,8 +379,10 @@ export class OrderService {
     userId: string,
     file: Express.Multer.File,
     documentType: OrderDocumentType,
+    user: AuthUser,
   ): Promise<OrderDocumentWhatsAppResult> {
     const order = await this.orders.findById(tenantId, orderId);
+    this.assertTailorOrderAccess(order, user);
 
     const locale = order.customer.preferredLocale === "UR" ? "ur" : "en";
     const docCtx = {
@@ -357,5 +419,34 @@ export class OrderService {
       whatsappUrl: wa.whatsappUrl,
       reason: wa.reason,
     };
+  }
+
+  private assertTailorOrderAccess(
+    order: { assignedToName?: string | null },
+    user?: AuthUser,
+  ) {
+    if (!user || !isTailorRole(user.role)) return;
+
+    if (!orderAssignedToUser(order, user.name)) {
+      throw new ForbiddenException("You can only access your assigned orders");
+    }
+  }
+
+  private scopeListQueryForUser(
+    query: ListOrdersQueryDto | undefined,
+    user: AuthUser,
+  ): ListOrdersQueryDto | undefined {
+    if (!shouldScopeOrdersToAssignee(user.role)) return query;
+
+    return { ...query, assignedTo: user.name };
+  }
+
+  private scopeFilterCountsQueryForUser(
+    query: OrderFilterCountsQueryDto | undefined,
+    user: AuthUser,
+  ): OrderFilterCountsQueryDto | undefined {
+    if (!shouldScopeOrdersToAssignee(user.role)) return query;
+
+    return { ...query, assignedTo: user.name };
   }
 }

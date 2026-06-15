@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Order, OrderWorkflowStatus } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
-import { isAdminRole } from "@/core/auth/roles";
+import { isAdminRole, canDeliverOrders } from "@/core/auth/roles";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
@@ -20,6 +20,7 @@ import { DeliverDialog } from "./deliver-dialog";
 import { MarkReadyConfirmSheet } from "./mark-ready-confirm-sheet";
 import { MarkReadyDialog } from "./mark-ready-dialog";
 import { OrderCard } from "./order-card";
+import { buildAssigneeWorkloadMap } from "@/tailor/infrastructure/data/assignee-workload";
 
 interface OrderListProps {
   orders: Order[];
@@ -44,9 +45,14 @@ export function OrderList({
   const t = getDictionary(locale);
   const { data: user } = useMeQuery();
   const isAdmin = isAdminRole(user?.role);
+  const canDeliver = canDeliverOrders(user?.role);
   const updateStatus = useUpdateOrderStatusMutation();
   const updateOrder = useUpdateOrderMutation();
   const { data: assignments } = useAssignmentsQuery();
+  const assigneeWorkload = useMemo(
+    () => buildAssigneeWorkloadMap(assignments),
+    [assignments],
+  );
   const { showSuccess, showError } = useToast();
   const [markReadyConfirmOrder, setMarkReadyConfirmOrder] = useState<Order | null>(
     null,
@@ -70,7 +76,7 @@ export function OrderList({
     orderId: string,
     status: OrderWorkflowStatus,
   ) {
-    if (status === "delivered" && isAdmin) {
+    if (status === "delivered" && canDeliver) {
       setDeliverOrderId(orderId);
       return;
     }
@@ -123,6 +129,7 @@ export function OrderList({
           key={order.id}
           order={order}
           isAdmin={isAdmin}
+          userRole={user?.role}
           statusUpdating={updatingOrderId === order.id}
           href={routes.orderDetail(order.id)}
           onMarkReady={
@@ -136,8 +143,9 @@ export function OrderList({
           onStatusChange={
             enableStatusChange ? handleStatusChange : undefined
           }
-          assigneeSuggestions={assignments?.assignees ?? []}
-          onAssignChange={handleAssignChange}
+          assigneeSuggestions={isAdmin ? (assignments?.assignees ?? []) : []}
+          assigneeWorkload={isAdmin ? assigneeWorkload : undefined}
+          onAssignChange={isAdmin ? handleAssignChange : undefined}
           assignmentUpdating={assigningOrderId === order.id}
         />
       ))}

@@ -2,21 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ClipboardList,
   Ellipsis,
   Home,
+  LogOut,
   Plus,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
+import { canCreateOrders } from "@/core/auth/roles";
 import { cn } from "@/core/presentation/lib/utils";
 import { BottomSheet } from "@/core/presentation/components/ui/bottom-sheet";
 import { useLocale } from "@/core/i18n/locale-context";
-import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
+import { useLogout, useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import {
   getMobileMoreNavItems,
   isNavActive,
@@ -93,6 +95,7 @@ function MobileMoreNavSheet({
   t,
   isRtl,
   onClose,
+  onLogout,
 }: {
   open: boolean;
   items: NavItem[];
@@ -100,6 +103,7 @@ function MobileMoreNavSheet({
   t: ReturnType<typeof getDictionary>;
   isRtl: boolean;
   onClose: () => void;
+  onLogout: () => void;
 }) {
   return (
     <BottomSheet
@@ -138,21 +142,46 @@ function MobileMoreNavSheet({
           );
         })}
       </ul>
+
+      <div className="mt-4 border-t border-hairline pt-4">
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onLogout();
+          }}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl border border-hairline bg-card px-4 py-3 text-sm font-semibold text-rose-600 transition-colors hover:border-rose-200 hover:bg-rose-50",
+            isRtl && "flex-row-reverse text-right",
+          )}
+        >
+          <LogOut className="h-5 w-5 shrink-0" strokeWidth={2} />
+          {t.auth.logout}
+        </button>
+      </div>
     </BottomSheet>
   );
 }
 
 export function MobileNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const { data: user } = useMeQuery();
+  const logout = useLogout();
+  const showNewOrder = canCreateOrders(user?.role);
   const moreItems = getMobileMoreNavItems(user?.role);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = moreItems.some((item) =>
     isNavActive(pathname, item.segment),
   );
+
+  function handleLogout() {
+    logout();
+    router.replace(routes.login);
+  }
 
   useEffect(() => {
     setMoreOpen(false);
@@ -180,6 +209,7 @@ export function MobileNav() {
             />
 
             <div className="flex justify-center pb-1">
+              {showNewOrder ? (
               <Link
                 href={routes.newOrder}
                 aria-label={t.nav.newOrder}
@@ -187,6 +217,9 @@ export function MobileNav() {
               >
                 <Plus className="h-7 w-7" strokeWidth={2.5} />
               </Link>
+              ) : (
+                <div className="h-14 w-14" aria-hidden />
+              )}
             </div>
 
             <MobileBottomNavLink
@@ -213,6 +246,7 @@ export function MobileNav() {
         t={t}
         isRtl={isRtl}
         onClose={() => setMoreOpen(false)}
+        onLogout={handleLogout}
       />
     </>
   );

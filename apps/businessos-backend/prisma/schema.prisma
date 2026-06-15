@@ -18,6 +18,7 @@ enum UserRole {
   SUPER_ADMIN
   ADMIN
   STAFF
+  TAILOR
 
   @@schema("business_os")
 }
@@ -49,6 +50,7 @@ model User {
   phone        String?  @unique
   passwordHash String   @map("password_hash")
   role         UserRole @default(STAFF)
+  isActive     Boolean  @default(true) @map("is_active")
   permissions  Json     @default("{}")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

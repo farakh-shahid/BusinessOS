@@ -19,9 +19,11 @@ export type {
   DashboardTailorWorkloadItem,
   OrderDetail,
   MarkReadyResult,
+  OrderListQuickFilterCounts,
+  OrderListQuickFilterKey,
 } from "./types/order";
 export type { PaginatedList } from "./types/pagination";
-export { DEFAULT_PAGE_SIZE } from "./types/pagination";
+export { DEFAULT_PAGE_SIZE, DASHBOARD_QUEUE_LIMIT } from "./types/pagination";
 export type {
   OrderFullDetail,
   OrderPaymentRecord,

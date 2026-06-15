@@ -5,9 +5,23 @@ interface BrandLogoProps {
   solutionsLabel: string;
   isRtl?: boolean;
   className?: string;
+  compact?: boolean;
 }
 
-export function BrandLogo({ solutionsLabel, isRtl, className }: BrandLogoProps) {
+export function BrandLogo({
+  solutionsLabel,
+  isRtl,
+  className,
+  compact = false,
+}: BrandLogoProps) {
+  if (compact) {
+    return (
+      <div className={cn("flex justify-center", className)}>
+        <BrandMarkIcon />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

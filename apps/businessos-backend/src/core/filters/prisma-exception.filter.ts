@@ -15,6 +15,19 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
 
+    if (exception.code === "P1001" || exception.code === "P1002" || exception.code === "P1017") {
+      this.logger.error(
+        `Database connection failed (${exception.code}): ${exception.message}`,
+      );
+      response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        message:
+          "Cannot reach the database. Check DATABASE_URL and your network connection.",
+        error: "Service Unavailable",
+      });
+      return;
+    }
+
     if (exception.code === "P2020") {
       response.status(HttpStatus.BAD_REQUEST).json({
         statusCode: HttpStatus.BAD_REQUEST,
@@ -27,12 +40,25 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     if (exception.code === "P2002") {
       const target = Array.isArray(exception.meta?.target)
-        ? exception.meta.target.join(", ")
-        : "record";
-      const message =
-        target.includes("phone")
-          ? "A customer with this phone number already exists. Switch to Existing customer or use a different number."
-          : "This record already exists. Please check your details and try again.";
+        ? exception.meta.target.join(",")
+        : String(exception.meta?.target ?? "record");
+
+      let message =
+        "This record already exists. Please check your details and try again.";
+
+      if (target.includes("tenant_id") && target.includes("phone")) {
+        message =
+          "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.";
+      } else if (target.includes("users_phone") || target === "phone") {
+        message =
+          "This phone number is already registered for another staff login.";
+      } else if (target.includes("users_email") || target === "email") {
+        message =
+          "This email is already registered for another staff login.";
+      } else if (target.includes("phone")) {
+        message =
+          "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.";
+      }
 
       response.status(HttpStatus.BAD_REQUEST).json({
         statusCode: HttpStatus.BAD_REQUEST,
@@ -42,7 +68,10 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    this.logger.error(exception.message, exception.stack);
+    this.logger.error(
+      `${exception.code ?? "PRISMA"}: ${exception.message}`,
+      exception.stack,
+    );
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: "Something went wrong while saving. Please try again.",

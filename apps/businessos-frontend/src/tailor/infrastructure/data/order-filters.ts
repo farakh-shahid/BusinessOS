@@ -56,3 +56,14 @@ export const orderFilterOptions: OrderListFilter[] = [
   "delivered",
   "cancelled",
 ];
+
+/** Horizontal quick filters on the orders list page toolbar. */
+export const orderQuickFilterOptions: OrderListFilter[] = [
+  "",
+  "booked_today",
+  "booked_last_week",
+  "overdue",
+  "due_today",
+  "ready",
+  "delivered",
+];

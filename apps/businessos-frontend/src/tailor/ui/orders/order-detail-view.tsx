@@ -1,28 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ChevronRight,
   MessageCircle,
   Pencil,
   Receipt,
   Ruler,
-  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import type { OrderFullDetail, OrderWorkflowStatus } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
 import { featureFlags } from "@/core/config/feature-flags";
-import { isAdminRole } from "@/core/auth/roles";
+import { isAdminRole, canDeliverOrders } from "@/core/auth/roles";
 import { cn } from "@/core/presentation/lib/utils";
 import { getAvatarPaletteClass } from "@/core/presentation/lib/avatar-utils";
 import { resolveApiErrorMessage } from "@/core/presentation/lib/resolve-api-error";
 import { useToast } from "@/core/presentation/components/ui/toast";
 import { useLocale } from "@/core/i18n/locale-context";
-import { resolveMediaUrl, dressImageThumbUrl } from "@/tailor/infrastructure/api/upload.api";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
+import { resolveMediaUrl, dressImageThumbUrl } from "@/tailor/infrastructure/api/upload.api";
 import {
   useAssignmentsQuery,
   useOrderDetailQuery,
@@ -30,63 +28,31 @@ import {
   useUpdateOrderMutation,
   useUpdateOrderStatusMutation,
 } from "@/tailor/infrastructure/api/hooks/use-orders";
-import { canEditOrderStatus } from "@/tailor/infrastructure/data/order-workflow";
-import { phoneTelHref } from "@/tailor/infrastructure/data/order-list-ui";
-import { DeliverDialog } from "./deliver-dialog";
+import {
+  getOrderCardSurfaceClass,
+  phoneTelHref,
+} from "@/tailor/infrastructure/data/order-list-ui";
+import {
+  buildAssigneeWorkloadMap,
+} from "@/tailor/infrastructure/data/assignee-workload";
+import { AssignWorkerSelect } from "@/tailor/ui/orders/assign-worker-select";
 import { EditOrderDialog } from "./edit-order-dialog";
-import { MarkReadyDialog } from "./mark-ready-dialog";
+import { DeliverDialog } from "./deliver-dialog";
+import { OrderDueChip } from "./order-due-chip";
+import { OrderStatusSelect } from "./order-status-select";
 import { OrderReceiptDialog } from "./order-receipt-dialog";
 import { MeasurementCardDialog } from "./measurement-card-dialog";
 import { measurementCardDataFromOrder } from "./measurement-card-data";
 import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 import { BackLink } from "@/tailor/ui/shared/back-link";
-import { MeasurementGrid } from "@/tailor/ui/shared/measurement-grid";
+import { GroupedMeasurementGrid } from "@/tailor/ui/shared/grouped-measurement-grid";
 import { buildWhatsAppUrl } from "./order-receipt-messages";
 import { OrderDetailPanel } from "./order-detail-panel";
-import {
-  OrderDetailInteractiveStepper,
-} from "./order-detail-interactive-stepper";
 
 interface OrderDetailViewProps {
   orderId: string;
 }
-
-const WORKFLOW_CHIP: Record<
-  OrderWorkflowStatus,
-  { wrap: string; dot: string; labelKey: OrderWorkflowStatus }
-> = {
-  pending: {
-    wrap: "bg-status-booked-bg text-status-booked",
-    dot: "bg-status-booked",
-    labelKey: "pending",
-  },
-  cutting: {
-    wrap: "bg-status-cutting-bg text-[#9c6a10]",
-    dot: "bg-status-cutting",
-    labelKey: "cutting",
-  },
-  stitching: {
-    wrap: "bg-status-stitching-bg text-status-stitching",
-    dot: "bg-status-stitching",
-    labelKey: "stitching",
-  },
-  ready: {
-    wrap: "bg-status-ready-bg text-status-ready",
-    dot: "bg-status-ready",
-    labelKey: "ready",
-  },
-  delivered: {
-    wrap: "bg-status-ready-bg text-status-ready",
-    dot: "bg-status-ready",
-    labelKey: "delivered",
-  },
-  cancelled: {
-    wrap: "bg-slate-100 text-muted-slate",
-    dot: "bg-muted-slate",
-    labelKey: "cancelled",
-  },
-};
 
 function customerInitials(name: string): string {
   return name
@@ -140,6 +106,27 @@ function formatRs(amount: number): string {
   return `Rs ${Math.round(amount).toLocaleString()}`;
 }
 
+function formatDetailDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale === "ur" ? "ur-PK" : "en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function findStatusChangeDate(
+  auditLog: OrderFullDetail["auditLog"],
+  status: OrderWorkflowStatus,
+): string | null {
+  for (let i = auditLog.length - 1; i >= 0; i -= 1) {
+    const entry = auditLog[i];
+    if (entry.action !== "STATUS_CHANGED") continue;
+    const to = (entry.details as { to?: string })?.to;
+    if (to === status) return entry.createdAt;
+  }
+  return null;
+}
+
 function OrderQuickAction({
   icon: Icon,
   label,
@@ -156,13 +143,18 @@ function OrderQuickAction({
   isRtl?: boolean;
 }) {
   const className = cn(
-    "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border border-hairline bg-card px-2 py-2.5 text-center transition hover:bg-slate-50 disabled:opacity-60",
-    isRtl && "text-right",
+    "flex items-center gap-2.5 rounded-xl border border-hairline bg-card px-3 py-3 text-left transition-all",
+    "hover:border-brand-200 hover:bg-brand-50/70 hover:shadow-sm",
+    "active:scale-[0.98] active:bg-brand-50",
+    "disabled:pointer-events-none disabled:opacity-60",
+    isRtl && "flex-row-reverse text-right",
   );
   const content = (
     <>
-      <Icon className="h-[18px] w-[18px] shrink-0 text-accent-500" strokeWidth={2} />
-      <span className="text-[11px] font-semibold leading-tight text-foreground">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+        <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
+      </span>
+      <span className="min-w-0 text-[12px] font-semibold leading-snug text-foreground sm:text-[13px]">
         {label}
       </span>
     </>
@@ -187,21 +179,26 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
+  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
   const { data: user } = useMeQuery();
   const isAdmin = isAdminRole(user?.role);
-  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
+  const canDeliver = canDeliverOrders(user?.role);
   const updateOrder = useUpdateOrderMutation();
-  const { data: assignments } = useAssignmentsQuery();
   const updateStatus = useUpdateOrderStatusMutation();
+  const { data: assignments } = useAssignmentsQuery();
+  const assigneeWorkload = useMemo(
+    () => buildAssigneeWorkloadMap(assignments),
+    [assignments],
+  );
   const sendReminder = useSendReminderMutation();
   const { showError, showSuccess } = useToast();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editFocusPayment, setEditFocusPayment] = useState(false);
-  const [markReadyOpen, setMarkReadyOpen] = useState(false);
+  const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [measurementOpen, setMeasurementOpen] = useState(false);
-  const [deliverOpen, setDeliverOpen] = useState(false);
 
   function openEditDialog(focusPayment = false) {
     setEditFocusPayment(focusPayment);
@@ -223,25 +220,16 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const canEdit =
     order.workflowStatus !== "delivered" &&
     order.workflowStatus !== "cancelled";
-  const statusEditable = canEditOrderStatus(order.workflowStatus, isAdmin);
+  const canManageOrder = canEdit && isAdmin;
+  const isCancelled = order.workflowStatus === "cancelled";
+  const cancelledAt = isCancelled
+    ? findStatusChangeDate(order.auditLog, "cancelled")
+    : null;
   const dressImage = resolveMediaUrl(order.dressImageUrl);
   const dressThumb = dressImageThumbUrl(order.dressImageUrl, 64);
-  const measurementItems = Object.entries(order.measurements)
-    .filter(([, value]) => value)
-    .map(([key, value]) => ({
-      label:
-        key in t.measurements
-          ? t.measurements[key as keyof typeof t.measurements]
-          : key,
-      value: `${value}"`,
-    }));
-  const stepperLabels = {
-    pending: t.dashboard.workload.booked,
-    cutting: t.dashboard.workload.cutting,
-    stitching: t.dashboard.workload.stitching,
-    ready: t.dashboard.workload.ready,
-  } as const;
-  const chip = WORKFLOW_CHIP[order.workflowStatus];
+  const filledMeasurementCount = Object.values(order.measurements).filter(
+    (value) => value !== undefined && value !== null && String(value).trim(),
+  ).length;
   const daysLeft = daysUntilDelivery(order.deliveryDate);
   const unitRate = Math.round(order.totalPrice / Math.max(order.suitCount, 1));
   const paidAmount = order.totalPrice - order.balanceDue;
@@ -250,24 +238,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
     t.customers.whatsAppGreeting.replace("{name}", order.customerName),
   );
 
-  const stepHint =
-    order.workflowStatus === "ready"
-      ? t.orderDetail.stepHintReady
-      : t.orderDetail.stepHint.replace(
-          "{stage}",
-          t.orderStatus[order.workflowStatus],
-        );
-
-  const dueChipLabel =
-    order.status === "overdue"
-      ? t.orderDetail.dueOverdueChip
-      : order.status === "due_today"
-        ? t.orderDetail.dueTodayChip
-        : daysLeft !== null && daysLeft >= 0
-          ? t.orderDetail.dueInDays
-              .replace("{date}", order.deliveryDate)
-              .replace("{days}", String(daysLeft))
-          : order.deliveryDate;
+  const cardSurfaceClass = getOrderCardSurfaceClass(order);
 
   const deliveryMeta =
     daysLeft === null ? null : daysLeft > 0 ? (
@@ -282,20 +253,6 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
         )}
       </span>
     ) : null;
-
-  async function handleStatusChange(status: OrderWorkflowStatus) {
-    if (status === "delivered" && isAdmin) {
-      setDeliverOpen(true);
-      return;
-    }
-
-    try {
-      await updateStatus.mutateAsync({ orderId, payload: { status } });
-      showSuccess(t.orders.statusUpdated);
-    } catch (err) {
-      showError(resolveApiErrorMessage(err, t));
-    }
-  }
 
   async function handleReminder() {
     try {
@@ -321,6 +278,28 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
     }
   }
 
+  async function handleStatusChange(
+    targetOrderId: string,
+    status: OrderWorkflowStatus,
+  ) {
+    if (status === "delivered" && canDeliver) {
+      setDeliverOrderId(targetOrderId);
+      return;
+    }
+
+    setStatusUpdating(true);
+    try {
+      await updateStatus.mutateAsync({
+        orderId: targetOrderId,
+        payload: { status },
+      });
+    } catch (err) {
+      showError(resolveApiErrorMessage(err, t));
+    } finally {
+      setStatusUpdating(false);
+    }
+  }
+
   return (
     <>
       <BackLink
@@ -330,13 +309,18 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
         className="mb-3"
       />
 
-      <OrderDetailPanel className="mb-3.5">
-        <div
-          className={cn(
-            "flex flex-wrap items-start justify-between gap-4",
-            isRtl && "flex-row-reverse",
-          )}
+      <div className="flex flex-col gap-3.5 pb-24 md:pb-0">
+        <OrderDetailPanel
+          className={
+            cardSurfaceClass !== "border-hairline" ? cardSurfaceClass : undefined
+          }
         >
+          <div
+            className={cn(
+              "flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between",
+              isRtl && "md:flex-row-reverse",
+            )}
+          >
           <div
             className={cn("flex min-w-0 gap-3.5", isRtl && "flex-row-reverse")}
           >
@@ -359,74 +343,97 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                   isRtl && "flex-row-reverse",
                 )}
               >
-                <h1 className="font-display text-[22px] font-bold leading-tight text-foreground">
+                <h1 className="font-display text-xl font-bold leading-tight text-foreground sm:text-[22px]">
                   #{order.orderNumber}
                 </h1>
-                {order.isRush ? (
+                {order.isRush && !isCancelled ? (
                   <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600">
                     ⚡ {t.orderDetail.rush}
                   </span>
                 ) : null}
               </div>
               <p className="mt-1 text-[13px] text-muted-slate">
-                {order.garmentLabel} · {order.customerName}
+                {order.garmentLabel} ·{" "}
+                <PersonNameText name={order.customerName} />
               </p>
             </div>
           </div>
 
           <div
             className={cn(
-              "flex shrink-0 flex-col items-end gap-2",
-              isRtl && "items-start",
+              "flex w-full flex-wrap items-center justify-between gap-2 md:w-auto md:min-w-[min(100%,20rem)] md:shrink-0",
+              isRtl && "flex-row-reverse",
             )}
           >
             <div
               className={cn(
-                "flex flex-wrap items-center justify-end gap-2",
-                isRtl && "flex-row-reverse justify-start",
+                "flex flex-wrap items-center gap-2",
+                isRtl && "flex-row-reverse",
               )}
             >
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
-                  chip.wrap,
-                )}
-              >
-                <span className={cn("h-1.5 w-1.5 rounded-full", chip.dot)} />
-                {t.orderStatus[chip.labelKey]}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-status-cutting-bg px-3 py-1.5 text-xs font-semibold text-[#9c6a10]">
-                📅 {dueChipLabel}
-              </span>
-              {order.balanceDue > 0 ? (
-                <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600">
-                  {t.orderDetail.balanceDueChip.replace(
-                    "{amount}",
-                    order.balanceDue.toLocaleString(),
-                  )}
-                </span>
-              ) : null}
+              {isCancelled ? (
+                <>
+                  <span className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="truncate">
+                      {cancelledAt
+                        ? t.orderDetail.cancelledOn.replace(
+                            "{date}",
+                            formatDetailDate(cancelledAt, locale),
+                          )
+                        : t.orderStatus.cancelled}
+                    </span>
+                  </span>
+                  {isAdmin && order.balanceDue > 0 ? (
+                    <span className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      <span className="truncate">
+                        {t.orderDetail.cancelledBalancePending.replace(
+                          "{amount}",
+                          order.balanceDue.toLocaleString(),
+                        )}
+                      </span>
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <OrderDueChip order={order} t={t} isRtl={isRtl} />
+                  {isAdmin && order.balanceDue > 0 ? (
+                    <span className="inline-flex max-w-full items-center rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600">
+                      <span className="truncate">
+                        {t.orderDetail.balanceDueChip.replace(
+                          "{amount}",
+                          order.balanceDue.toLocaleString(),
+                        )}
+                      </span>
+                    </span>
+                  ) : null}
+                </>
+              )}
             </div>
-            {order.canMarkReady ? (
-              <button
-                type="button"
-                onClick={() => setMarkReadyOpen(true)}
-                className="inline-flex items-center justify-center gap-1 rounded-[9px] border border-status-ready/25 bg-status-ready-bg px-2.5 py-1.5 text-[11.5px] font-semibold text-status-ready transition hover:bg-status-ready/10"
-              >
-                ✓ {t.orders.markReady}
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-4 border-t border-hairline pt-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <OrderQuickAction
-              icon={Receipt}
-              label={t.orderDetail.quickReceipt}
-              onClick={() => setReceiptOpen(true)}
-              isRtl={isRtl}
+            <OrderStatusSelect
+              orderId={order.id}
+              workflowStatus={order.workflowStatus}
+              displayStatus={order.status}
+              userRole={user?.role}
+              disabled={statusUpdating}
+              onChange={handleStatusChange}
+              context="detail"
+              className="shrink-0"
             />
+          </div>
+          </div>
+        </OrderDetailPanel>
+
+        <OrderDetailPanel>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {isAdmin ? (
+              <OrderQuickAction
+                icon={Receipt}
+                label={t.orderDetail.quickReceipt}
+                onClick={() => setReceiptOpen(true)}
+                isRtl={isRtl}
+              />
+            ) : null}
             <OrderQuickAction
               icon={Ruler}
               label={t.orderDetail.quickMeasurements}
@@ -440,62 +447,78 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
               disabled={sendReminder.isPending}
               isRtl={isRtl}
             />
-            {canEdit ? (
+            {canManageOrder ? (
               <OrderQuickAction
                 icon={Pencil}
                 label={t.orderDetail.quickEdit}
                 onClick={() => openEditDialog(false)}
                 isRtl={isRtl}
               />
-            ) : (
-              <OrderQuickAction
-                icon={UserRound}
-                label={t.orderDetail.customerView}
-                href={routes.customerDetail(order.customerId)}
-                isRtl={isRtl}
-              />
-            )}
+            ) : null}
           </div>
+        </OrderDetailPanel>
 
-          {canEdit ? (
-            <Link
-              href={routes.customerDetail(order.customerId)}
-              className={cn(
-                "inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-700 hover:text-brand-800",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <UserRound className="h-3.5 w-3.5" />
-              {t.orderDetail.viewCustomerProfile}
-              <ChevronRight className={cn("h-3.5 w-3.5", isRtl && "rotate-180")} />
-            </Link>
-          ) : null}
-        </div>
-      </OrderDetailPanel>
-
-      <OrderDetailPanel className="mb-3.5">
-        <OrderDetailInteractiveStepper
-          workflowStatus={order.workflowStatus}
-          labels={stepperLabels}
-          hint={stepHint}
-          editable={statusEditable && !updateStatus.isPending}
-          isRtl={isRtl}
-          onStageChange={(stage) => void handleStatusChange(stage)}
-        />
-      </OrderDetailPanel>
-
-      <div className="grid gap-3.5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+        <div className="grid gap-3.5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="flex flex-col gap-3.5">
           <OrderDetailPanel title={t.orderDetail.items} isRtl={isRtl}>
-            <div className="-mx-1 overflow-x-auto">
+            <div className="space-y-2 md:hidden">
+              <div className="rounded-xl border border-hairline bg-background p-3">
+                <div
+                  className={cn(
+                    "grid grid-cols-2 gap-x-3 gap-y-2 text-[12.5px]",
+                    isRtl && "text-right",
+                  )}
+                >
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {t.orderDetail.tableGarment}
+                    </p>
+                    <p className="font-bold text-foreground">{order.garmentLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {t.orderDetail.tableFabric}
+                    </p>
+                    <p className="text-foreground">{fabricLabel(order, t)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {t.orderDetail.tableQty}
+                    </p>
+                    <p className="font-semibold text-foreground">{order.suitCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {t.orderDetail.tableRate}
+                    </p>
+                    <p className="text-foreground">
+                      {isAdmin ? formatRs(unitRate) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
+                      {t.orderDetail.tableAmount}
+                    </p>
+                    <p className="font-semibold text-foreground">
+                      {isAdmin ? formatRs(order.totalPrice) : "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="-mx-1 hidden overflow-x-auto md:block">
               <table className="w-full min-w-[480px] border-collapse">
                 <thead>
                   <tr className="border-b border-hairline text-left text-[10px] font-semibold uppercase tracking-wide text-muted-slate">
                     <th className="px-1.5 py-2">{t.orderDetail.tableGarment}</th>
                     <th className="px-1.5 py-2">{t.orderDetail.tableFabric}</th>
                     <th className="px-1.5 py-2 text-center">{t.orderDetail.tableQty}</th>
-                    <th className="px-1.5 py-2 text-right">{t.orderDetail.tableRate}</th>
-                    <th className="px-1.5 py-2 text-right">{t.orderDetail.tableAmount}</th>
+                    {isAdmin ? (
+                      <>
+                        <th className="px-1.5 py-2 text-right">{t.orderDetail.tableRate}</th>
+                        <th className="px-1.5 py-2 text-right">{t.orderDetail.tableAmount}</th>
+                      </>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -509,12 +532,16 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                     <td className="px-1.5 py-2.5 text-center text-[12.5px]">
                       {order.suitCount}
                     </td>
-                    <td className="px-1.5 py-2.5 text-right text-[12.5px]">
-                      {formatRs(unitRate)}
-                    </td>
-                    <td className="px-1.5 py-2.5 text-right text-[12.5px] font-semibold">
-                      {formatRs(order.totalPrice)}
-                    </td>
+                    {isAdmin ? (
+                      <>
+                        <td className="px-1.5 py-2.5 text-right text-[12.5px]">
+                          {formatRs(unitRate)}
+                        </td>
+                        <td className="px-1.5 py-2.5 text-right text-[12.5px] font-semibold">
+                          {formatRs(order.totalPrice)}
+                        </td>
+                      </>
+                    ) : null}
                   </tr>
                 </tbody>
               </table>
@@ -533,7 +560,9 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                 ],
                 [
                   t.orderDetail.priority,
-                  order.isRush ? (
+                  isCancelled ? (
+                    t.orderStatus.cancelled
+                  ) : order.isRush ? (
                     <span className="text-rose-600">{t.orderDetail.rush}</span>
                   ) : (
                     t.orderDetail.priorityNormal
@@ -547,12 +576,19 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                 <div
                   key={String(label)}
                   className={cn(
-                    "flex justify-between gap-3 border-b border-hairline py-2 last:border-b-0",
-                    isRtl && "flex-row-reverse",
+                    "flex flex-col gap-0.5 border-b border-hairline py-2.5 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3",
+                    isRtl && "sm:flex-row-reverse",
                   )}
                 >
-                  <dt className="text-muted-slate">{label}</dt>
-                  <dd className="font-semibold text-foreground">{value}</dd>
+                  <dt className="shrink-0 text-muted-slate">{label}</dt>
+                  <dd
+                    className={cn(
+                      "font-semibold text-foreground sm:text-right",
+                      isRtl && "sm:text-left",
+                    )}
+                  >
+                    {value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -567,18 +603,19 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                 onClick={() => setMeasurementOpen(true)}
                 className="text-[11.5px] font-semibold text-accent-500 hover:text-accent-600"
               >
-                📐 {t.receipt.viewMeasurementCard}
+                {t.receipt.viewMeasurementCard}
               </button>
             }
           >
             <p className="mb-3 text-[11.5px] text-muted-slate">
               {t.orderDetail.measurementsMeta
                 .replace("{garment}", order.garmentLabel)
-                .replace("{count}", String(measurementItems.length))}
+                .replace("{count}", String(filledMeasurementCount))}
             </p>
-            <MeasurementGrid
-              items={measurementItems}
-              columns={4}
+            <GroupedMeasurementGrid
+              garmentType={order.garmentType}
+              measurements={order.measurements}
+              t={t}
               isRtl={isRtl}
             />
           </OrderDetailPanel>
@@ -626,23 +663,42 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
         <div className="flex flex-col gap-3.5">
           <OrderDetailPanel title={t.orderDetail.customerPanel} isRtl={isRtl}>
-            <Link
-              href={routes.customerDetail(order.customerId)}
-              className={cn(
-                "mb-3 flex items-center gap-2.5 transition hover:opacity-90",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <InitialsAvatar name={order.customerName} size={42} className="rounded-[14px]" />
-              <div className={cn("min-w-0", isRtl && "text-right")}>
-                <p className="text-sm font-bold text-foreground">
-                  <PersonNameText name={order.customerName} />
-                </p>
-                <p className="text-xs text-muted-slate" dir="ltr">
-                  {order.customerPhone}
-                </p>
+            {isAdmin ? (
+              <Link
+                href={routes.customerDetail(order.customerId)}
+                className={cn(
+                  "mb-3 flex items-center gap-2.5 transition hover:opacity-90",
+                  isRtl && "flex-row-reverse",
+                )}
+              >
+                <InitialsAvatar name={order.customerName} size={42} className="rounded-[14px]" />
+                <div className={cn("min-w-0", isRtl && "text-right")}>
+                  <p className="text-sm font-bold text-foreground">
+                    <PersonNameText name={order.customerName} />
+                  </p>
+                  <p className="text-xs text-muted-slate" dir="ltr">
+                    {order.customerPhone}
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <div
+                className={cn(
+                  "mb-3 flex items-center gap-2.5",
+                  isRtl && "flex-row-reverse",
+                )}
+              >
+                <InitialsAvatar name={order.customerName} size={42} className="rounded-[14px]" />
+                <div className={cn("min-w-0", isRtl && "text-right")}>
+                  <p className="text-sm font-bold text-foreground">
+                    <PersonNameText name={order.customerName} />
+                  </p>
+                  <p className="text-xs text-muted-slate" dir="ltr">
+                    {order.customerPhone}
+                  </p>
+                </div>
               </div>
-            </Link>
+            )}
             <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
               <a
                 href={phoneTelHref(order.customerPhone)}
@@ -661,31 +717,24 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
             </div>
           </OrderDetailPanel>
 
-          {canEdit ? (
+          {canManageOrder ? (
             <OrderDetailPanel title={t.orderDetail.assignedTailor} isRtl={isRtl}>
-              <select
-                className="w-full rounded-[10px] border border-hairline bg-background px-3 py-2.5 text-[13px] text-foreground"
+              <AssignWorkerSelect
                 value={order.assignedToName ?? ""}
+                assignees={assignments?.assignees ?? []}
+                assigneeWorkload={assigneeWorkload}
                 disabled={updateOrder.isPending}
-                onChange={(e) => void handleAssignCommit(e.target.value)}
-              >
-                <option value="">{t.form.assignedToNone}</option>
-                {(assignments?.assignees ?? []).map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-                {order.assignedToName &&
-                !(assignments?.assignees ?? []).includes(order.assignedToName) ? (
-                  <option value={order.assignedToName}>{order.assignedToName}</option>
-                ) : null}
-              </select>
+                onChange={(name) => void handleAssignCommit(name)}
+                t={t}
+                isRtl={isRtl}
+              />
               <p className="mt-2 text-[11px] text-muted-slate">
                 {t.orderDetail.assignHint}
               </p>
             </OrderDetailPanel>
           ) : null}
 
+          {isAdmin ? (
           <OrderDetailPanel title={t.orderDetail.payments} isRtl={isRtl}>
             <div className="mb-3 rounded-[11px] bg-background p-3">
               <div
@@ -724,9 +773,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
             <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-muted-slate">
               {t.orderDetail.transactions}
             </p>
-            {order.payments.length === 0 ? (
-              <p className="text-sm text-muted-slate">{t.orderDetail.noPayments}</p>
-            ) : (
+            {order.payments.length > 0 ? (
               <ul>
                 {order.payments.map((payment) => (
                   <li
@@ -736,14 +783,12 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                       isRtl && "flex-row-reverse",
                     )}
                   >
-                    <div className={cn(isRtl && "text-right")}>
+                    <div className={cn("min-w-0 flex-1", isRtl && "text-right")}>
                       <p className="font-semibold">
                         {payment.note?.trim() || t.form.advancePaid}
                       </p>
                       <p className="text-[11px] text-muted-slate">
-                        {new Date(payment.createdAt).toLocaleDateString(
-                          locale === "ur" ? "ur-PK" : "en-PK",
-                        )}
+                        {formatDetailDate(payment.createdAt, locale)}
                       </p>
                     </div>
                     <span className="font-bold text-status-ready">
@@ -752,21 +797,57 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
                   </li>
                 ))}
               </ul>
+            ) : paidAmount > 0 ? (
+              <div className="space-y-2 rounded-[11px] border border-hairline bg-background p-3 text-[12.5px]">
+                <div
+                  className={cn(
+                    "flex justify-between gap-3",
+                    isRtl && "flex-row-reverse",
+                  )}
+                >
+                  <span className="text-muted-slate">
+                    {t.orderDetail.advancePaymentRecorded}
+                  </span>
+                  <span className="font-semibold text-status-ready">
+                    {formatRs(paidAmount)}
+                  </span>
+                </div>
+                {order.balanceDue > 0 ? (
+                  <div
+                    className={cn(
+                      "flex justify-between gap-3",
+                      isRtl && "flex-row-reverse",
+                    )}
+                  >
+                    <span className="text-muted-slate">
+                      {t.orderDetail.remainingBalance}
+                    </span>
+                    <span className="font-semibold text-rose-600">
+                      {formatRs(order.balanceDue)}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-slate">{t.orderDetail.noPayments}</p>
             )}
 
-            {canEdit ? (
+            {canManageOrder ? (
               <button
                 type="button"
                 onClick={() => openEditDialog(true)}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-[10px] bg-accent-500 px-3 py-2.5 text-[12.5px] font-semibold text-white transition hover:brightness-105"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-[10px] bg-accent-500 px-3 py-3 text-[12.5px] font-semibold text-white transition hover:brightness-105 sm:py-2.5"
               >
                 + {t.orderDetail.recordPayment}
               </button>
             ) : null}
           </OrderDetailPanel>
+          ) : null}
+        </div>
         </div>
       </div>
 
+      {isAdmin ? (
       <EditOrderDialog
         order={order}
         open={editOpen}
@@ -775,11 +856,13 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
           setEditFocusPayment(false);
         }}
         assigneeSuggestions={assignments?.assignees ?? []}
+        assigneeWorkload={assigneeWorkload}
         focusPayment={editFocusPayment}
       />
-      <MarkReadyDialog
-        orderId={markReadyOpen ? orderId : null}
-        onClose={() => setMarkReadyOpen(false)}
+      ) : null}
+      <DeliverDialog
+        orderId={deliverOrderId}
+        onClose={() => setDeliverOrderId(null)}
       />
       <OrderReceiptDialog
         orderId={receiptOpen ? orderId : null}
@@ -788,10 +871,6 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       <MeasurementCardDialog
         data={measurementOpen ? measurementCardDataFromOrder(order) : null}
         onClose={() => setMeasurementOpen(false)}
-      />
-      <DeliverDialog
-        orderId={deliverOpen ? orderId : null}
-        onClose={() => setDeliverOpen(false)}
       />
     </>
   );

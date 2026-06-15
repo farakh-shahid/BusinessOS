@@ -2,12 +2,15 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
+import { isAdminRole } from "@/core/auth/roles";
 import { queryKeys } from "@/core/infrastructure/api/query-keys";
+import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import {
   createOrder,
   fetchAssignments,
   fetchDashboard,
   fetchOrderDetail,
+  fetchOrderFilterCounts,
   fetchOrders,
   fetchOrdersPage,
   fetchReceivables,
@@ -17,6 +20,7 @@ import {
   updateOrder,
   updateOrderStatus,
   type MarkOrderReadyPayload,
+  type OrderFilterCountsParams,
   type OrdersQueryParams,
   type UpdateOrderPayload,
   type UpdateOrderStatusPayload,
@@ -53,17 +57,36 @@ export function useInfiniteOrdersQuery(
   });
 }
 
+export function useOrderFilterCountsQuery(
+  params?: OrderFilterCountsParams,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.orders.filterCounts(params),
+    queryFn: () => fetchOrderFilterCounts(params),
+    enabled,
+  });
+}
+
 export function useReceivablesQuery() {
+  const { data: user } = useMeQuery();
+  const isAdmin = isAdminRole(user?.role);
+
   return useQuery({
     queryKey: queryKeys.orders.receivables,
     queryFn: fetchReceivables,
+    enabled: isAdmin,
   });
 }
 
 export function useAssignmentsQuery() {
+  const { data: user } = useMeQuery();
+  const isAdmin = isAdminRole(user?.role);
+
   return useQuery({
     queryKey: queryKeys.orders.assignments,
     queryFn: fetchAssignments,
+    enabled: isAdmin,
   });
 }
 

@@ -6,12 +6,12 @@ export interface CreateStaffPayload {
   email?: string;
   phone?: string;
   password: string;
-  role: "ADMIN" | "STAFF";
+  role: "ADMIN" | "STAFF" | "TAILOR";
 }
 
 export interface UpdateStaffPayload {
   name: string;
-  role: "ADMIN" | "STAFF";
+  role: "ADMIN" | "STAFF" | "TAILOR";
 }
 
 export function fetchStaff() {
@@ -29,5 +29,11 @@ export function updateStaff(staffId: string, payload: UpdateStaffPayload) {
   return apiFetch<StaffMember>(`/tailor/staff/${staffId}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+export function revokeStaffAccess(staffId: string) {
+  return apiFetch<{ revoked: boolean }>(`/tailor/staff/${staffId}`, {
+    method: "DELETE",
   });
 }

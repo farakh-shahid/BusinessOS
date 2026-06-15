@@ -12,6 +12,8 @@ export class SettingsController {
   constructor(private readonly settings: SettingsService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPER_ADMIN")
   get(@CurrentTenant() tenantId: string) {
     return this.settings.get(tenantId);
   }

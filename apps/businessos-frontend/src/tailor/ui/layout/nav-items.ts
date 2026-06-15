@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
 import { routes } from "@/core/config/routes";
-import { isAdminRole } from "@/core/auth/roles";
+import { isAdminRole, isFloorRole } from "@/core/auth/roles";
 
 export type NavLabelKey =
   | "dashboard"
@@ -51,6 +51,7 @@ export const navItems: NavItem[] = [
     segment: "settings",
     icon: Settings,
     labelKey: "settings",
+    adminOnly: true,
   },
 ];
 
@@ -86,6 +87,12 @@ export function mobileNavLabel(labelKey: NavLabelKey, t: Dictionary): string {
 }
 
 export function getVisibleNavItems(role?: string | null): NavItem[] {
+  if (isFloorRole(role)) {
+    return navItems.filter(
+      (item) => item.segment === "dashboard" || item.segment === "orders",
+    );
+  }
+
   return navItems.filter(
     (item) => !item.adminOnly || isAdminRole(role),
   );

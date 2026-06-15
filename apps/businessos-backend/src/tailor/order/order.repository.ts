@@ -6,9 +6,11 @@ import type {
   Order,
   OrderAuditEntry,
   OrderFullDetail,
+  OrderListQuickFilterCounts,
+  OrderListQuickFilterKey,
   PaginatedList,
 } from "@business-os/tailor";
-import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
+import { DASHBOARD_QUEUE_LIMIT, DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import type { UserRole } from "../../generated/prisma/client";
 import { OrderStatus } from "../../generated/prisma/client";
 import { PrismaService } from "../../core/database/prisma.service";
@@ -32,10 +34,12 @@ import {
 import type { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 import type { CreateOrderDto } from "./dto/create-order.dto";
 import type { ListOrdersQueryDto } from "./dto/list-orders-query.dto";
+import type { OrderFilterCountsQueryDto } from "./dto/order-filter-counts-query.dto";
 import type { UpdateOrderDto } from "./dto/update-order.dto";
-import { buildOrderListWhere } from "./order-list.helpers";
+import { buildOrderListWhere, ORDER_QUICK_FILTER_KEYS } from "./order-list.helpers";
 import {
   buildOrderListOrderBy,
+  compareOrdersForDashboardQueue,
   compareOrdersForWorkflowSort,
   usesWorkflowSort,
 } from "./order-list-sort";
@@ -43,8 +47,8 @@ import { buildNeedsAttentionList } from "./needs-attention.helper";
 import {
   buildDashboardCash,
   buildDashboardDueWeekChart,
-  buildDashboardGarmentMix,
-  buildDashboardTailorWorkload,
+  buildDashboardGarmentMixFromCounts,
+  buildDashboardTailorWorkloadFromCounts,
   buildDashboardWorkload,
   buildReadyForPickupList,
   dashboardDueWeekRange,
@@ -104,7 +108,6 @@ export class OrderRepository {
       OrderStatus.PENDING,
       OrderStatus.CUTTING,
       OrderStatus.STITCHING,
-      OrderStatus.READY,
     ];
     const dueWeekWhere = {
       tenantId,
@@ -125,7 +128,7 @@ export class OrderRepository {
       bookedToday,
       cutting,
       stitching,
-      queueRows,
+      queueCandidates,
       dueSoonRows,
       rushPreview,
       overduePreview,
@@ -138,8 +141,8 @@ export class OrderRepository {
       recentPayments,
       dueWeekOrderRows,
       readyPickupRows,
-      garmentMixRows,
-      tailorWorkloadRows,
+      garmentMixGroups,
+      tailorWorkloadGroups,
     ] = await Promise.all([
       this.prisma.order.count({ where: { tenantId } }),
       this.prisma.order.count({ where: inProgressWhere }),
@@ -180,9 +183,13 @@ export class OrderRepository {
       }),
       this.prisma.order.findMany({
         where: inProgressWhere,
-        include: { customer: true },
-        orderBy: { createdAt: "desc" },
-        take: DEFAULT_PAGE_SIZE,
+        select: {
+          id: true,
+          status: true,
+          deliveryDate: true,
+          isRush: true,
+          createdAt: true,
+        },
       }),
       this.prisma.order.findMany({
         where: {
@@ -263,20 +270,22 @@ export class OrderRepository {
         orderBy: { updatedAt: "asc" },
         take: 4,
       }),
-      this.prisma.order.findMany({
+      this.prisma.order.groupBy({
+        by: ["garmentType"],
         where: {
           tenantId,
           status: { not: OrderStatus.CANCELLED },
           createdAt: { gte: mixWindowStart },
         },
-        select: { garmentType: true },
+        _count: { _all: true },
       }),
-      this.prisma.order.findMany({
+      this.prisma.order.groupBy({
+        by: ["assignedToName"],
         where: {
           tenantId,
           status: { in: activeAssignmentStatuses },
         },
-        select: { assignedToName: true },
+        _count: { _all: true },
       }),
     ]);
 
@@ -314,12 +323,53 @@ export class OrderRepository {
       customerInitials,
     );
 
-    const garmentMix = buildDashboardGarmentMix(
-      garmentMixRows,
+    const garmentMixCounts = new Map<string, number>();
+    for (const group of garmentMixGroups) {
+      const type = toGarmentType(group.garmentType);
+      const key = garmentKey(type);
+      garmentMixCounts.set(
+        key,
+        (garmentMixCounts.get(key) ?? 0) + group._count._all,
+      );
+    }
+
+    const garmentMix = buildDashboardGarmentMixFromCounts(
+      garmentMixCounts,
       (type) => garmentLabel(toGarmentType(type)),
     );
 
-    const workloadByTailor = buildDashboardTailorWorkload(tailorWorkloadRows);
+    const tailorCounts = new Map<string, number>();
+    let unassignedTailorCount = 0;
+    for (const group of tailorWorkloadGroups) {
+      const name = group.assignedToName?.trim();
+      if (!name) {
+        unassignedTailorCount += group._count._all;
+        continue;
+      }
+      tailorCounts.set(name, (tailorCounts.get(name) ?? 0) + group._count._all);
+    }
+
+    const workloadByTailor = buildDashboardTailorWorkloadFromCounts(
+      tailorCounts,
+      unassignedTailorCount,
+    );
+
+    const queueIds = [...queueCandidates]
+      .sort(compareOrdersForDashboardQueue)
+      .slice(0, DASHBOARD_QUEUE_LIMIT)
+      .map((row) => row.id);
+
+    const queueRows =
+      queueIds.length === 0
+        ? []
+        : await this.prisma.order.findMany({
+            where: { id: { in: queueIds } },
+            include: { customer: true },
+          });
+    const queueById = new Map(queueRows.map((order) => [order.id, order]));
+    const orderedQueueRows = queueIds
+      .map((id) => queueById.get(id))
+      .filter((order): order is (typeof queueRows)[number] => Boolean(order));
 
     return {
       stats: {
@@ -339,7 +389,7 @@ export class OrderRepository {
       dueWeekChart,
       garmentMix,
       workloadByTailor,
-      orders: queueRows.map((order) => this.toOrderDto(order)),
+      orders: orderedQueueRows.map((order) => this.toOrderDto(order)),
       dueSoonOrders: dueSoonRows.map((order) => this.toOrderDto(order)),
     };
   }
@@ -415,6 +465,31 @@ export class OrderRepository {
       hasMore,
       nextOffset: hasMore ? offset + limit : null,
     };
+  }
+
+  async getQuickFilterCounts(
+    tenantId: string,
+    query?: OrderFilterCountsQueryDto,
+  ): Promise<OrderListQuickFilterCounts> {
+    const entries = await Promise.all(
+      ORDER_QUICK_FILTER_KEYS.map(async (filterKey) => {
+        const where = buildOrderListWhere(
+          tenantId,
+          filterKey || undefined,
+          query?.customerId,
+          query?.search,
+          query?.assignedTo,
+          query?.dueFrom,
+          query?.dueTo,
+        );
+        const count = await this.prisma.order.count({ where });
+        const key: OrderListQuickFilterKey =
+          filterKey === "" ? "all" : filterKey;
+        return [key, count] as const;
+      }),
+    );
+
+    return Object.fromEntries(entries) as OrderListQuickFilterCounts;
   }
 
   async listReceivables(tenantId: string) {
@@ -760,14 +835,24 @@ export class OrderRepository {
   ) {
     const order = await this.findById(tenantId, orderId);
     const nextStatus = toOrderStatus(dto.status);
-    const adminOnly: Array<typeof nextStatus> = ["DELIVERED", "CANCELLED"];
 
     if (
-      adminOnly.includes(nextStatus) &&
+      nextStatus === "DELIVERED" &&
+      userRole !== "ADMIN" &&
+      userRole !== "SUPER_ADMIN" &&
+      userRole !== "STAFF"
+    ) {
+      throw new ForbiddenException(
+        "Only staff or admin can mark orders as delivered",
+      );
+    }
+
+    if (
+      nextStatus === "CANCELLED" &&
       userRole !== "ADMIN" &&
       userRole !== "SUPER_ADMIN"
     ) {
-      throw new ForbiddenException("Only admin can mark orders as delivered");
+      throw new ForbiddenException("Only admin can cancel orders");
     }
 
     if (order.status === "CANCELLED" && nextStatus !== "CANCELLED") {
@@ -1280,7 +1365,7 @@ export class OrderRepository {
 
     if (existingByPhone) {
       throw new BadRequestException(
-        "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+        "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.",
       );
     }
 
@@ -1304,7 +1389,7 @@ export class OrderRepository {
         error.code === "P2002"
       ) {
         throw new BadRequestException(
-          "A customer with this phone number already exists. Switch to Existing customer or use a different number.",
+          "A customer with this phone number already exists in your shop. Switch to Existing customer or use a different number.",
         );
       }
       throw error;
@@ -1329,7 +1414,7 @@ export class OrderRepository {
     deliveryDate: Date;
     isRush: boolean;
     balanceDue: { toString(): string } | number;
-    customer: { name: string; phone: string };
+    customer: { name: string; phone: string; isVip?: boolean };
   }): Order {
     const count = order.suitCount > 0 ? order.suitCount : 1;
     const label = garmentLabel(order.garmentType);
@@ -1339,6 +1424,7 @@ export class OrderRepository {
       customerName: order.customer.name,
       customerInitials: customerInitials(order.customer.name),
       customerPhone: order.customer.phone,
+      customerIsVip: order.customer.isVip ?? false,
       items: `${count} x ${label}`,
       suitCount: count,
       garmentLabel: label,
