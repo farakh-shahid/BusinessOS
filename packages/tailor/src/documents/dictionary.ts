@@ -8,5 +8,4 @@ export interface DocumentDictionary {
   print: Record<string, string>;
   measurements: Record<string, string>;
   style: Record<string, string>;
-  orderDetail: Record<string, string>;
 }

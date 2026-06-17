@@ -28,5 +28,5 @@ export function whatsAppTextFeedback(
   result: { sent: boolean },
   t: Dictionary,
 ): string {
-  return result.sent ? t.receipt.whatsappSent : t.receipt.whatsappOpened;
+  return result.sent ? t.orders.whatsappSent : t.receipt.whatsappOpened;
 }
