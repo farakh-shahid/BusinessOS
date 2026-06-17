@@ -62,6 +62,19 @@ export interface CustomerSearchResult {
   orders: CustomerOrderHistoryItem[];
 }
 
+export type CustomerListQuickFilterKey =
+  | "all"
+  | "vip"
+  | "new"
+  | "regular"
+  | "has_balance"
+  | "has_measurements";
+
+export type CustomerListQuickFilterCounts = Record<
+  CustomerListQuickFilterKey,
+  number
+>;
+
 export interface CustomerDetail {
   customer: TailorCustomer;
   latestMeasurement: TailorMeasurement | null;

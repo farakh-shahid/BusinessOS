@@ -13,5 +13,6 @@ export interface StaffMember {
   email?: string;
   phone?: string;
   role: "ADMIN" | "STAFF" | "TAILOR";
+  specialty?: string;
   createdAt: string;
 }

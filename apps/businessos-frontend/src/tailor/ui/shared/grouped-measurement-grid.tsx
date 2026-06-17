@@ -1,22 +1,17 @@
 "use client";
 
 import type { Dictionary } from "@business-os/i18n";
-import {
-  getGarmentSchema,
-  normalizeBookingGarmentType,
-  type BookingGarmentType,
-} from "@business-os/tailor";
+import { getWorksheetMeasurementFields } from "@business-os/tailor";
 import { cn } from "@/core/presentation/lib/utils";
 
-const GROUP_ORDER = ["body", "upper", "lower"] as const;
+const GROUP_ORDER = ["size", "main"] as const;
 
 const groupTitleKeys: Record<
   (typeof GROUP_ORDER)[number],
-  keyof Dictionary["orderDetail"]
+  keyof Dictionary["form"]
 > = {
-  body: "measurementGroupUpperBody",
-  upper: "measurementGroupLengths",
-  lower: "measurementGroupLowerBody",
+  size: "measurementGroupSize",
+  main: "measurementGroupMain",
 };
 
 interface GroupedMeasurementGridProps {
@@ -28,25 +23,24 @@ interface GroupedMeasurementGridProps {
 }
 
 export function GroupedMeasurementGrid({
-  garmentType,
+  garmentType: _garmentType,
   measurements,
   t,
   isRtl,
   className,
 }: GroupedMeasurementGridProps) {
-  const schema = getGarmentSchema(
-    normalizeBookingGarmentType(garmentType as BookingGarmentType),
-  );
+  const fields = getWorksheetMeasurementFields();
+
   const labelFor = (key: string) => {
     const m = t.measurements as Record<string, string>;
     return m[key] ?? key;
   };
 
   const groups = GROUP_ORDER.map((group) => {
-    const fields = schema.measurementFields.filter(
-      (field) => (field.group ?? "body") === group,
+    const groupFields = fields.filter(
+      (field) => (field.group ?? "main") === group,
     );
-    const items = fields
+    const items = groupFields
       .map((field) => {
         const raw = measurements[field.key];
         const text =
@@ -75,7 +69,7 @@ export function GroupedMeasurementGrid({
               isRtl && "text-right",
             )}
           >
-            {String(t.orderDetail[groupTitleKeys[group]])}
+            {String(t.form[groupTitleKeys[group]])}
           </h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             {items.map((item) => (
@@ -86,7 +80,7 @@ export function GroupedMeasurementGrid({
                 <p className="font-display text-[1.35rem] font-bold leading-none tabular-nums text-foreground">
                   {item.value}
                 </p>
-                <p className="mt-1.5 text-[10px] font-medium text-muted-slate">
+                <p className="mt-1.5 text-[10px] font-semibold leading-snug text-brand-700 sm:text-[11px]">
                   {item.label}
                 </p>
               </div>

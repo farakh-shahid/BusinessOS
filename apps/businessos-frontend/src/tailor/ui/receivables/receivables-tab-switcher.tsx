@@ -11,6 +11,7 @@ interface ReceivablesTabSwitcherProps {
   t: Dictionary;
   isRtl?: boolean;
   onChange: (tab: ReceivablesTab) => void;
+  className?: string;
 }
 
 const tabs: {
@@ -27,12 +28,13 @@ export function ReceivablesTabSwitcher({
   t,
   isRtl,
   onChange,
+  className,
 }: ReceivablesTabSwitcherProps) {
   return (
     <div
       className={cn(
-        "inline-flex shrink-0 rounded-[10px] border border-hairline bg-card p-[3px]",
-        isRtl && "flex-row-reverse",
+        "grid w-full grid-cols-2 gap-1 rounded-[10px] border border-hairline bg-card p-[3px]",
+        className,
       )}
       role="tablist"
       aria-label={t.receivables.title}
@@ -47,11 +49,11 @@ export function ReceivablesTabSwitcher({
             aria-selected={active}
             onClick={() => onChange(value)}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-[7px] px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-[11px]",
+              "flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[7px] px-2.5 py-2 text-xs font-semibold transition-colors sm:text-sm",
               isRtl && "flex-row-reverse",
               active
                 ? "bg-brand-700 text-white"
-                : "text-muted-slate hover:text-foreground",
+                : "text-muted-slate hover:bg-slate-50 hover:text-foreground",
             )}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />

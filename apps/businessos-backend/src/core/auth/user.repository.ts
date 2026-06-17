@@ -25,4 +25,15 @@ export class UserRepository {
       include: { tenant: true },
     });
   }
+
+  updateProfile(userId: string, data: { name: string; specialty?: string | null }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: data.name.trim(),
+        specialty: data.specialty?.trim() || null,
+      },
+      include: { tenant: true },
+    });
+  }
 }

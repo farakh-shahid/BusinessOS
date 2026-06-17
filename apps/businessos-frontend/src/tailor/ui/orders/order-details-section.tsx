@@ -85,6 +85,26 @@ export function OrderDetailsSection({
     onChange({ dressImageUrl: "", dressImagePublicId: "" });
   }
 
+  const rushOrderField = (
+    <div className={isWorksheet ? undefined : "sm:col-span-2"}>
+      <label
+        className={cn(
+          "flex items-center gap-2 text-sm font-medium text-slate-700",
+          isRtl && "flex-row-reverse",
+        )}
+      >
+        <input
+          type="checkbox"
+          id="rush-order"
+          checked={draft.isRush}
+          onChange={(e) => onChange({ isRush: e.target.checked })}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        {t.orderDetail.rushOrder}
+      </label>
+    </div>
+  );
+
   const suitCountField = isWorksheet ? (
     <WorksheetField
       label={t.form.suitCount}
@@ -123,6 +143,9 @@ export function OrderDetailsSection({
     </div>
   );
 
+  const bookingDateDisabledClass =
+    "bg-slate-50 text-slate-600 cursor-not-allowed";
+
   const bookingDateField = isWorksheet ? (
     <WorksheetField
       label={t.form.bookingDate}
@@ -133,9 +156,13 @@ export function OrderDetailsSection({
         id="booking-date"
         type="date"
         value={draft.bookingDate}
+        readOnly
+        disabled
         aria-invalid={!!fieldErrors.bookingDate}
-        className={worksheetFieldClass(!!fieldErrors.bookingDate)}
-        onChange={(e) => onChange({ bookingDate: e.target.value })}
+        className={cn(
+          worksheetFieldClass(!!fieldErrors.bookingDate),
+          bookingDateDisabledClass,
+        )}
       />
     </WorksheetField>
   ) : (
@@ -145,13 +172,15 @@ export function OrderDetailsSection({
         id="booking-date"
         type="date"
         value={draft.bookingDate}
+        readOnly
+        disabled
         aria-invalid={!!fieldErrors.bookingDate}
-        className={
+        className={cn(
           fieldErrors.bookingDate
             ? "border-rose-300 focus-visible:ring-rose-400"
-            : undefined
-        }
-        onChange={(e) => onChange({ bookingDate: e.target.value })}
+            : undefined,
+          bookingDateDisabledClass,
+        )}
       />
       <FormFieldError message={fieldErrors.bookingDate} />
     </div>
@@ -191,12 +220,85 @@ export function OrderDetailsSection({
     </div>
   );
 
+  const totalPriceField = isWorksheet ? (
+    <WorksheetField
+      label={t.form.totalPrice}
+      htmlFor="total"
+      error={fieldErrors.totalPrice}
+    >
+      <Input
+        id="total"
+        type="number"
+        min={0}
+        value={draft.totalPrice}
+        aria-invalid={!!fieldErrors.totalPrice}
+        className={worksheetFieldClass(!!fieldErrors.totalPrice)}
+        onChange={(e) => onChange({ totalPrice: e.target.value })}
+      />
+    </WorksheetField>
+  ) : (
+    <div>
+      <Label htmlFor="total">{t.form.totalPrice}</Label>
+      <Input
+        id="total"
+        type="number"
+        min={0}
+        value={draft.totalPrice}
+        aria-invalid={!!fieldErrors.totalPrice}
+        className={
+          fieldErrors.totalPrice
+            ? "border-rose-300 focus-visible:ring-rose-400"
+            : undefined
+        }
+        onChange={(e) => onChange({ totalPrice: e.target.value })}
+      />
+      <FormFieldError message={fieldErrors.totalPrice} />
+    </div>
+  );
+
+  const advancePaidField = isWorksheet ? (
+    <WorksheetField label={t.form.advancePaid} htmlFor="advance">
+      <Input
+        id="advance"
+        type="number"
+        min={0}
+        value={draft.advancePaid}
+        className={worksheetFieldClass()}
+        onChange={(e) => onChange({ advancePaid: e.target.value })}
+      />
+    </WorksheetField>
+  ) : (
+    <div>
+      <Label htmlFor="advance">{t.form.advancePaid}</Label>
+      <Input
+        id="advance"
+        type="number"
+        min={0}
+        value={draft.advancePaid}
+        onChange={(e) => onChange({ advancePaid: e.target.value })}
+      />
+    </div>
+  );
+
+  const balanceDueBlock = (
+    <div className="sm:col-span-2 rounded-xl bg-slate-50 px-4 py-3">
+      <p className="text-sm text-slate-500">{t.form.balanceDue}</p>
+      <p className="text-lg font-bold text-slate-900">
+        Rs. {balance.toLocaleString()}
+      </p>
+    </div>
+  );
+
   if (isWorksheet && fieldPlacement === "primary") {
     return (
       <>
+        {rushOrderField}
         {suitCountField}
         {bookingDateField}
         {deliveryDateField}
+        {totalPriceField}
+        {advancePaidField}
+        {balanceDueBlock}
       </>
     );
   }
@@ -204,10 +306,15 @@ export function OrderDetailsSection({
   const secondaryFields = (
     <>
       {!isWorksheet ? bookingDateField : null}
+      {!isWorksheet ? rushOrderField : null}
       {!isWorksheet ? suitCountField : null}
       <div className={isWorksheet ? undefined : "sm:col-span-2"}>
         {isWorksheet ? (
-          <WorksheetField label={t.form.dressCode} htmlFor="dress-code">
+          <WorksheetField
+            label={t.form.dressCode}
+            htmlFor="dress-code"
+            hint={t.form.dressCodeHint}
+          >
             <Input
               id="dress-code"
               value={draft.dressCode}
@@ -444,71 +551,13 @@ export function OrderDetailsSection({
           </>
         )}
       </div>
-      {isWorksheet ? (
+      {!isWorksheet ? (
         <>
-          <WorksheetField
-            label={t.form.totalPrice}
-            htmlFor="total"
-            error={fieldErrors.totalPrice}
-          >
-            <Input
-              id="total"
-              type="number"
-              min={0}
-              value={draft.totalPrice}
-              aria-invalid={!!fieldErrors.totalPrice}
-              className={worksheetFieldClass(!!fieldErrors.totalPrice)}
-              onChange={(e) => onChange({ totalPrice: e.target.value })}
-            />
-          </WorksheetField>
-          <WorksheetField label={t.form.advancePaid} htmlFor="advance">
-            <Input
-              id="advance"
-              type="number"
-              min={0}
-              value={draft.advancePaid}
-              className={worksheetFieldClass()}
-              onChange={(e) => onChange({ advancePaid: e.target.value })}
-            />
-          </WorksheetField>
+          {totalPriceField}
+          {advancePaidField}
+          {balanceDueBlock}
         </>
-      ) : (
-        <>
-          <div>
-            <Label htmlFor="total">{t.form.totalPrice}</Label>
-            <Input
-              id="total"
-              type="number"
-              min={0}
-              value={draft.totalPrice}
-              aria-invalid={!!fieldErrors.totalPrice}
-              className={
-                fieldErrors.totalPrice
-                  ? "border-rose-300 focus-visible:ring-rose-400"
-                  : undefined
-              }
-              onChange={(e) => onChange({ totalPrice: e.target.value })}
-            />
-            <FormFieldError message={fieldErrors.totalPrice} />
-          </div>
-          <div>
-            <Label htmlFor="advance">{t.form.advancePaid}</Label>
-            <Input
-              id="advance"
-              type="number"
-              min={0}
-              value={draft.advancePaid}
-              onChange={(e) => onChange({ advancePaid: e.target.value })}
-            />
-          </div>
-        </>
-      )}
-      <div className="sm:col-span-2 rounded-xl bg-slate-50 px-4 py-3">
-        <p className="text-sm text-slate-500">{t.form.balanceDue}</p>
-        <p className="text-lg font-bold text-slate-900">
-          Rs. {balance.toLocaleString()}
-        </p>
-      </div>
+      ) : null}
       <div className="sm:col-span-2">
         <AssignedToInput
           t={t}
@@ -518,17 +567,6 @@ export function OrderDetailsSection({
           assigneeWorkload={assigneeWorkload}
           isRtl={isRtl}
         />
-      </div>
-      <div className="sm:col-span-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <input
-            type="checkbox"
-            checked={draft.isRush}
-            onChange={(e) => onChange({ isRush: e.target.checked })}
-            className="h-4 w-4 rounded border-slate-300"
-          />
-          {t.orderDetail.rushOrder}
-        </label>
       </div>
     </>
   );

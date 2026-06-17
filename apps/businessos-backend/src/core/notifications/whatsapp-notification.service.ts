@@ -4,6 +4,7 @@ import {
   isWhatsAppCloudConfigured,
   notificationConfig,
 } from "../../config/notification.config";
+import { BaileysConnectionManager } from "../whatsapp/baileys-connection.manager";
 import {
   buildWhatsAppMessage,
   buildWhatsAppUrl,
@@ -11,7 +12,11 @@ import {
   type ReadyNotificationContext,
 } from "./notification.templates";
 
-export type WhatsAppSendMethod = "meta_cloud" | "twilio" | "wa_me_link";
+export type WhatsAppSendMethod =
+  | "baileys"
+  | "meta_cloud"
+  | "twilio"
+  | "wa_me_link";
 
 export interface WhatsAppSendResult {
   sent: boolean;
@@ -24,12 +29,27 @@ export interface WhatsAppSendResult {
 export class WhatsAppNotificationService {
   private readonly logger = new Logger(WhatsAppNotificationService.name);
 
+  constructor(private readonly baileys: BaileysConnectionManager) {}
+
   async sendMessage(
+    tenantId: string,
     phone: string,
     message: string,
     template?: { name: string; bodyParams: string[] },
   ): Promise<WhatsAppSendResult> {
     const whatsappUrl = buildWhatsAppUrl(phone, message);
+
+    if (this.baileys.isConnected(tenantId)) {
+      try {
+        await this.baileys.sendText(tenantId, phone, message);
+        return { sent: true, method: "baileys", whatsappUrl };
+      } catch (error) {
+        this.logger.warn(
+          "Baileys WhatsApp send failed, trying next provider",
+          error,
+        );
+      }
+    }
 
     if (isWhatsAppCloudConfigured()) {
       try {
@@ -61,6 +81,7 @@ export class WhatsAppNotificationService {
   }
 
   async sendReadyNotification(
+    tenantId: string,
     phone: string,
     ctx: ReadyNotificationContext,
   ): Promise<WhatsAppSendResult> {
@@ -77,10 +98,11 @@ export class WhatsAppNotificationService {
         }
       : undefined;
 
-    return this.sendMessage(phone, message, template);
+    return this.sendMessage(tenantId, phone, message, template);
   }
 
   async sendDocument(params: {
+    tenantId: string;
     phone: string;
     caption: string;
     filename: string;
@@ -88,6 +110,24 @@ export class WhatsAppNotificationService {
     pdfBuffer: Buffer;
   }): Promise<WhatsAppSendResult> {
     const whatsappUrl = buildWhatsAppUrl(params.phone, params.fallbackMessage);
+
+    if (this.baileys.isConnected(params.tenantId)) {
+      try {
+        await this.baileys.sendDocument(
+          params.tenantId,
+          params.phone,
+          params.pdfBuffer,
+          params.filename,
+          params.caption,
+        );
+        return { sent: true, method: "baileys", whatsappUrl };
+      } catch (error) {
+        this.logger.warn(
+          "Baileys WhatsApp document send failed, trying next provider",
+          error,
+        );
+      }
+    }
 
     if (isWhatsAppCloudConfigured()) {
       try {

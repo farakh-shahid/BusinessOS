@@ -250,7 +250,7 @@ export function ReceivablesView() {
   const { locale } = useLocale();
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
-  const { showError, showSuccess } = useToast();
+  const { showError, showSuccess, showToast } = useToast();
   const { data, isLoading, isError } = useReceivablesQuery();
   const markPaid = useMarkReceivableCustomerPaidMutation();
   const sendReminder = useSendReminderMutation();
@@ -274,10 +274,14 @@ export function ReceivablesView() {
     setActiveOrderId(orderId);
     try {
       const result = await sendReminder.mutateAsync(orderId);
-      if (result.whatsappUrl) {
-        window.open(result.whatsappUrl, "_blank");
+      if (!result.sent && result.whatsappUrl) {
+        window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
+        showToast(t.receipt.whatsappOpened, "info");
+        return;
       }
-      showSuccess(t.receivables.reminderSent);
+      showSuccess(
+        result.sent ? t.receivables.reminderSent : t.receipt.whatsappOpened,
+      );
     } catch {
       showError(t.common.error);
     } finally {
@@ -292,27 +296,22 @@ export function ReceivablesView() {
     <>
       <BackLink href={routes.dashboard} label={t.nav.dashboard} isRtl={isRtl} />
 
-      <div
-        className={cn(
-          "mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
-          isRtl && "sm:flex-row-reverse",
-        )}
-      >
-        <PageHeader
-          title={t.receivables.title}
-          subtitle={t.receivables.subtitle}
+      <PageHeader
+        title={t.receivables.title}
+        subtitle={t.receivables.subtitle}
+        isRtl={isRtl}
+        className="mb-0"
+      />
+
+      {!isLoading && !isError ? (
+        <ReceivablesTabSwitcher
+          tab={tab}
+          t={t}
           isRtl={isRtl}
-          className="mb-0"
+          onChange={setTab}
+          className="mb-4"
         />
-        {!isLoading && !isError ? (
-          <ReceivablesTabSwitcher
-            tab={tab}
-            t={t}
-            isRtl={isRtl}
-            onChange={setTab}
-          />
-        ) : null}
-      </div>
+      ) : null}
 
       {isLoading ? (
         <>

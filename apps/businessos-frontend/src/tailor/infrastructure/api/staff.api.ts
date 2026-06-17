@@ -7,11 +7,13 @@ export interface CreateStaffPayload {
   phone?: string;
   password: string;
   role: "ADMIN" | "STAFF" | "TAILOR";
+  specialty?: string;
 }
 
 export interface UpdateStaffPayload {
   name: string;
   role: "ADMIN" | "STAFF" | "TAILOR";
+  specialty?: string;
 }
 
 export function fetchStaff() {

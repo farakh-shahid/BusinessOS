@@ -13,4 +13,9 @@ export class AnalyticsQueryDto {
   @IsOptional()
   @IsDateString()
   focus?: string;
+
+  /** Overview tab: filter garment / busiest / karigar / customer cards */
+  @IsOptional()
+  @IsIn(["year", "sixMonth", "month"])
+  overviewScope?: "year" | "sixMonth" | "month";
 }

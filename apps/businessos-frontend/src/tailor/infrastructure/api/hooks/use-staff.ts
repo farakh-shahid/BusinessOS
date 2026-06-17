@@ -25,6 +25,8 @@ export function useCreateStaffMutation() {
     mutationFn: (payload: CreateStaffPayload) => createStaff(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.assignments });
     },
   });
 }
@@ -42,6 +44,8 @@ export function useUpdateStaffMutation() {
     }) => updateStaff(staffId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.assignments });
     },
   });
 }
@@ -53,6 +57,7 @@ export function useRevokeStaffMutation() {
     mutationFn: (staffId: string) => revokeStaffAccess(staffId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.assignments });
     },
   });
 }

@@ -1,6 +1,7 @@
 import type {
   CustomerDetail,
   CustomerListEntry,
+  CustomerListQuickFilterCounts,
   CustomerSearchResult,
   PaginatedList,
   TailorCustomer,
@@ -17,8 +18,23 @@ export function fetchCustomersPage(
   if (params?.offset) search.set("offset", String(params.offset));
   if (params?.q?.trim()) search.set("q", params.q.trim());
   if (params?.segment) search.set("segment", params.segment);
+  if (params?.registeredFrom) search.set("registeredFrom", params.registeredFrom);
+  if (params?.registeredTo) search.set("registeredTo", params.registeredTo);
   return apiFetch<PaginatedList<CustomerListEntry>>(
     `/tailor/customers?${search.toString()}`,
+  );
+}
+
+export function fetchCustomerFilterCounts(
+  params?: Pick<CustomersListParams, "q" | "registeredFrom" | "registeredTo">,
+) {
+  const search = new URLSearchParams();
+  if (params?.q?.trim()) search.set("q", params.q.trim());
+  if (params?.registeredFrom) search.set("registeredFrom", params.registeredFrom);
+  if (params?.registeredTo) search.set("registeredTo", params.registeredTo);
+  const qs = search.toString();
+  return apiFetch<CustomerListQuickFilterCounts>(
+    `/tailor/customers/filter-counts${qs ? `?${qs}` : ""}`,
   );
 }
 

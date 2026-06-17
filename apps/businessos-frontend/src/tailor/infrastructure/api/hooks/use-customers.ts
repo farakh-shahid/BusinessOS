@@ -5,6 +5,7 @@ import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import { queryKeys } from "@/core/infrastructure/api/query-keys";
 import {
   fetchCustomerDetail,
+  fetchCustomerFilterCounts,
   fetchCustomers,
   fetchCustomersPage,
   updateCustomer,
@@ -29,6 +30,8 @@ export function useInfiniteCustomersQuery(
   const listParams = {
     q: params?.q?.trim() || undefined,
     segment: params?.segment || undefined,
+    registeredFrom: params?.registeredFrom,
+    registeredTo: params?.registeredTo,
   };
 
   return useInfiniteQuery({
@@ -41,6 +44,15 @@ export function useInfiniteCustomersQuery(
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+  });
+}
+
+export function useCustomerFilterCountsQuery(
+  params?: Pick<CustomersListParams, "q" | "registeredFrom" | "registeredTo">,
+) {
+  return useQuery({
+    queryKey: queryKeys.customers.filterCounts(params),
+    queryFn: () => fetchCustomerFilterCounts(params),
   });
 }
 

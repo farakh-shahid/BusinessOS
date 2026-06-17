@@ -16,12 +16,15 @@ export const bookingGarmentTypes: BookingGarmentType[] = [
 
 export type MeasurementFieldType = "number" | "text";
 
+/** Matches the tailor shop worksheet: SIZE (trousers) + main chart. */
+export type MeasurementFieldGroup = "size" | "main";
+
 export interface MeasurementFieldDef {
   key: string;
   labelKey: string;
   type?: MeasurementFieldType;
   required?: boolean;
-  group?: "body" | "upper" | "lower";
+  group?: MeasurementFieldGroup;
 }
 
 export interface StyleFieldDef {
@@ -37,6 +40,52 @@ export interface GarmentMeasurementSchema {
   styleFields: StyleFieldDef[];
 }
 
+/**
+ * Master worksheet chart — same fields as the printed tailor form.
+ * Labels use English (Urdu) via i18n `measurements.*` keys.
+ */
+export const masterWorksheetMeasurementFields: MeasurementFieldDef[] = [
+  { key: "trouserLength", labelKey: "trouserLength", group: "size" },
+  { key: "waist", labelKey: "waist", group: "size" },
+  { key: "hip", labelKey: "hip", group: "size" },
+  { key: "crotch", labelKey: "crotch", group: "size" },
+  { key: "knee", labelKey: "knee", group: "size" },
+  { key: "trouserBottom", labelKey: "trouserBottom", group: "size" },
+  { key: "coatLength", labelKey: "coatLength", group: "main" },
+  { key: "qameezLength", labelKey: "qameezLength", group: "main" },
+  { key: "shirtLength", labelKey: "shirtLength", group: "main" },
+  { key: "sherwaniLength", labelKey: "sherwaniLength", group: "main" },
+  { key: "waistcoatLength", labelKey: "waistcoatLength", group: "main" },
+  { key: "chest", labelKey: "chest", group: "main" },
+  { key: "shoulder", labelKey: "shoulder", group: "main" },
+  { key: "sleeve", labelKey: "sleeve", group: "main" },
+  { key: "crossBack", labelKey: "crossBack", group: "main" },
+  { key: "cuffOpening", labelKey: "cuffOpening", group: "main" },
+  { key: "collarSize", labelKey: "collarSize", group: "main" },
+  { key: "bandCollar", labelKey: "bandCollar", group: "main" },
+  { key: "shalwarLength", labelKey: "shalwarLength", group: "main" },
+  { key: "shalwarBottom", labelKey: "shalwarBottom", group: "main" },
+  { key: "frontPocket", labelKey: "frontPocket", group: "main" },
+  { key: "sidePocket", labelKey: "sidePocket", group: "main" },
+  { key: "shalwarPocket", labelKey: "shalwarPocket", group: "main" },
+];
+
+const masterFieldMap = Object.fromEntries(
+  masterWorksheetMeasurementFields.map((field) => [field.key, field]),
+) as Record<string, MeasurementFieldDef>;
+
+function pickFields(
+  specs: Array<{ key: string; required?: boolean }>,
+): MeasurementFieldDef[] {
+  return specs.map(({ key, required }) => {
+    const base = masterFieldMap[key];
+    if (!base) {
+      throw new Error(`Unknown measurement field: ${key}`);
+    }
+    return { ...base, required: required ?? false };
+  });
+}
+
 /** Pakistani tailor-style measurement charts per garment (inches). */
 export const garmentMeasurementSchemas: Record<
   BookingGarmentType,
@@ -44,20 +93,23 @@ export const garmentMeasurementSchemas: Record<
 > = {
   shalwarQameez: {
     garmentType: "shalwarQameez",
-    measurementFields: [
-      { key: "neck", labelKey: "neck", group: "body", required: true },
-      { key: "shoulder", labelKey: "shoulder", group: "body", required: true },
-      { key: "chest", labelKey: "chest", group: "body", required: true },
-      { key: "waist", labelKey: "waist", group: "body", required: true },
-      { key: "hip", labelKey: "hip", group: "body" },
-      { key: "sleeve", labelKey: "sleeve", group: "upper", required: true },
-      { key: "qameezLength", labelKey: "qameezLength", group: "upper", required: true },
-      { key: "shalwarLength", labelKey: "shalwarLength", group: "lower", required: true },
-      { key: "thigh", labelKey: "thigh", group: "lower" },
-      { key: "armhole", labelKey: "armhole", group: "upper" },
-      { key: "bicep", labelKey: "bicep", group: "upper" },
-      { key: "wrist", labelKey: "wrist", group: "upper" },
-    ],
+    measurementFields: pickFields([
+      { key: "qameezLength", required: true },
+      { key: "shalwarLength", required: true },
+      { key: "chest", required: true },
+      { key: "waist", required: true },
+      { key: "shoulder", required: true },
+      { key: "sleeve", required: true },
+      { key: "hip" },
+      { key: "crossBack" },
+      { key: "cuffOpening" },
+      { key: "collarSize" },
+      { key: "bandCollar" },
+      { key: "shalwarBottom" },
+      { key: "frontPocket" },
+      { key: "sidePocket" },
+      { key: "shalwarPocket" },
+    ]),
     styleFields: [
       {
         key: "collar",
@@ -80,46 +132,27 @@ export const garmentMeasurementSchemas: Record<
           { value: "other", labelKey: "placketOther" },
         ],
       },
-      {
-        key: "chestPocket",
-        labelKey: "chestPocket",
-        type: "select",
-        options: [
-          { value: "none", labelKey: "none" },
-          { value: "single", labelKey: "single" },
-          { value: "double", labelKey: "double" },
-        ],
-      },
-      {
-        key: "sidePockets",
-        labelKey: "sidePockets",
-        type: "select",
-        options: [
-          { value: "none", labelKey: "none" },
-          { value: "single", labelKey: "single" },
-          { value: "double", labelKey: "double" },
-        ],
-      },
       { key: "gera", labelKey: "gera", type: "text" },
       { key: "notes", labelKey: "styleNotes", type: "text" },
     ],
   },
   dressPantCoat: {
     garmentType: "dressPantCoat",
-    measurementFields: [
-      { key: "neck", labelKey: "neck", group: "body", required: true },
-      { key: "shoulder", labelKey: "shoulder", group: "body", required: true },
-      { key: "chest", labelKey: "chest", group: "body", required: true },
-      { key: "waist", labelKey: "waist", group: "body", required: true },
-      { key: "hip", labelKey: "hip", group: "body", required: true },
-      { key: "sleeve", labelKey: "sleeve", group: "upper", required: true },
-      { key: "coatLength", labelKey: "coatLength", group: "upper", required: true },
-      { key: "trouserLength", labelKey: "trouserLength", group: "lower", required: true },
-      { key: "inseam", labelKey: "inseam", group: "lower" },
-      { key: "thigh", labelKey: "thigh", group: "lower" },
-      { key: "knee", labelKey: "knee", group: "lower" },
-      { key: "crotch", labelKey: "crotch", group: "lower" },
-    ],
+    measurementFields: pickFields([
+      { key: "coatLength", required: true },
+      { key: "trouserLength", required: true },
+      { key: "chest", required: true },
+      { key: "waist", required: true },
+      { key: "shoulder", required: true },
+      { key: "sleeve", required: true },
+      { key: "hip", required: true },
+      { key: "crotch" },
+      { key: "knee" },
+      { key: "trouserBottom" },
+      { key: "crossBack" },
+      { key: "cuffOpening" },
+      { key: "collarSize" },
+    ]),
     styleFields: [
       {
         key: "lapel",
@@ -146,18 +179,20 @@ export const garmentMeasurementSchemas: Record<
   },
   sherwani: {
     garmentType: "sherwani",
-    measurementFields: [
-      { key: "neck", labelKey: "neck", group: "body", required: true },
-      { key: "shoulder", labelKey: "shoulder", group: "body", required: true },
-      { key: "chest", labelKey: "chest", group: "body", required: true },
-      { key: "stomach", labelKey: "stomach", group: "body" },
-      { key: "waist", labelKey: "waist", group: "body", required: true },
-      { key: "hip", labelKey: "hip", group: "body" },
-      { key: "sleeve", labelKey: "sleeve", group: "upper", required: true },
-      { key: "sherwaniLength", labelKey: "sherwaniLength", group: "upper", required: true },
-      { key: "trouserLength", labelKey: "trouserLength", group: "lower" },
-      { key: "thigh", labelKey: "thigh", group: "lower" },
-    ],
+    measurementFields: pickFields([
+      { key: "sherwaniLength", required: true },
+      { key: "chest", required: true },
+      { key: "waist", required: true },
+      { key: "shoulder", required: true },
+      { key: "sleeve", required: true },
+      { key: "hip" },
+      { key: "crossBack" },
+      { key: "cuffOpening" },
+      { key: "collarSize" },
+      { key: "bandCollar" },
+      { key: "trouserLength" },
+      { key: "trouserBottom" },
+    ]),
     styleFields: [
       {
         key: "collar",
@@ -174,17 +209,20 @@ export const garmentMeasurementSchemas: Record<
   },
   kurta: {
     garmentType: "kurta",
-    measurementFields: [
-      { key: "neck", labelKey: "neck", group: "body", required: true },
-      { key: "shoulder", labelKey: "shoulder", group: "body", required: true },
-      { key: "chest", labelKey: "chest", group: "body", required: true },
-      { key: "waist", labelKey: "waist", group: "body", required: true },
-      { key: "hip", labelKey: "hip", group: "body" },
-      { key: "sleeve", labelKey: "sleeve", group: "upper", required: true },
-      { key: "kurtaLength", labelKey: "kurtaLength", group: "upper", required: true },
-      { key: "pajamaLength", labelKey: "pajamaLength", group: "lower" },
-      { key: "thigh", labelKey: "thigh", group: "lower" },
-    ],
+    measurementFields: pickFields([
+      { key: "qameezLength", required: true },
+      { key: "chest", required: true },
+      { key: "waist", required: true },
+      { key: "shoulder", required: true },
+      { key: "sleeve", required: true },
+      { key: "hip" },
+      { key: "crossBack" },
+      { key: "cuffOpening" },
+      { key: "collarSize" },
+      { key: "bandCollar" },
+      { key: "shalwarLength" },
+      { key: "shalwarBottom" },
+    ]),
     styleFields: [
       {
         key: "collar",
@@ -211,16 +249,14 @@ export const garmentMeasurementSchemas: Record<
   },
   waistcoat: {
     garmentType: "waistcoat",
-    measurementFields: [
-      { key: "neck", labelKey: "neck", group: "body", required: true },
-      { key: "shoulder", labelKey: "shoulder", group: "body", required: true },
-      { key: "chest", labelKey: "chest", group: "body", required: true },
-      { key: "waist", labelKey: "waist", group: "body", required: true },
-      { key: "hip", labelKey: "hip", group: "body" },
-      { key: "waistcoatLength", labelKey: "waistcoatLength", group: "upper", required: true },
-      { key: "armhole", labelKey: "armhole", group: "upper" },
-      { key: "bicep", labelKey: "bicep", group: "upper" },
-    ],
+    measurementFields: pickFields([
+      { key: "waistcoatLength", required: true },
+      { key: "chest", required: true },
+      { key: "waist", required: true },
+      { key: "shoulder", required: true },
+      { key: "crossBack" },
+      { key: "cuffOpening" },
+    ]),
     styleFields: [
       {
         key: "buttonStyle",
@@ -252,6 +288,19 @@ const legacyGarmentToBooking: Record<string, BookingGarmentType> = {
   frock: "kurta",
 };
 
+/** Legacy measurement keys mapped to the new worksheet chart. */
+const legacyMeasurementKeyAliases: Record<string, string> = {
+  wrist: "cuffOpening",
+  inseam: "crotch",
+  neck: "collarSize",
+  armhole: "crossBack",
+  bicep: "cuffOpening",
+  thigh: "hip",
+  stomach: "waist",
+  kurtaLength: "qameezLength",
+  pajamaLength: "shalwarLength",
+};
+
 export function normalizeBookingGarmentType(
   value?: string | null,
 ): BookingGarmentType {
@@ -268,12 +317,15 @@ export function getGarmentSchema(
   return garmentMeasurementSchemas[normalizeBookingGarmentType(garmentType)];
 }
 
+export function getWorksheetMeasurementFields(): MeasurementFieldDef[] {
+  return masterWorksheetMeasurementFields;
+}
+
 export function emptyMeasurementsForGarment(
-  garmentType?: string | null,
+  _garmentType?: string | null,
 ): Record<string, string> {
-  const schema = getGarmentSchema(garmentType);
   return Object.fromEntries(
-    schema.measurementFields.map((f) => [f.key, ""]),
+    masterWorksheetMeasurementFields.map((field) => [field.key, ""]),
   );
 }
 
@@ -282,34 +334,62 @@ export function emptyStyleForGarment(
 ): Record<string, string> {
   const schema = getGarmentSchema(garmentType);
   return Object.fromEntries(
-    schema.styleFields.map((f) => {
+    schema.styleFields.map((field) => {
       const defaultVal =
-        f.type === "select" && f.options?.length ? f.options[0]!.value : "";
-      return [f.key, defaultVal];
+        field.type === "select" && field.options?.length
+          ? field.options[0]!.value
+          : "";
+      return [field.key, defaultVal];
     }),
   );
 }
 
 /** Keys shared across most garments — copied when switching suit type. */
 export const sharedMeasurementKeys = [
-  "neck",
-  "shoulder",
   "chest",
   "waist",
-  "hip",
+  "shoulder",
   "sleeve",
-  "thigh",
+  "hip",
+  "qameezLength",
+  "shalwarLength",
+  "trouserLength",
+  "coatLength",
+  "crossBack",
+  "cuffOpening",
 ] as const;
 
+function normalizeLegacyMeasurementKey(key: string): string {
+  return legacyMeasurementKeyAliases[key] ?? key;
+}
+
 export function mergeMeasurementsForGarmentChange(
-  garmentType: BookingGarmentType | string,
+  _garmentType: BookingGarmentType | string,
   previous: Record<string, string>,
 ): Record<string, string> {
-  const next = emptyMeasurementsForGarment(garmentType);
-  for (const key of sharedMeasurementKeys) {
-    if (previous[key]?.trim()) {
-      next[key] = previous[key];
+  const next = emptyMeasurementsForGarment();
+  for (const [rawKey, value] of Object.entries(previous)) {
+    if (!value?.trim()) continue;
+    const key = normalizeLegacyMeasurementKey(rawKey);
+    if (key in next) {
+      next[key] = value;
     }
   }
   return next;
+}
+
+export function normalizeMeasurementValues(
+  values: Record<string, string | number | undefined>,
+): Record<string, string> {
+  const normalized = emptyMeasurementsForGarment();
+  for (const [rawKey, rawValue] of Object.entries(values)) {
+    if (rawValue === undefined || rawValue === null) continue;
+    const text = String(rawValue).trim();
+    if (!text) continue;
+    const key = normalizeLegacyMeasurementKey(rawKey);
+    if (key in normalized) {
+      normalized[key] = text;
+    }
+  }
+  return normalized;
 }

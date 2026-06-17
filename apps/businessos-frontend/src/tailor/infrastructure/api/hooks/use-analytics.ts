@@ -15,9 +15,10 @@ export function useAnalyticsQuery(params: AnalyticsQueryParams) {
   const view = params.view ?? "week";
   const anchor = params.anchor ?? "";
   const focus = params.focus ?? "";
+  const overviewScope = params.overviewScope ?? "";
 
   return useQuery({
-    queryKey: queryKeys.analytics.overview(view, anchor, focus),
+    queryKey: queryKeys.analytics.overview(view, anchor, focus, overviewScope),
     queryFn: () => fetchAnalytics(params),
     enabled: isAdmin,
   });

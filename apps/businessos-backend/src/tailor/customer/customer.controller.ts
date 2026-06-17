@@ -3,6 +3,7 @@ import { CurrentTenant } from "../../common/decorators/current-tenant.decorator"
 import { JwtAuthGuard } from "../../core/auth/jwt-auth.guard";
 import { CustomerService } from "./customer.service";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
+import { CustomerFilterCountsQueryDto } from "./dto/customer-filter-counts-query.dto";
 import { ListCustomersQueryDto } from "./dto/list-customers-query.dto";
 import { SearchCustomersQueryDto } from "./dto/search-customers-query.dto";
 import { UpdateCustomerDto } from "./dto/update-customer.dto";
@@ -31,6 +32,14 @@ export class CustomerController {
   @Get("by-phone")
   byPhone(@CurrentTenant() tenantId: string, @Query("phone") phone: string) {
     return this.customers.findByPhone(tenantId, phone);
+  }
+
+  @Get("filter-counts")
+  filterCounts(
+    @CurrentTenant() tenantId: string,
+    @Query() query: CustomerFilterCountsQueryDto,
+  ) {
+    return this.customers.filterCounts(tenantId, query);
   }
 
   @Get()

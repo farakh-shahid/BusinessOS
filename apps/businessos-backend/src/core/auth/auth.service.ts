@@ -4,6 +4,7 @@ import * as bcrypt from "bcrypt";
 import { parseLoginIdentifier } from "../../common/utils/user-contact.util";
 import type { AuthUser } from "../../common/types/auth-user.type";
 import { LoginDto } from "./dto/login.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { UserRepository } from "./user.repository";
 
 export interface LoginResult {
@@ -83,6 +84,25 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      specialty: user.specialty ?? null,
+      tenantId: user.tenantId,
+      tenantName: user.tenant?.name ?? null,
+    };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.users.updateProfile(userId, {
+      name: dto.name,
+      specialty: dto.specialty,
+    });
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      specialty: user.specialty ?? null,
       tenantId: user.tenantId,
       tenantName: user.tenant?.name ?? null,
     };

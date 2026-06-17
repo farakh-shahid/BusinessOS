@@ -1,26 +1,22 @@
 import type { OrderDocumentType, OrderDocumentWhatsAppResult } from "@business-os/tailor";
-import {
-  htmlToPdfBlob,
-  pdfBlobToFile,
-} from "@/core/presentation/lib/html-to-pdf";
+import { pdfBlobToFile } from "@/core/presentation/lib/capture-document-pdf";
 import { sendOrderDocumentWhatsApp } from "@/tailor/infrastructure/api/order-documents.api";
 import { sharePdfOnWhatsAppClient } from "./share-pdf-whatsapp";
 
-export async function sendOrderHtmlAsPdfWhatsApp(params: {
+export async function sendOrderDocumentPdfWhatsApp(params: {
   orderId: string;
   orderNumber: string;
   documentType: OrderDocumentType;
-  html: string;
+  pdfBlob: Blob;
   customerPhone: string;
   caption: string;
 }): Promise<OrderDocumentWhatsAppResult> {
-  const blob = await htmlToPdfBlob(params.html);
   const filename =
     params.documentType === "receipt"
       ? `receipt-${params.orderNumber.replace(/[^\w-]+/g, "-")}.pdf`
       : `measurements-${params.orderNumber.replace(/[^\w-]+/g, "-")}.pdf`;
 
-  const file = pdfBlobToFile(blob, filename);
+  const file = pdfBlobToFile(params.pdfBlob, filename);
 
   try {
     const result = await sendOrderDocumentWhatsApp(
@@ -32,7 +28,7 @@ export async function sendOrderHtmlAsPdfWhatsApp(params: {
       return result;
     }
   } catch {
-    // Fall through to direct client share (no Cloudinary, no broken links).
+    // Fall through to client share when Baileys/API unavailable.
   }
 
   const shared = await sharePdfOnWhatsAppClient({

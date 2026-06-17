@@ -125,8 +125,14 @@ export class AnalyticsRepository {
         ? addDays(startOfWeek(clampedStart), 7) <= startOfWeek(now)
         : startOfMonth(addMonths(clampedStart, 1)) <= startOfMonth(now);
 
-    const garmentBreakdown = garmentAnalytics(metricsOrders);
-    const topGarments = garmentBreakdown.slice(0, 5);
+    const overviewOrders = filterByOverviewScope(
+      orders,
+      query.overviewScope ?? "year",
+      now,
+      tenantCreatedAt,
+    );
+    const garmentBreakdown = garmentAnalytics(overviewOrders);
+    const topGarments = garmentAnalytics(metricsOrders).slice(0, 5);
     const monthlyTrend = buildMonthlyTrend(orders, now);
     const yearlyTrend = buildYearlyTrend(orders, now);
     const currentMonthRange = resolveRange("month", now, now);
@@ -145,9 +151,9 @@ export class AnalyticsRepository {
     );
     const receivables = buildReceivablesSnapshot(activeOrders);
     const productionPipeline = buildProductionPipeline(activeOrders);
-    const busiestDays = buildBusiestDays(metricsOrders);
-    const karigarOutput = buildKarigarOutput(metricsOrders);
-    const topCustomers = buildTopCustomers(metricsOrders);
+    const busiestDays = buildBusiestDays(overviewOrders);
+    const karigarOutput = buildKarigarOutput(overviewOrders);
+    const topCustomers = buildTopCustomers(overviewOrders);
     const advanceCollectionRate =
       selectedPeriod.revenue > 0
         ? Math.round((selectedPeriod.advanceCollected / selectedPeriod.revenue) * 100)
@@ -677,6 +683,30 @@ function buildTopCustomers(orders: OrderRow[]) {
       revenue: row.revenue,
       orderCount: row.orderCount,
     }));
+}
+
+function filterByOverviewScope(
+  orders: OrderRow[],
+  scope: "year" | "sixMonth" | "month",
+  now: Date,
+  tenantCreatedAt: Date,
+) {
+  const end = endOfDay(now);
+  let start: Date;
+
+  if (scope === "year") {
+    start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+  } else if (scope === "sixMonth") {
+    start = startOfMonth(addMonths(now, -5));
+  } else {
+    start = startOfMonth(now);
+  }
+
+  if (start < tenantCreatedAt) {
+    start = tenantCreatedAt;
+  }
+
+  return orders.filter((o) => isInRange(o.createdAt, start, end));
 }
 
 function percentChange(previous: number, current: number): number | null {

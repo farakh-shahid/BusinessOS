@@ -56,7 +56,7 @@ export interface OrderDetail extends Order {
 export interface MarkReadyNotificationResult {
   attempted: boolean;
   sent: boolean;
-  method?: "meta_cloud" | "twilio" | "wa_me_link";
+  method?: "baileys" | "meta_cloud" | "twilio" | "wa_me_link";
   whatsappUrl?: string;
   reason?: string;
 }

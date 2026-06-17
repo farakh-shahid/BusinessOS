@@ -9,6 +9,7 @@ import {
   createOrder,
   fetchAssignments,
   fetchDashboard,
+  fetchNextOrderNumber,
   fetchOrderDetail,
   fetchOrderFilterCounts,
   fetchOrders,
@@ -31,6 +32,13 @@ export function useDashboardQuery() {
   return useQuery({
     queryKey: queryKeys.orders.dashboard,
     queryFn: fetchDashboard,
+  });
+}
+
+export function useNextOrderNumberQuery() {
+  return useQuery({
+    queryKey: queryKeys.orders.nextNumber,
+    queryFn: fetchNextOrderNumber,
   });
 }
 

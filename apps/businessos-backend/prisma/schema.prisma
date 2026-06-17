@@ -30,6 +30,9 @@ model Tenant {
   email          String?
   address        String?  @db.Text
   whatsappFooter String?  @map("whatsapp_footer") @db.Text
+  whatsappConnected Boolean @default(false) @map("whatsapp_connected")
+  whatsappPhone     String?  @map("whatsapp_phone")
+  whatsappSession   Json?    @map("whatsapp_session")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -50,6 +53,7 @@ model User {
   phone        String?  @unique
   passwordHash String   @map("password_hash")
   role         UserRole @default(STAFF)
+  specialty    String?
   isActive     Boolean  @default(true) @map("is_active")
   permissions  Json     @default("{}")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -275,6 +279,9 @@ model Order {
 
   readyNotifiedAt  DateTime? @map("ready_notified_at")
   readyEmailSentAt DateTime? @map("ready_email_sent_at")
+
+  receiptDocumentHtml     String? @map("receipt_document_html") @db.Text
+  measurementDocumentHtml String? @map("measurement_document_html") @db.Text
 
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

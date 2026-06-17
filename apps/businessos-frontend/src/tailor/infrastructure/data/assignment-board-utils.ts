@@ -5,14 +5,27 @@ import type {
 } from "@business-os/tailor";
 import type { Dictionary } from "@business-os/i18n";
 
-export type AssignmentView = "board" | "table";
+export type AssignmentView = "grid" | "board" | "table";
 
 export const ASSIGNMENTS_VIEW_STORAGE_KEY = "businessos-assignments-view";
 
+export type PersonBoardWorkerKey = string | "__unassigned__";
+
+export const PERSON_WORKFLOW_COLUMNS = [
+  "pending",
+  "cutting",
+  "stitching",
+  "ready",
+] as const satisfies readonly OrderWorkflowStatus[];
+
+export type PersonWorkflowColumnStatus = (typeof PERSON_WORKFLOW_COLUMNS)[number];
+
 export function loadAssignmentView(): AssignmentView {
-  if (typeof window === "undefined") return "board";
+  if (typeof window === "undefined") return "grid";
   const stored = localStorage.getItem(ASSIGNMENTS_VIEW_STORAGE_KEY);
-  return stored === "table" ? "table" : "board";
+  if (stored === "table") return "table";
+  if (stored === "board") return "board";
+  return "grid";
 }
 
 export function persistAssignmentView(view: AssignmentView) {
@@ -43,7 +56,9 @@ export function buildAssignmentColumns(
       key: row.assignedToName,
       workerName: row.assignedToName,
       displayName: row.assignedToName,
-      roleLabel: inferWorkerRoleLabel(row.orders, t),
+      roleLabel:
+        data.staffSpecialties[row.assignedToName] ??
+        inferWorkerRoleLabel(row.orders, t),
       orderCount: row.orderCount,
       orders: row.orders,
     })),
@@ -168,4 +183,92 @@ export function workflowStatusLabel(
   if (status === "delivered") return t.orderStatus.delivered;
   if (status === "cancelled") return t.orderStatus.cancelled;
   return t.orderStatus[status];
+}
+
+export interface AssignmentPersonGridItem {
+  key: PersonBoardWorkerKey;
+  workerName: string | null;
+  displayName: string;
+  roleLabel: string;
+  orderCount: number;
+  suitCount: number;
+  statusCounts: Record<PersonWorkflowColumnStatus, number>;
+  orders: AssignmentOrderItem[];
+}
+
+export interface PersonStatusColumn {
+  status: PersonWorkflowColumnStatus;
+  orders: AssignmentOrderItem[];
+}
+
+export function countOrdersByWorkflowStatus(
+  orders: AssignmentOrderItem[],
+): Record<PersonWorkflowColumnStatus, number> {
+  const counts: Record<PersonWorkflowColumnStatus, number> = {
+    pending: 0,
+    cutting: 0,
+    stitching: 0,
+    ready: 0,
+  };
+
+  for (const order of orders) {
+    if (order.workflowStatus in counts) {
+      counts[order.workflowStatus as PersonWorkflowColumnStatus] += 1;
+    }
+  }
+
+  return counts;
+}
+
+export function buildPersonStatusColumns(
+  orders: AssignmentOrderItem[],
+): PersonStatusColumn[] {
+  return PERSON_WORKFLOW_COLUMNS.map((status) => ({
+    status,
+    orders: orders.filter((order) => order.workflowStatus === status),
+  }));
+}
+
+export function buildAssignmentPeopleGrid(
+  data: AssignmentsOverview,
+  t: Dictionary,
+): AssignmentPersonGridItem[] {
+  const people: AssignmentPersonGridItem[] = data.assignments.map((row) => ({
+    key: row.assignedToName,
+    workerName: row.assignedToName,
+    displayName: row.assignedToName,
+    roleLabel:
+      data.staffSpecialties[row.assignedToName] ??
+      inferWorkerRoleLabel(row.orders, t),
+    orderCount: row.orderCount,
+    suitCount: row.suitCount,
+    statusCounts: countOrdersByWorkflowStatus(row.orders),
+    orders: row.orders,
+  }));
+
+  if (data.unassignedOrderCount > 0) {
+    people.push({
+      key: "__unassigned__",
+      workerName: null,
+      displayName: t.assignments.unassigned,
+      roleLabel: t.assignments.unassignedSubtitle,
+      orderCount: data.unassignedOrderCount,
+      suitCount: data.unassignedSuitCount,
+      statusCounts: countOrdersByWorkflowStatus(data.unassignedOrders),
+      orders: data.unassignedOrders,
+    });
+  }
+
+  return people;
+}
+
+export function findAssignmentPerson(
+  data: AssignmentsOverview,
+  workerKey: PersonBoardWorkerKey,
+  t: Dictionary,
+): AssignmentPersonGridItem | null {
+  return (
+    buildAssignmentPeopleGrid(data, t).find((person) => person.key === workerKey) ??
+    null
+  );
 }

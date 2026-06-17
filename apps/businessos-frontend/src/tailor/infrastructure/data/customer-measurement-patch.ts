@@ -5,6 +5,7 @@ import {
   emptyStyleForGarment,
   getGarmentSchema,
   normalizeBookingGarmentType,
+  normalizeMeasurementValues,
   sharedMeasurementKeys,
   type BookingGarmentType,
 } from "@business-os/tailor";
@@ -42,7 +43,7 @@ export function measurementToDraftFields(
   garmentType: BookingGarmentType | string,
 ): { measurements: Record<string, string>; style: Record<string, string> } {
   const suitType = normalizeBookingGarmentType(garmentType);
-  const baseMeasurements = emptyMeasurementsForGarment(suitType);
+  const baseMeasurements = normalizeMeasurementValues(m.measurements);
   const schema = getGarmentSchema(suitType);
 
   for (const field of schema.measurementFields) {

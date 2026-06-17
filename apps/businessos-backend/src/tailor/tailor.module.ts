@@ -6,6 +6,7 @@ import { OrderModule } from "./order/order.module";
 import { SettingsModule } from "./settings/settings.module";
 import { StaffModule } from "./staff/staff.module";
 import { UploadModule } from "./upload/upload.module";
+import { TailorWhatsAppModule } from "./whatsapp/whatsapp.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UploadModule } from "./upload/upload.module";
     SettingsModule,
     StaffModule,
     UploadModule,
+    TailorWhatsAppModule,
   ],
 })
 export class TailorModule {}

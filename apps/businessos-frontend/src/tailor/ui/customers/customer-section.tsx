@@ -181,40 +181,38 @@ export const CustomerSection = forwardRef<
 
   const modeToggle = (
     <div
-      className={cn("border-b border-hairline", isWorksheet ? "mb-5" : "mt-4")}
+      className={cn("grid grid-cols-2 border-b border-hairline", isWorksheet ? "mb-5" : "mt-4")}
       role="tablist"
       aria-label={t.form.customer}
     >
-      <div className={cn("flex gap-6 sm:gap-8", isRtl && "flex-row-reverse")}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={draft.customerMode === "existing"}
-          onClick={() => onChange({ customerMode: "existing" })}
-          className={cn(
-            "-mb-px shrink-0 border-b-2 pb-3 pt-1 text-sm font-semibold transition-colors",
-            draft.customerMode === "existing"
-              ? "border-accent-500 text-foreground"
-              : "border-transparent text-muted-slate hover:text-foreground",
-          )}
-        >
-          {t.form.existingCustomer}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={draft.customerMode === "new"}
-          onClick={() => onChange({ customerMode: "new" })}
-          className={cn(
-            "-mb-px shrink-0 border-b-2 pb-3 pt-1 text-sm font-semibold transition-colors",
-            draft.customerMode === "new"
-              ? "border-accent-500 text-foreground"
-              : "border-transparent text-muted-slate hover:text-foreground",
-          )}
-        >
-          {t.form.newCustomer}
-        </button>
-      </div>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={draft.customerMode === "existing"}
+        onClick={() => onChange({ customerMode: "existing" })}
+        className={cn(
+          "-mb-px w-full border-b-2 pb-3 pt-1 text-center text-sm font-semibold transition-colors",
+          draft.customerMode === "existing"
+            ? "border-accent-500 text-foreground"
+            : "border-transparent text-muted-slate hover:text-foreground",
+        )}
+      >
+        {t.form.existingCustomer}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={draft.customerMode === "new"}
+        onClick={() => onChange({ customerMode: "new" })}
+        className={cn(
+          "-mb-px w-full border-b-2 pb-3 pt-1 text-center text-sm font-semibold transition-colors",
+          draft.customerMode === "new"
+            ? "border-accent-500 text-foreground"
+            : "border-transparent text-muted-slate hover:text-foreground",
+        )}
+      >
+        {t.form.newCustomer}
+      </button>
     </div>
   );
 

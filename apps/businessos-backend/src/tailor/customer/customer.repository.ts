@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
   CustomerDetail,
   CustomerGarmentStyleProfile,
+  CustomerListQuickFilterCounts,
+  CustomerListQuickFilterKey,
   CustomerSearchResult,
   CustomerListEntry,
   OrderWorkflowStatus,
@@ -27,7 +29,8 @@ import { requirePakistanPhone } from "../../common/utils/pakistan-phone.util";
 import type { CreateCustomerDto } from "./dto/create-customer.dto";
 import type { ListCustomersQueryDto } from "./dto/list-customers-query.dto";
 import type { UpdateCustomerDto } from "./dto/update-customer.dto";
-import { buildCustomerListWhere } from "./customer-list-query.helper";
+import { buildCustomerListWhere, CUSTOMER_QUICK_FILTER_KEYS } from "./customer-list-query.helper";
+import type { CustomerFilterCountsQueryDto } from "./dto/customer-filter-counts-query.dto";
 
 @Injectable()
 export class CustomerRepository {
@@ -50,6 +53,8 @@ export class CustomerRepository {
         q: query?.q,
         segment: query?.segment,
         multiOrderCustomerIds,
+        registeredFrom: query?.registeredFrom,
+        registeredTo: query?.registeredTo,
       }),
       include: {
         _count: { select: { orders: true } },
@@ -108,6 +113,31 @@ export class CustomerRepository {
       hasMore,
       nextOffset: hasMore ? offset + limit : null,
     };
+  }
+
+  async getQuickFilterCounts(
+    tenantId: string,
+    query?: CustomerFilterCountsQueryDto,
+  ): Promise<CustomerListQuickFilterCounts> {
+    const multiOrderCustomerIds = await this.customerIdsWithMultipleOrders(tenantId);
+
+    const entries = await Promise.all(
+      CUSTOMER_QUICK_FILTER_KEYS.map(async (segmentKey) => {
+        const where = buildCustomerListWhere(tenantId, {
+          q: query?.q,
+          segment: segmentKey || undefined,
+          multiOrderCustomerIds,
+          registeredFrom: query?.registeredFrom,
+          registeredTo: query?.registeredTo,
+        });
+        const count = await this.prisma.customer.count({ where });
+        const key: CustomerListQuickFilterKey =
+          segmentKey === "" ? "all" : (segmentKey as Exclude<CustomerListQuickFilterKey, "all">);
+        return [key, count] as const;
+      }),
+    );
+
+    return Object.fromEntries(entries) as CustomerListQuickFilterCounts;
   }
 
   async search(tenantId: string, query: string): Promise<CustomerSearchResult[]> {

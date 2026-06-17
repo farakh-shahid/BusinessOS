@@ -90,6 +90,11 @@ export class OrderController {
     return this.orders.list(tenantId, query, user);
   }
 
+  @Get("next-number")
+  nextOrderNumber(@CurrentTenant() tenantId: string) {
+    return this.orders.getNextOrderNumber(tenantId);
+  }
+
   @Get(":id")
   getById(
     @CurrentTenant() tenantId: string,
@@ -168,17 +173,13 @@ export class OrderController {
     @Query() query: SendOrderDocumentQueryDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    if (!file?.buffer) {
-      throw new BadRequestException("No PDF uploaded");
-    }
-
     return this.orders.sendDocumentWhatsApp(
       tenantId,
       id,
       user.id,
-      file,
       query.type,
       user,
+      file,
     );
   }
 }

@@ -8,9 +8,19 @@ import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
 import { useDebouncedValue } from "@/core/presentation/hooks/use-debounced-value";
 import { useLocale } from "@/core/i18n/locale-context";
-import { useInfiniteCustomersQuery } from "@/tailor/infrastructure/api/hooks/use-customers";
+import {
+  useCustomerFilterCountsQuery,
+  useInfiniteCustomersQuery,
+} from "@/tailor/infrastructure/api/hooks/use-customers";
 import type { CustomerListSegment } from "@/tailor/infrastructure/data/customer-list-filters";
+import {
+  emptyRegistrationFilter,
+  registrationFilterIsActive,
+  resolveRegisteredDateRange,
+  type CustomerRegistrationFilter,
+} from "@/tailor/infrastructure/data/customer-list-filters";
 import { CustomerListItem } from "./customer-list-item";
+import { CustomerFiltersSheet } from "./customer-filters-sheet";
 import { CustomerQuickFilters } from "./customer-quick-filters";
 import { CustomerListSkeleton } from "@/tailor/ui/skeletons";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
@@ -25,18 +35,38 @@ export function CustomersView() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [segment, setSegment] = useState<CustomerListSegment>("");
+  const [registration, setRegistration] = useState<CustomerRegistrationFilter>(
+    emptyRegistrationFilter,
+  );
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedInput = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
 
   useEffect(() => {
     setSearchQuery(debouncedInput.trim());
   }, [debouncedInput]);
 
+  const dateRange = useMemo(
+    () => resolveRegisteredDateRange(registration),
+    [registration],
+  );
+
   const listParams = useMemo(
     () => ({
       q: searchQuery || undefined,
       segment: segment || undefined,
+      registeredFrom: dateRange.registeredFrom,
+      registeredTo: dateRange.registeredTo,
     }),
-    [searchQuery, segment],
+    [searchQuery, segment, dateRange],
+  );
+
+  const filterCountParams = useMemo(
+    () => ({
+      q: searchQuery || undefined,
+      registeredFrom: dateRange.registeredFrom,
+      registeredTo: dateRange.registeredTo,
+    }),
+    [searchQuery, dateRange],
   );
 
   const {
@@ -47,6 +77,8 @@ export function CustomersView() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteCustomersQuery(listParams);
+
+  const { data: filterCounts } = useCustomerFilterCountsQuery(filterCountParams);
 
   const customers = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -83,6 +115,8 @@ export function CustomersView() {
   }
 
   const hasActiveSearch = searchQuery.length > 0;
+  const hasActiveFilters =
+    hasActiveSearch || segment !== "" || registrationFilterIsActive(registration);
 
   return (
     <>
@@ -142,11 +176,23 @@ export function CustomersView() {
 
         <CustomerQuickFilters
           segment={segment}
+          registration={registration}
           t={t}
           isRtl={isRtl}
+          filterCounts={filterCounts}
           onSegmentChange={setSegment}
+          onOpenFilters={() => setFiltersOpen(true)}
         />
       </div>
+
+      <CustomerFiltersSheet
+        open={filtersOpen}
+        registration={registration}
+        t={t}
+        isRtl={isRtl}
+        onClose={() => setFiltersOpen(false)}
+        onApply={setRegistration}
+      />
 
       {isLoading ? (
         <CustomerListSkeleton />
@@ -156,7 +202,7 @@ export function CustomersView() {
         </div>
       ) : customers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-          {hasActiveSearch || segment ? t.search.noResults : t.customers.empty}
+          {hasActiveFilters ? t.search.noResults : t.customers.empty}
         </div>
       ) : (
         <section className="space-y-3">

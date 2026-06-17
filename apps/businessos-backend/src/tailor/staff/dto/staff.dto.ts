@@ -3,6 +3,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
   ValidateIf,
 } from "class-validator";
@@ -28,6 +29,11 @@ export class CreateStaffDto {
 
   @IsIn(["ADMIN", "STAFF", "TAILOR"])
   role!: "ADMIN" | "STAFF" | "TAILOR";
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  specialty?: string;
 }
 
 export class UpdateStaffDto {
@@ -37,4 +43,20 @@ export class UpdateStaffDto {
 
   @IsIn(["ADMIN", "STAFF", "TAILOR"])
   role!: "ADMIN" | "STAFF" | "TAILOR";
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  specialty?: string;
+}
+
+export class UpdateMyProfileDto {
+  @IsString()
+  @MinLength(2)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  specialty?: string;
 }

@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from "@nestjs/common";
 import type {
   MarkReadyResult,
   OrderDocumentWhatsAppResult,
@@ -39,7 +43,6 @@ import {
 } from "./dashboard-staff-sanitize.helper";
 import { filterDashboardForAssignee } from "./dashboard-tailor-filter.helper";
 import { OrderRepository } from "./order.repository";
-
 @Injectable()
 export class OrderService {
   constructor(
@@ -146,6 +149,11 @@ export class OrderService {
     return order;
   }
 
+  async getNextOrderNumber(tenantId: string) {
+    const orderNumber = await this.orders.previewNextOrderNumber(tenantId);
+    return { orderNumber };
+  }
+
   async updateOrder(
     tenantId: string,
     orderId: string,
@@ -249,6 +257,7 @@ export class OrderService {
     const message = buildReminderMessage(reminderCtx);
 
     const wa = await this.whatsapp.sendMessage(
+      tenantId,
       order.customer.phone,
       message,
       notificationConfig.whatsappCloud.reminderTemplate
@@ -315,7 +324,7 @@ export class OrderService {
     const whatsappResult = {
       attempted: false,
       sent: false,
-      method: undefined as "meta_cloud" | "twilio" | "wa_me_link" | undefined,
+      method: undefined as "baileys" | "meta_cloud" | "twilio" | "wa_me_link" | undefined,
       whatsappUrl: undefined as string | undefined,
       reason: undefined as string | undefined,
     };
@@ -323,6 +332,7 @@ export class OrderService {
     if (sendWhatsApp) {
       whatsappResult.attempted = true;
       const wa = await this.whatsapp.sendReadyNotification(
+        tenantId,
         order.customer.phone,
         ctx,
       );
@@ -381,9 +391,9 @@ export class OrderService {
     tenantId: string,
     orderId: string,
     userId: string,
-    file: Express.Multer.File,
     documentType: OrderDocumentType,
     user: AuthUser,
+    file?: Express.Multer.File,
   ): Promise<OrderDocumentWhatsAppResult> {
     const order = await this.orders.findById(tenantId, orderId);
     this.assertTailorOrderAccess(order, user);
@@ -393,6 +403,8 @@ export class OrderService {
       customerName: order.customer.name,
       orderNumber: order.orderNumber,
       shopName: order.tenant.name,
+      garmentLabel: garmentLabel(order.garmentType),
+      suitCount: order.suitCount > 0 ? order.suitCount : 1,
       locale: locale as "en" | "ur",
       documentType,
       whatsappFooter: order.tenant.whatsappFooter ?? undefined,
@@ -402,12 +414,19 @@ export class OrderService {
     const fallbackMessage = buildOrderDocumentWhatsAppFallbackMessage(docCtx);
     const filename = orderDocumentFilename(documentType, order.orderNumber);
 
+    if (!file?.buffer?.length) {
+      throw new BadRequestException("PDF file is required");
+    }
+
+    const pdfBuffer = file.buffer;
+
     const wa = await this.whatsapp.sendDocument({
+      tenantId,
       phone: order.customer.phone,
       caption,
       filename,
       fallbackMessage,
-      pdfBuffer: file.buffer,
+      pdfBuffer,
     });
 
     await this.audit.log(tenantId, orderId, userId, "ORDER_UPDATED", {

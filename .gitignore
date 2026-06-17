@@ -6,5 +6,6 @@ dist
 **/src/generated
 uploads/
 apps/businessos-backend/uploads/
+apps/businessos-backend/data/
 *.log
 .DS_Store

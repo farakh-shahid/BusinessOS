@@ -3,8 +3,10 @@
 import type { Dictionary } from "@business-os/i18n";
 import {
   getGarmentSchema,
+  getWorksheetMeasurementFields,
   normalizeBookingGarmentType,
   type BookingGarmentType,
+  type MeasurementFieldDef,
 } from "@business-os/tailor";
 import { Label } from "@/core/presentation/components/ui/label";
 import { Input } from "@/core/presentation/components/ui/input";
@@ -16,8 +18,10 @@ import { useLocale } from "@/core/i18n/locale-context";
 import {
   WorksheetField,
   WorksheetSectionTitle,
+  measurementSectionTitleClass,
   savedMeasurementsChartBorderClass,
   worksheetFieldClass,
+  worksheetMeasureLabelClass,
 } from "@/tailor/ui/orders/worksheet-form-primitives";
 
 interface MeasurementFieldsFormProps {
@@ -32,10 +36,11 @@ interface MeasurementFieldsFormProps {
 }
 
 const groupLabels: Record<string, keyof Dictionary["form"]> = {
-  body: "measurementGroupBody",
-  upper: "measurementGroupUpper",
-  lower: "measurementGroupLower",
+  size: "measurementGroupSize",
+  main: "measurementGroupMain",
 };
+
+const MEASUREMENT_GROUPS = ["size", "main"] as const;
 
 export function MeasurementFieldsForm({
   t,
@@ -51,7 +56,11 @@ export function MeasurementFieldsForm({
   const isWorksheet = variant === "worksheet";
   const suitType = normalizeBookingGarmentType(garmentType);
   const schema = getGarmentSchema(suitType);
-  const groups = ["body", "upper", "lower"] as const;
+  const requiredKeys = new Set(
+    schema.measurementFields.filter((field) => field.required).map((f) => f.key),
+  );
+
+  const allFields: MeasurementFieldDef[] = getWorksheetMeasurementFields();
 
   function updateField(key: string, value: string, isNumeric: boolean) {
     const next = isNumeric ? sanitizeMeasurementInput(value) : value;
@@ -63,43 +72,93 @@ export function MeasurementFieldsForm({
     return m[key] ?? key;
   }
 
-  const allFields = schema.measurementFields;
-
-  if (isWorksheet) {
-    const grid = (
+  function renderFieldGrid(fields: MeasurementFieldDef[], worksheetLayout: boolean) {
+    return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 md:grid-cols-4">
-        {allFields.map((field) => {
+        {fields.map((field) => {
           const isNumeric = field.type !== "text";
-          const label = labelFor(field.labelKey).toUpperCase();
+          const label = labelFor(field.labelKey);
+
+          if (worksheetLayout) {
+            return (
+              <WorksheetField
+                key={field.key}
+                label={label}
+                htmlFor={`m-${field.key}`}
+                required={requiredKeys.has(field.key)}
+                error={fieldErrors[field.key]}
+                measureStyle
+              >
+                <Input
+                  id={`m-${field.key}`}
+                  type="text"
+                  inputMode={isNumeric ? "decimal" : "text"}
+                  placeholder={isNumeric ? t.form.measurementPlaceholder : ""}
+                  value={measurements[field.key] ?? ""}
+                  aria-invalid={!!fieldErrors[field.key]}
+                  className={worksheetFieldClass(!!fieldErrors[field.key])}
+                  onChange={(e) =>
+                    updateField(field.key, e.target.value, isNumeric)
+                  }
+                  dir={locale === "ur" ? "ltr" : undefined}
+                  autoComplete="off"
+                />
+              </WorksheetField>
+            );
+          }
 
           return (
-            <WorksheetField
-              key={field.key}
-              label={label}
-              htmlFor={`m-${field.key}`}
-              required={field.required}
-              error={fieldErrors[field.key]}
-              measureStyle
-            >
+            <div key={field.key}>
+              <Label
+                htmlFor={`m-${field.key}`}
+                className={worksheetMeasureLabelClass}
+              >
+                {label}
+                {isNumeric ? ` (${t.form.inchesAbbr})` : ""}
+                {requiredKeys.has(field.key) ? " *" : ""}
+              </Label>
               <Input
                 id={`m-${field.key}`}
                 type="text"
                 inputMode={isNumeric ? "decimal" : "text"}
-                placeholder={
-                  isNumeric ? t.form.measurementPlaceholder : ""
-                }
+                placeholder={isNumeric ? t.form.measurementPlaceholder : ""}
                 value={measurements[field.key] ?? ""}
                 aria-invalid={!!fieldErrors[field.key]}
-                className={worksheetFieldClass(!!fieldErrors[field.key])}
+                className={
+                  fieldErrors[field.key]
+                    ? "border-rose-300 focus-visible:ring-rose-400"
+                    : undefined
+                }
                 onChange={(e) =>
                   updateField(field.key, e.target.value, isNumeric)
                 }
                 dir={locale === "ur" ? "ltr" : undefined}
                 autoComplete="off"
               />
-            </WorksheetField>
+              <FormFieldError message={fieldErrors[field.key]} />
+            </div>
           );
         })}
+      </div>
+    );
+  }
+
+  if (isWorksheet) {
+    const sections = MEASUREMENT_GROUPS.map((group) => ({
+      group,
+      fields: allFields.filter((field) => (field.group ?? "main") === group),
+    })).filter((section) => section.fields.length > 0);
+
+    const body = (
+      <div className="space-y-6">
+        {sections.map(({ group, fields }) => (
+          <section key={group}>
+            <h3 className={measurementSectionTitleClass}>
+              {t.form[groupLabels[group]]}
+            </h3>
+            {renderFieldGrid(fields, true)}
+          </section>
+        ))}
       </div>
     );
 
@@ -117,9 +176,9 @@ export function MeasurementFieldsForm({
           <FormFieldError message={fieldErrors.measurements} />
         ) : null}
         {framed ? (
-          <div className={savedMeasurementsChartBorderClass}>{grid}</div>
+          <div className={savedMeasurementsChartBorderClass}>{body}</div>
         ) : (
-          grid
+          body
         )}
       </section>
     );
@@ -128,7 +187,7 @@ export function MeasurementFieldsForm({
   return (
     <Card>
       <CardTitle>{t.form.measurements}</CardTitle>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm font-medium text-brand-700">
         {t.garments[suitType]} · {t.form.unitInches}
       </p>
       <p className="mt-0.5 text-xs text-slate-400">{t.form.unitInchesHint}</p>
@@ -137,53 +196,18 @@ export function MeasurementFieldsForm({
       ) : null}
 
       <div className="mt-4 space-y-5">
-        {groups.map((group) => {
-          const fields = schema.measurementFields.filter(
-            (f) => (f.group ?? "body") === group,
+        {MEASUREMENT_GROUPS.map((group) => {
+          const fields = allFields.filter(
+            (field) => (field.group ?? "main") === group,
           );
           if (fields.length === 0) return null;
 
           return (
             <section key={group}>
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <h3 className={measurementSectionTitleClass}>
                 {t.form[groupLabels[group]]}
               </h3>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                {fields.map((field) => {
-                  const isNumeric = field.type !== "text";
-
-                  return (
-                    <div key={field.key}>
-                      <Label htmlFor={`m-${field.key}`}>
-                        {labelFor(field.labelKey)}
-                        {isNumeric ? ` (${t.form.inchesAbbr})` : ""}
-                        {field.required ? " *" : ""}
-                      </Label>
-                      <Input
-                        id={`m-${field.key}`}
-                        type="text"
-                        inputMode={isNumeric ? "decimal" : "text"}
-                        placeholder={
-                          isNumeric ? t.form.measurementPlaceholder : ""
-                        }
-                        value={measurements[field.key] ?? ""}
-                        aria-invalid={!!fieldErrors[field.key]}
-                        className={
-                          fieldErrors[field.key]
-                            ? "border-rose-300 focus-visible:ring-rose-400"
-                            : undefined
-                        }
-                        onChange={(e) =>
-                          updateField(field.key, e.target.value, isNumeric)
-                        }
-                        dir={locale === "ur" ? "ltr" : undefined}
-                        autoComplete="off"
-                      />
-                      <FormFieldError message={fieldErrors[field.key]} />
-                    </div>
-                  );
-                })}
-              </div>
+              {renderFieldGrid(fields, false)}
             </section>
           );
         })}

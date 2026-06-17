@@ -94,24 +94,68 @@ export function buildOrderDocumentWhatsAppCaption(
     customerName: string;
     orderNumber: string;
     shopName: string;
+    garmentLabel: string;
+    suitCount?: number;
     whatsappFooter?: string;
   },
   documentType: "receipt" | "measurements",
   locale: "en" | "ur",
 ): string {
-  const footer = params.whatsappFooter?.trim()
-    ? `\n\n${params.whatsappFooter.trim()}`
-    : "";
+  const footer = params.whatsappFooter?.trim();
+  const suitCount = params.suitCount && params.suitCount > 0 ? params.suitCount : 1;
+  const garmentQty =
+    suitCount > 1
+      ? locale === "ur"
+        ? `آپ کا ${params.garmentLabel} (×${suitCount})`
+        : `Your ${params.garmentLabel} (×${suitCount})`
+      : locale === "ur"
+        ? `آپ کا ${params.garmentLabel}`
+        : `Your ${params.garmentLabel}`;
+  const confirmationLine =
+    locale === "ur"
+      ? `${garmentQty} موصول ہو گیا ہے اور سلائی کے لیے رجسٹر کر لیا گیا ہے۔`
+      : `${garmentQty} has been received and registered for stitching.`;
 
   if (documentType === "receipt") {
     if (locale === "ur") {
-      return `السلام علیکم ${params.customerName}،\n\nآپ کی آرڈر رسید (${params.orderNumber}) منسلک ہے۔\n\n— ${params.shopName}${footer}`;
+      const lines = [
+        `السلام علیکم، ${params.customerName}،`,
+        "",
+        `${params.shopName} تشریف لانے اور اپنے ${params.garmentLabel} کے لیے ہم پر اعتماد کرنے کا شکریہ۔`,
+        "",
+        confirmationLine,
+        "",
+        `📋 آرڈر نمبر: #${params.orderNumber}`,
+        "",
+        "براہ کرم اپنی رسید منسلکہ دیکھیں۔ ہم آپ کے لیے بہترین سلائی شدہ لباس فراہم کرنے کے منتظر ہیں۔",
+        "",
+        "نیک تمنائیں،",
+        params.shopName,
+      ];
+      if (footer) lines.push(footer);
+      return lines.join("\n");
     }
-    return `Hello ${params.customerName},\n\nPlease find your order receipt for #${params.orderNumber} attached.\n\n— ${params.shopName}${footer}`;
+
+    const lines = [
+      `Asslam o Alaikum ${params.customerName},`,
+      "",
+      `Thank you for visiting ${params.shopName} and trusting us with your ${params.garmentLabel}.`,
+      "",
+      confirmationLine,
+      "",
+      `📋 Order Number: #${params.orderNumber}`,
+      "",
+      "Please find your receipt attached for your records. We look forward to delivering a perfectly tailored outfit for you.",
+      "",
+      "Warm regards,",
+      params.shopName,
+    ];
+    if (footer) lines.push(footer);
+    return lines.join("\n");
   }
 
   if (locale === "ur") {
-    return `السلام علیکم ${params.customerName}،\n\nآپ کی پیمائش (${params.orderNumber}) منسلک ہے۔\n\n— ${params.shopName}${footer}`;
+    return `السلام علیکم ${params.customerName}،\n\nآپ کی پیمائش (${params.orderNumber}) منسلک ہے۔\n\n— ${params.shopName}${footer ? `\n\n${footer}` : ""}`;
   }
-  return `Hello ${params.customerName},\n\nPlease find your measurement card for order #${params.orderNumber} attached.\n\n— ${params.shopName}${footer}`;
+  return `Hello ${params.customerName},\n\nPlease find your measurement card for order #${params.orderNumber} attached.\n\n— ${params.shopName}${footer ? `\n\n${footer}` : ""}`;
 }

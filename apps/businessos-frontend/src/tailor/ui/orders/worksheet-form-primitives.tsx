@@ -17,7 +17,10 @@ export const worksheetLabelClass =
   "mb-1 block text-sm font-bold text-slate-900";
 
 export const worksheetMeasureLabelClass =
-  "mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400";
+  "mb-1 block text-[11px] font-semibold leading-snug text-brand-700 sm:text-xs";
+
+export const measurementSectionTitleClass =
+  "mb-3 text-xs font-bold uppercase tracking-wide text-brand-700";
 
 export function WorksheetPanel({
   children,

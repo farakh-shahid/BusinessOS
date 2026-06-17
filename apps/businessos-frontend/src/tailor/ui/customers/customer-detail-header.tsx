@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Mail,
-  MessageCircle,
   Pencil,
   Phone,
   Plus,
@@ -15,7 +14,6 @@ import { cn } from "@/core/presentation/lib/utils";
 import { Button } from "@/core/presentation/components/ui/button";
 import { Card } from "@/core/presentation/components/ui/card";
 import { UserAvatar } from "@/core/presentation/components/ui/user-avatar";
-import { buildWhatsAppUrl } from "@/tailor/ui/orders/order-receipt-messages";
 import { CustomerStatusChips } from "@/tailor/ui/customers/customer-status-chips";
 
 interface CustomerDetailHeaderProps {
@@ -31,10 +29,6 @@ export function CustomerDetailHeader({
 }: CustomerDetailHeaderProps) {
   const { customer, summary } = data;
   const hasOutstanding = summary.outstandingBalance > 0;
-  const whatsAppUrl = buildWhatsAppUrl(
-    customer.phone,
-    t.customers.whatsAppGreeting.replace("{name}", customer.name),
-  );
 
   return (
     <Card
@@ -122,15 +116,6 @@ export function CustomerDetailHeader({
           >
             <Phone className="h-4 w-4 shrink-0" />
             {t.customers.call}
-          </a>
-          <a
-            href={whatsAppUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:gap-2 sm:px-4 sm:text-sm max-md:w-full"
-          >
-            <MessageCircle className="h-4 w-4 shrink-0" />
-            {t.customers.whatsApp}
           </a>
           <Link
             href={routes.customerEdit(customer.id)}

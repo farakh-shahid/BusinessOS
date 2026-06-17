@@ -1175,7 +1175,7 @@ export class OrderRepository {
         }),
         this.prisma.user.findMany({
           where: { tenantId },
-          select: { name: true },
+          select: { name: true, specialty: true },
           orderBy: { name: "asc" },
         }),
         this.prisma.order.findMany({
@@ -1236,8 +1236,15 @@ export class OrderRepository {
 
     assignments.sort((a, b) => a.assignedToName.localeCompare(b.assignedToName));
 
+    const staffSpecialties: Record<string, string> = {};
+    for (const user of staffUsers) {
+      const specialty = user.specialty?.trim();
+      if (specialty) staffSpecialties[user.name] = specialty;
+    }
+
     return {
       assignees,
+      staffSpecialties,
       unassignedOrderCount: unassignedAgg._count._all ?? 0,
       unassignedSuitCount: unassignedAgg._sum.suitCount ?? 0,
       unassignedOrders: unassignedOrders.map((order) =>
@@ -1416,10 +1423,14 @@ export class OrderRepository {
     }
   }
 
-  private async nextOrderNumber(tenantId: string) {
+  async previewNextOrderNumber(tenantId: string) {
     const count = await this.prisma.order.count({ where: { tenantId } });
     const year = new Date().getFullYear();
     return `ORD-${year}-${String(count + 1).padStart(4, "0")}`;
+  }
+
+  private async nextOrderNumber(tenantId: string) {
+    return this.previewNextOrderNumber(tenantId);
   }
 
   toOrderDto(order: {

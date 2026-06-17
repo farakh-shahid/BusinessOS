@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/core/infrastructure/api/query-keys";
 import { clearAccessToken, setAccessToken } from "@/core/auth/auth-storage";
-import { loginRequest, meRequest } from "@/tailor/infrastructure/api/auth.api";
+import { loginRequest, meRequest, updateProfileRequest } from "@/tailor/infrastructure/api/auth.api";
 
 export function useMeQuery(enabled = true) {
   return useQuery({
@@ -39,4 +39,17 @@ export function useLogout() {
     clearAccessToken();
     queryClient.clear();
   };
+}
+
+export function useUpdateProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateProfileRequest,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.auth.me, data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.assignments });
+    },
+  });
 }

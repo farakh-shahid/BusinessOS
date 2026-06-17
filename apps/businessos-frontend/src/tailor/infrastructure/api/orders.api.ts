@@ -108,6 +108,10 @@ export function fetchDashboard() {
   return apiFetch<DashboardData>("/tailor/orders/dashboard");
 }
 
+export function fetchNextOrderNumber() {
+  return apiFetch<{ orderNumber: string }>("/tailor/orders/next-number");
+}
+
 export function fetchOrdersPage(params?: OrdersQueryParams) {
   return apiFetch<PaginatedList<Order>>(
     `/tailor/orders${ordersQueryString({

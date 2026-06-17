@@ -44,6 +44,10 @@ export type {
 } from "./types/order-document";
 export type { TenantSettings, StaffMember } from "./types/settings";
 export type {
+  WhatsAppConnectionState,
+  WhatsAppConnectionStatus,
+} from "./types/whatsapp";
+export type {
   MeasurementFields,
   MeasurementValues,
   StyleSpecs,
@@ -57,20 +61,26 @@ export {
   bookingGarmentTypes,
   garmentMeasurementSchemas,
   getGarmentSchema,
+  getWorksheetMeasurementFields,
+  masterWorksheetMeasurementFields,
   emptyMeasurementsForGarment,
   emptyStyleForGarment,
   mergeMeasurementsForGarmentChange,
+  normalizeMeasurementValues,
   normalizeBookingGarmentType,
   sharedMeasurementKeys,
   type BookingGarmentType,
   type GarmentMeasurementSchema,
   type MeasurementFieldDef,
+  type MeasurementFieldGroup,
   type StyleFieldDef,
 } from "./measurement-schemas";
 export type {
   TailorCustomer,
   CustomerListEntry,
   CustomerSearchResult,
+  CustomerListQuickFilterCounts,
+  CustomerListQuickFilterKey,
   CustomerOrderHistoryItem,
   CustomerGarmentCount,
   CustomerPaymentSummary,
@@ -91,3 +101,15 @@ export type {
   MonthlyTrendPoint,
   WorkflowSnapshot,
 } from "./types/analytics";
+export {
+  DOCUMENT_PRINT_BASE_CSS,
+  DOCUMENT_PRINT_FONTS,
+  buildOrderReceiptHtml,
+  buildMeasurementCardHtml,
+  measurementCardDataFromOrder,
+  type OrderReceiptHtmlInput,
+  type MeasurementCardHtmlInput,
+  type MeasurementCardData,
+  type OrderDocumentShopInfo,
+  type DocumentDictionary,
+} from "./documents";

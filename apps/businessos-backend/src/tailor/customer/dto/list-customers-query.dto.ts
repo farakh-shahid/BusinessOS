@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsDateString, IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 import { DEFAULT_PAGE_SIZE } from "@business-os/tailor";
 import type { CustomerListSegment } from "../customer-list-query.helper";
 
@@ -32,4 +32,12 @@ export class ListCustomersQueryDto {
   @IsOptional()
   @IsIn(CUSTOMER_SEGMENTS)
   segment?: CustomerListSegment;
+
+  @IsOptional()
+  @IsDateString()
+  registeredFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  registeredTo?: string;
 }

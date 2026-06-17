@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Zap } from "lucide-react";
-import type { AssignmentOrderItem, AssignmentsOverview } from "@business-os/tailor";
+import type { AssignmentsOverview } from "@business-os/tailor";
 import type { Dictionary } from "@business-os/i18n";
-import { routes } from "@/core/config/routes";
 import { cn } from "@/core/presentation/lib/utils";
 import { getAvatarPaletteClass } from "@/core/presentation/lib/avatar-utils";
 import { useToast } from "@/core/presentation/components/ui/toast";
@@ -17,74 +14,14 @@ import {
   buildAssignmentColumns,
   nameInitials,
   splitAssignmentBoardRows,
-  workflowStatusLabel,
   type AssignmentKanbanColumn,
 } from "@/tailor/infrastructure/data/assignment-board-utils";
-import { boardColumnBorderClass } from "@/tailor/infrastructure/data/order-list-ui";
+import { AssignmentOrderCard } from "@/tailor/ui/assignments/assignment-order-card";
 
 interface AssignmentKanbanBoardProps {
   data: AssignmentsOverview;
   t: Dictionary;
   isRtl: boolean;
-}
-
-function AssignmentOrderCard({
-  order,
-  t,
-  isRtl,
-  draggable,
-  onDragStart,
-}: {
-  order: AssignmentOrderItem;
-  t: Dictionary;
-  isRtl: boolean;
-  draggable: boolean;
-  onDragStart: () => void;
-}) {
-  const statusLabel = workflowStatusLabel(order.workflowStatus, t);
-
-  return (
-    <Link
-      href={routes.orderDetail(order.id)}
-      draggable={draggable}
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/order-id", order.id);
-        event.dataTransfer.effectAllowed = "move";
-        onDragStart();
-      }}
-      className={cn(
-        "block rounded-[10px] border border-hairline border-t-[3px] bg-background p-2.5 transition-shadow hover:shadow-sm",
-        boardColumnBorderClass(order.workflowStatus),
-        draggable && "cursor-grab active:cursor-grabbing",
-      )}
-    >
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-1.5 text-xs font-semibold text-foreground",
-          isRtl && "flex-row-reverse justify-end",
-        )}
-      >
-        <span className="truncate">{order.customerName}</span>
-        {order.isRush ? (
-          <span
-            className={cn(
-              "inline-flex shrink-0 items-center gap-0.5 rounded-full bg-status-urgent-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-status-urgent",
-              isRtl && "flex-row-reverse",
-            )}
-          >
-            <Zap className="h-2.5 w-2.5" />
-            {t.orderDetail.rush}
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-0.5 font-display text-[10px] text-muted-slate">
-        #{order.orderNumber}
-      </p>
-      <p className="mt-1 text-[11px] text-muted-slate">
-        {order.suitCount}x {order.garmentLabel} · {statusLabel}
-      </p>
-    </Link>
-  );
 }
 
 function AssignmentKanbanColumn({
@@ -168,7 +105,6 @@ function AssignmentKanbanColumn({
               t={t}
               isRtl={isRtl}
               draggable
-              onDragStart={() => undefined}
             />
           ))
         )}

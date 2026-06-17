@@ -5,6 +5,7 @@ export interface AnalyticsQueryParams {
   view?: "week" | "month";
   anchor?: string;
   focus?: string;
+  overviewScope?: "year" | "sixMonth" | "month";
 }
 
 export function fetchAnalytics(params: AnalyticsQueryParams = {}) {
@@ -12,6 +13,7 @@ export function fetchAnalytics(params: AnalyticsQueryParams = {}) {
   if (params.view) search.set("view", params.view);
   if (params.anchor) search.set("anchor", params.anchor);
   if (params.focus) search.set("focus", params.focus);
+  if (params.overviewScope) search.set("overviewScope", params.overviewScope);
   const qs = search.toString();
   return apiFetch<TailorAnalytics>(
     `/tailor/analytics${qs ? `?${qs}` : ""}`,

@@ -28,6 +28,7 @@ export class StaffService {
       email: u.email ?? undefined,
       phone: u.phone ?? undefined,
       role: u.role === "SUPER_ADMIN" ? "ADMIN" : u.role,
+      specialty: u.specialty ?? undefined,
       createdAt: u.createdAt.toISOString(),
     }));
   }
@@ -70,6 +71,7 @@ export class StaffService {
         phone,
         passwordHash,
         role: dto.role,
+        specialty: dto.specialty?.trim() || null,
       },
     });
     return {
@@ -78,6 +80,7 @@ export class StaffService {
       email: user.email ?? undefined,
       phone: user.phone ?? undefined,
       role: user.role,
+      specialty: user.specialty ?? undefined,
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -99,7 +102,11 @@ export class StaffService {
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { name: dto.name.trim(), role: dto.role },
+      data: {
+        name: dto.name.trim(),
+        role: dto.role,
+        specialty: dto.specialty?.trim() || null,
+      },
     });
     return {
       id: updated.id,
@@ -107,6 +114,7 @@ export class StaffService {
       email: updated.email ?? undefined,
       phone: updated.phone ?? undefined,
       role: updated.role === "SUPER_ADMIN" ? "ADMIN" : updated.role,
+      specialty: updated.specialty ?? undefined,
       createdAt: updated.createdAt.toISOString(),
     };
   }

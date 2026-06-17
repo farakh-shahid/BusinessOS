@@ -1,19 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Loader2, MessageCircle, Printer, X } from "lucide-react";
 import { getDictionary } from "@business-os/i18n";
 import { Button } from "@/core/presentation/components/ui/button";
 import { cn } from "@/core/presentation/lib/utils";
 import { openHtmlForPrint } from "@/core/presentation/lib/open-html-for-print";
+import {
+  iframeToPdfBlob,
+  pdfBlobToFile,
+} from "@/core/presentation/lib/capture-document-pdf";
+import { useToast } from "@/core/presentation/components/ui/toast";
 import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { useSettingsQuery } from "@/tailor/infrastructure/api/hooks/use-settings";
 import { buildMeasurementCardHtml } from "./measurement-card-html";
 import type { MeasurementCardData } from "./measurement-card-data";
 import { buildOrderDocumentWhatsAppCaption } from "./order-receipt-messages";
-import { sendOrderHtmlAsPdfWhatsAppWithFeedback } from "./order-document-whatsapp-feedback";
-import { htmlToPdfBlob, pdfBlobToFile } from "@/core/presentation/lib/html-to-pdf";
+import {
+  sendOrderDocumentPdfWhatsAppWithFeedback,
+  showDocumentWhatsAppFeedbackToast,
+} from "./order-document-whatsapp-feedback";
 import { sharePdfOnWhatsAppClient } from "./share-pdf-whatsapp";
 
 interface MeasurementCardDialogProps {
@@ -30,12 +37,12 @@ export function MeasurementCardDialog({
   const isRtl = locale === "ur";
   const { data: user } = useMeQuery();
   const { data: settings } = useSettingsQuery();
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const { showSuccess, showError, showToast } = useToast();
   const [sendingPdf, setSendingPdf] = useState(false);
+  const previewRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (!data) return;
-    setFeedback(null);
     setSendingPdf(false);
   }, [data]);
 
@@ -66,37 +73,42 @@ export function MeasurementCardDialog({
 
   async function handleWhatsAppPdf() {
     if (!data || !cardHtml || !data.customerPhone) return;
+    const iframe = previewRef.current;
+    if (!iframe) return;
+
     setSendingPdf(true);
-    setFeedback(null);
+    const toastHandlers = { showSuccess, showError, showToast };
     try {
       const caption = buildOrderDocumentWhatsAppCaption(
         {
           customerName: data.customerName,
           orderNumber: data.orderNumber ?? data.garmentLabel,
           shopName: shop.name,
+          garmentLabel: data.garmentLabel,
           whatsappFooter: shop.whatsappFooter,
         },
         "measurements",
         locale,
       );
 
+      const pdfBlob = await iframeToPdfBlob(iframe);
+
       if (data.orderId && data.orderNumber) {
-        const message = await sendOrderHtmlAsPdfWhatsAppWithFeedback({
+        const message = await sendOrderDocumentPdfWhatsAppWithFeedback({
           orderId: data.orderId,
           orderNumber: data.orderNumber,
           documentType: "measurements",
-          html: cardHtml,
+          pdfBlob,
           customerPhone: data.customerPhone,
           caption,
           t,
         });
-        setFeedback(message);
+        showDocumentWhatsAppFeedbackToast(message, t, toastHandlers);
         return;
       }
 
-      const blob = await htmlToPdfBlob(cardHtml);
       const file = pdfBlobToFile(
-        blob,
+        pdfBlob,
         `measurements-${data.customerName.replace(/\s+/g, "-")}.pdf`,
       );
       const shared = await sharePdfOnWhatsAppClient({
@@ -104,13 +116,15 @@ export function MeasurementCardDialog({
         phone: data.customerPhone,
         caption,
       });
-      setFeedback(
+      showDocumentWhatsAppFeedbackToast(
         shared === "shared"
           ? t.receipt.whatsappPdfShared
           : t.receipt.whatsappPdfDownloadAttach,
+        t,
+        toastHandlers,
       );
     } catch {
-      setFeedback(t.receipt.whatsappPdfFailed);
+      showError(t.receipt.whatsappPdfFailed);
     } finally {
       setSendingPdf(false);
     }
@@ -159,18 +173,13 @@ export function MeasurementCardDialog({
         <div className="min-h-0 flex-1 overflow-hidden bg-slate-50 p-4">
           {cardHtml ? (
             <iframe
+              ref={previewRef}
               title={t.print.measurementCard}
               srcDoc={cardHtml}
               className="h-[min(56vh,560px)] w-full rounded-xl border border-hairline bg-white shadow-sm"
             />
           ) : null}
         </div>
-
-        {feedback ? (
-          <p className="shrink-0 border-t border-emerald-100 bg-emerald-50 px-5 py-2 text-sm text-emerald-800">
-            {feedback}
-          </p>
-        ) : null}
 
         <div
           className={cn(

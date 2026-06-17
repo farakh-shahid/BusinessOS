@@ -1,5 +1,7 @@
-export { sendOrderHtmlAsPdfWhatsApp } from "./send-order-document-whatsapp-core";
+export { sendOrderDocumentPdfWhatsApp } from "./send-order-document-whatsapp-core";
 export {
   applyDocumentWhatsAppFeedback,
-  sendOrderHtmlAsPdfWhatsAppWithFeedback,
+  sendOrderDocumentPdfWhatsAppWithFeedback,
+  showDocumentWhatsAppBatchFeedbackToast,
+  showDocumentWhatsAppFeedbackToast,
 } from "./order-document-whatsapp-feedback";

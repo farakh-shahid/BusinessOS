@@ -47,7 +47,7 @@ import { OrderDetailSkeleton } from "@/tailor/ui/skeletons";
 import { PersonNameText } from "@/core/presentation/components/ui/person-name-text";
 import { BackLink } from "@/tailor/ui/shared/back-link";
 import { GroupedMeasurementGrid } from "@/tailor/ui/shared/grouped-measurement-grid";
-import { buildWhatsAppUrl } from "./order-receipt-messages";
+import { useWhatsAppTextAction } from "@/tailor/infrastructure/api/hooks/use-whatsapp";
 import { OrderDetailPanel } from "./order-detail-panel";
 
 interface OrderDetailViewProps {
@@ -191,7 +191,8 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
     [assignments],
   );
   const sendReminder = useSendReminderMutation();
-  const { showError, showSuccess } = useToast();
+  const { showError, showSuccess, showToast } = useToast();
+  const { send: sendWhatsApp, sending: sendingWhatsApp } = useWhatsAppTextAction();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editFocusPayment, setEditFocusPayment] = useState(false);
@@ -233,10 +234,6 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const daysLeft = daysUntilDelivery(order.deliveryDate);
   const unitRate = Math.round(order.totalPrice / Math.max(order.suitCount, 1));
   const paidAmount = order.totalPrice - order.balanceDue;
-  const whatsAppUrl = buildWhatsAppUrl(
-    order.customerPhone,
-    t.customers.whatsAppGreeting.replace("{name}", order.customerName),
-  );
 
   const cardSurfaceClass = getOrderCardSurfaceClass(order);
 
@@ -257,10 +254,14 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   async function handleReminder() {
     try {
       const result = await sendReminder.mutateAsync(orderId);
-      if (result.whatsappUrl) {
-        window.open(result.whatsappUrl, "_blank");
+      if (!result.sent && result.whatsappUrl) {
+        window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
+        showToast(t.receipt.whatsappOpened, "info");
+        return;
       }
-      showSuccess(t.orderDetail.reminderSent);
+      showSuccess(
+        result.sent ? t.orderDetail.reminderSent : t.receipt.whatsappOpened,
+      );
     } catch (err) {
       showError(resolveApiErrorMessage(err, t));
     }
@@ -706,14 +707,23 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
               >
                 📞 {t.orderDetail.call}
               </a>
-              <a
-                href={whatsAppUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-hairline bg-card px-3 py-2 text-[12.5px] font-semibold transition hover:bg-slate-50"
+              <button
+                type="button"
+                disabled={sendingWhatsApp}
+                onClick={() =>
+                  void sendWhatsApp({
+                    phone: order.customerPhone,
+                    message: t.customers.whatsAppGreeting.replace(
+                      "{name}",
+                      order.customerName,
+                    ),
+                    t,
+                  })
+                }
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-hairline bg-card px-3 py-2 text-[12.5px] font-semibold transition hover:bg-slate-50 disabled:opacity-60"
               >
                 💬 {t.customers.whatsApp}
-              </a>
+              </button>
             </div>
           </OrderDetailPanel>
 

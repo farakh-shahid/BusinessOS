@@ -5,13 +5,20 @@ import type { DailyAnalyticsPoint, TailorAnalytics } from "@business-os/tailor";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
-import { toDateInputValue } from "./analytics-date-utils";
+import {
+  parseMonthInput,
+  parseWeekInput,
+  toDateInputValue,
+  toMonthInputValue,
+  toWeekInputValue,
+} from "./analytics-date-utils";
 
 interface AnalyticsCalendarPickerProps {
   data: TailorAnalytics;
-  selectedDay: string;
+  anchor: string;
+  focusedDay: string | null;
   onSelectDay: (date: string) => void;
-  onJumpToDate: (date: string) => void;
+  onJumpToPeriod: (date: string) => void;
   onPrevious: () => void;
   onNext: () => void;
   onViewChange: (view: "week" | "month") => void;
@@ -19,9 +26,10 @@ interface AnalyticsCalendarPickerProps {
 
 export function AnalyticsCalendarPicker({
   data,
-  selectedDay,
+  anchor,
+  focusedDay,
   onSelectDay,
-  onJumpToDate,
+  onJumpToPeriod,
   onPrevious,
   onNext,
   onViewChange,
@@ -31,11 +39,14 @@ export function AnalyticsCalendarPicker({
   const isRtl = locale === "ur";
 
   const days: DailyAnalyticsPoint[] = data.dailyBreakdown;
-  const minDate = toDateInputValue(new Date(data.tenantCreatedAt));
-  const maxDate = toDateInputValue(new Date());
+  const anchorDate = new Date(anchor);
+  const minWeek = toWeekInputValue(new Date(data.tenantCreatedAt));
+  const maxWeek = toWeekInputValue(new Date());
+  const minMonth = toMonthInputValue(new Date(data.tenantCreatedAt));
+  const maxMonth = toMonthInputValue(new Date());
 
   return (
-    <div className="rounded-3xl bg-white p-4 shadow-sm sm:p-5">
+    <div className="rounded-2xl border border-hairline bg-card p-4 sm:p-5">
       <div
         className={cn(
           "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between",
@@ -47,20 +58,22 @@ export function AnalyticsCalendarPicker({
             type="button"
             onClick={onPrevious}
             disabled={!data.canGoPrevious}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-analytics-select-muted text-analytics-select transition hover:bg-analytics-select/10 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-background text-analytics-select transition hover:bg-analytics-select/10 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={t.analytics.previousPeriod}
           >
             <ChevronLeft className={cn("h-5 w-5", isRtl && "rotate-180")} />
           </button>
           <div className={cn("min-w-[10rem] text-center", isRtl && "text-right")}>
-            <p className="text-base font-bold text-slate-900">{data.rangeLabel}</p>
-            <p className="text-xs text-slate-500">{t.analytics.periodReports}</p>
+            <p className="font-display text-base font-bold text-foreground">
+              {data.rangeLabel}
+            </p>
+            <p className="text-xs text-muted-slate">{t.analytics.periodReports}</p>
           </div>
           <button
             type="button"
             onClick={onNext}
             disabled={!data.canGoNext}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-analytics-select-muted text-analytics-select transition hover:bg-analytics-select/10 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-background text-analytics-select transition hover:bg-analytics-select/10 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={t.analytics.nextPeriod}
           >
             <ChevronRight className={cn("h-5 w-5", isRtl && "rotate-180")} />
@@ -73,35 +86,58 @@ export function AnalyticsCalendarPicker({
             isRtl && "flex-row-reverse",
           )}
         >
-          <label
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700",
-              isRtl && "flex-row-reverse",
-            )}
-          >
-            <Calendar className="h-4 w-4 shrink-0 text-analytics-select" />
-            <span className="sr-only sm:not-sr-only">{t.analytics.pickDate}</span>
-            <input
-              type="date"
-              value={selectedDay}
-              min={minDate}
-              max={maxDate}
-              onChange={(e) => {
-                if (e.target.value) onJumpToDate(e.target.value);
-              }}
-              className="border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none"
-              aria-label={t.analytics.pickDate}
-            />
-          </label>
+          {data.viewMode === "week" ? (
+            <label
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border border-hairline bg-background px-3 py-2 text-sm font-medium text-foreground",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              <Calendar className="h-4 w-4 shrink-0 text-analytics-select" />
+              <span className="hidden sm:inline">{t.analytics.pickWeek}</span>
+              <input
+                type="week"
+                value={toWeekInputValue(anchorDate)}
+                min={minWeek}
+                max={maxWeek}
+                onChange={(e) => {
+                  if (e.target.value) onJumpToPeriod(parseWeekInput(e.target.value));
+                }}
+                className="border-0 bg-transparent text-sm font-semibold text-foreground outline-none"
+                aria-label={t.analytics.pickWeek}
+              />
+            </label>
+          ) : (
+            <label
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border border-hairline bg-background px-3 py-2 text-sm font-medium text-foreground",
+                isRtl && "flex-row-reverse",
+              )}
+            >
+              <Calendar className="h-4 w-4 shrink-0 text-analytics-select" />
+              <span className="hidden sm:inline">{t.analytics.pickMonth}</span>
+              <input
+                type="month"
+                value={toMonthInputValue(anchorDate)}
+                min={minMonth}
+                max={maxMonth}
+                onChange={(e) => {
+                  if (e.target.value) onJumpToPeriod(parseMonthInput(e.target.value));
+                }}
+                className="border-0 bg-transparent text-sm font-semibold text-foreground outline-none"
+                aria-label={t.analytics.pickMonth}
+              />
+            </label>
+          )}
 
           <button
             type="button"
             onClick={() => onViewChange("week")}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold transition",
+              "rounded-xl px-4 py-2 text-sm font-semibold transition",
               data.viewMode === "week"
                 ? "bg-analytics-select text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                : "border border-hairline bg-background text-muted-slate hover:text-foreground",
             )}
           >
             {t.analytics.weekView}
@@ -110,10 +146,10 @@ export function AnalyticsCalendarPicker({
             type="button"
             onClick={() => onViewChange("month")}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold transition",
+              "rounded-xl px-4 py-2 text-sm font-semibold transition",
               data.viewMode === "month"
                 ? "bg-analytics-select text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                : "border border-hairline bg-background text-muted-slate hover:text-foreground",
             )}
           >
             {t.analytics.monthView}
@@ -121,10 +157,14 @@ export function AnalyticsCalendarPicker({
         </div>
       </div>
 
+      <p className="mt-3 text-[11px] text-muted-slate">
+        {focusedDay ? t.analytics.drillDownHint : t.analytics.rangeHint}
+      </p>
+
       {data.viewMode === "week" && (
-        <div className="mt-5 grid grid-cols-7 gap-2">
+        <div className="mt-4 grid grid-cols-7 gap-2">
           {days.map((day) => {
-            const isSelected = day.date === selectedDay;
+            const isSelected = focusedDay === day.date;
             const isDisabled = day.disabled;
 
             return (
@@ -134,10 +174,10 @@ export function AnalyticsCalendarPicker({
                 disabled={isDisabled}
                 onClick={() => onSelectDay(day.date)}
                 className={cn(
-                  "flex flex-col items-center rounded-2xl px-1 py-3 transition",
+                  "flex flex-col items-center rounded-xl px-1 py-3 transition",
                   isSelected && "bg-analytics-select text-white shadow-md",
-                  !isSelected && !isDisabled && "bg-slate-50 text-slate-700 hover:bg-slate-100",
-                  isDisabled && "cursor-not-allowed bg-transparent text-slate-300",
+                  !isSelected && !isDisabled && "bg-background text-foreground hover:bg-background/80",
+                  isDisabled && "cursor-not-allowed bg-transparent text-muted-slate/50",
                 )}
               >
                 <span className="text-[11px] font-medium uppercase">{day.dayLabel}</span>
@@ -159,13 +199,14 @@ export function AnalyticsCalendarPicker({
       )}
 
       {data.viewMode === "month" && (
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {days.map((week, index) => {
             const next = days[index + 1];
             const weekSelected =
+              focusedDay !== null &&
               !week.disabled &&
-              selectedDay >= week.date &&
-              (!next || selectedDay < next.date);
+              focusedDay >= week.date &&
+              (!next || focusedDay < next.date);
 
             return (
               <button
@@ -174,12 +215,12 @@ export function AnalyticsCalendarPicker({
                 disabled={week.disabled}
                 onClick={() => onSelectDay(week.date)}
                 className={cn(
-                  "rounded-2xl px-3 py-3 text-center transition",
+                  "rounded-xl px-3 py-3 text-center transition",
                   weekSelected && "bg-analytics-select text-white shadow-md",
                   !weekSelected &&
                     !week.disabled &&
-                    "bg-slate-50 text-slate-700 hover:bg-slate-100",
-                  week.disabled && "cursor-not-allowed bg-slate-50 text-slate-300",
+                    "bg-background text-foreground hover:bg-background/80",
+                  week.disabled && "cursor-not-allowed bg-background text-muted-slate/50",
                 )}
               >
                 <p className="text-xs font-semibold uppercase">{week.dayLabel}</p>

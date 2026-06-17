@@ -1,23 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { getDictionary } from "@business-os/i18n";
+import { cn } from "@/core/presentation/lib/utils";
+import { useLocale } from "@/core/i18n/locale-context";
 import { routes } from "@/core/config/routes";
 import { isAdminRole } from "@/core/auth/roles";
-import { cn } from "@/core/presentation/lib/utils";
-import { Button } from "@/core/presentation/components/ui/button";
-import { Input } from "@/core/presentation/components/ui/input";
-import { Label } from "@/core/presentation/components/ui/label";
-import { Textarea } from "@/core/presentation/components/ui/textarea";
-import { Card, CardTitle } from "@/core/presentation/components/ui/card";
-import { useLocale } from "@/core/i18n/locale-context";
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import {
   useSettingsQuery,
   useUpdateSettingsMutation,
 } from "@/tailor/infrastructure/api/hooks/use-settings";
 import { SettingsFormSkeleton } from "@/tailor/ui/skeletons";
+import { BackLink } from "@/tailor/ui/shared/back-link";
+import { PageHeader } from "@/tailor/ui/shared/page-header";
+import { SettingsMyProfilePanel } from "@/tailor/ui/settings/settings-my-profile-panel";
+import {
+  SettingsSectionNav,
+  type SettingsSection,
+} from "@/tailor/ui/settings/settings-section-nav";
+import { SettingsShopPanel } from "@/tailor/ui/settings/settings-shop-panel";
+import { SettingsWhatsAppPanel } from "@/tailor/ui/settings/settings-whatsapp-panel";
+import { StaffTeamPanel } from "@/tailor/ui/staff/staff-team-panel";
+
+const SETTINGS_SECTION_KEY = "businessos-settings-section";
+
+function loadSettingsSection(): SettingsSection {
+  if (typeof window === "undefined") return "shop";
+  const stored = localStorage.getItem(SETTINGS_SECTION_KEY);
+  if (stored === "whatsapp" || stored === "team") return stored;
+  return "shop";
+}
 
 export function SettingsView() {
   const { locale } = useLocale();
@@ -27,6 +40,7 @@ export function SettingsView() {
   const isAdmin = isAdminRole(user?.role);
   const { data, isLoading, isError } = useSettingsQuery();
   const updateSettings = useUpdateSettingsMutation();
+  const [section, setSection] = useState<SettingsSection>("shop");
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,6 +51,10 @@ export function SettingsView() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setSection(loadSettingsSection());
+  }, []);
+
+  useEffect(() => {
     if (!data) return;
     setName(data.name);
     setPhone(data.phone ?? "");
@@ -45,7 +63,16 @@ export function SettingsView() {
     setWhatsappFooter(data.whatsappFooter ?? "");
   }, [data]);
 
-  async function handleSave() {
+  function handleSectionChange(next: SettingsSection) {
+    setSection(next);
+    setFeedback(null);
+    setError(null);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SETTINGS_SECTION_KEY, next);
+    }
+  }
+
+  async function handleSaveShop() {
     if (!isAdmin) return;
     setFeedback(null);
     setError(null);
@@ -55,6 +82,20 @@ export function SettingsView() {
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
         address: address.trim() || undefined,
+      });
+      setFeedback(t.settings.saved);
+    } catch {
+      setError(t.common.error);
+    }
+  }
+
+  async function handleSaveWhatsApp() {
+    if (!isAdmin) return;
+    setFeedback(null);
+    setError(null);
+    try {
+      await updateSettings.mutateAsync({
+        name: data?.name ?? name.trim(),
         whatsappFooter: whatsappFooter.trim() || undefined,
       });
       setFeedback(t.settings.saved);
@@ -63,20 +104,45 @@ export function SettingsView() {
     }
   }
 
+  const sectionSubtitle =
+    section === "shop"
+      ? t.settings.shopSectionSubtitle
+      : section === "whatsapp"
+        ? t.settings.whatsappSectionSubtitle
+        : t.staff.gridSubtitle;
+
   return (
     <>
-      <div className="mb-4">
-        <Link
-          href={routes.dashboard}
-          className="text-sm font-medium text-brand-700 hover:text-brand-800"
+      <BackLink href={routes.dashboard} label={t.nav.dashboard} isRtl={isRtl} />
+
+      <PageHeader
+        title={t.settings.title}
+        subtitle={isAdmin ? sectionSubtitle : t.settings.subtitleStaff}
+        isRtl={isRtl}
+      />
+
+      {!isAdmin ? (
+        <div className="mb-4 space-y-4">
+          <SettingsMyProfilePanel isRtl={isRtl} />
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && data ? (
+        <div
+          className={cn(
+            "mb-4 flex justify-end",
+            isRtl && "justify-start",
+          )}
         >
-          ← {t.nav.dashboard}
-        </Link>
-        <h2 className="mt-2 text-lg font-bold text-slate-900 md:text-2xl">
-          {t.settings.title}
-        </h2>
-        <p className="text-sm text-slate-500">{t.settings.subtitle}</p>
-      </div>
+          <SettingsSectionNav
+            section={section}
+            t={t}
+            isRtl={isRtl}
+            showTeam={isAdmin}
+            onChange={handleSectionChange}
+          />
+        </div>
+      ) : null}
 
       {isLoading ? (
         <SettingsFormSkeleton />
@@ -85,93 +151,78 @@ export function SettingsView() {
           {t.common.error}
         </div>
       ) : (
-        <Card>
-          <CardTitle>{t.settings.shopDetails}</CardTitle>
-          <div className="mt-4 space-y-4">
-            <div>
-              <Label htmlFor="shop-name">{t.settings.shopName}</Label>
-              <Input
-                id="shop-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={!isAdmin}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="shop-phone">{t.form.phone}</Label>
-                <Input
-                  id="shop-phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={!isAdmin}
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <Label htmlFor="shop-email">{t.form.email}</Label>
-                <Input
-                  id="shop-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={!isAdmin}
-                  dir="ltr"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="shop-address">{t.settings.address}</Label>
-              <Textarea
-                id="shop-address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                disabled={!isAdmin}
-              />
-            </div>
-            <div>
-              <Label htmlFor="shop-wa-footer">{t.settings.whatsappFooter}</Label>
-              <Textarea
-                id="shop-wa-footer"
-                value={whatsappFooter}
-                onChange={(e) => setWhatsappFooter(e.target.value)}
-                disabled={!isAdmin}
-                placeholder={t.settings.whatsappFooterPlaceholder}
-              />
-            </div>
+        <div className="space-y-4">
+          {isAdmin && section === "shop" ? (
+            <SettingsShopPanel
+              t={t}
+              isRtl={isRtl}
+              isAdmin={isAdmin}
+              name={name}
+              phone={phone}
+              email={email}
+              address={address}
+              feedback={feedback}
+              error={error}
+              isSaving={updateSettings.isPending}
+              onNameChange={setName}
+              onPhoneChange={setPhone}
+              onEmailChange={setEmail}
+              onAddressChange={setAddress}
+              onSave={() => void handleSaveShop()}
+            />
+          ) : null}
 
-            {!isAdmin && (
-              <p className="text-sm text-slate-500">{t.settings.adminOnly}</p>
-            )}
+          {isAdmin && section === "whatsapp" ? (
+            <SettingsWhatsAppPanel
+              t={t}
+              isRtl={isRtl}
+              isAdmin={isAdmin}
+              whatsappFooter={whatsappFooter}
+              feedback={feedback}
+              error={error}
+              isSaving={updateSettings.isPending}
+              onWhatsappFooterChange={setWhatsappFooter}
+              onSave={() => void handleSaveWhatsApp()}
+            />
+          ) : null}
 
-            {feedback && (
-              <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                {feedback}
-              </p>
-            )}
-            {error && (
-              <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {error}
-              </p>
-            )}
+          {isAdmin && section === "team" ? (
+            <StaffTeamPanel t={t} isRtl={isRtl} showHeader={false} />
+          ) : null}
 
-            {isAdmin && (
-              <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
-                <Link href={routes.staff}>
-                  <Button variant="outline">{t.settings.manageStaff}</Button>
-                </Link>
-                <Button
-                  onClick={handleSave}
-                  disabled={updateSettings.isPending}
-                >
-                  {updateSettings.isPending
-                    ? t.settings.saving
-                    : t.settings.save}
-                </Button>
-              </div>
-            )}
-          </div>
-        </Card>
+          {!isAdmin ? (
+            <>
+              <SettingsShopPanel
+                t={t}
+                isRtl={isRtl}
+                isAdmin={false}
+                name={name}
+                phone={phone}
+                email={email}
+                address={address}
+                feedback={null}
+                error={null}
+                isSaving={false}
+                onNameChange={setName}
+                onPhoneChange={setPhone}
+                onEmailChange={setEmail}
+                onAddressChange={setAddress}
+                onSave={() => undefined}
+              />
+              <SettingsWhatsAppPanel
+                t={t}
+                isRtl={isRtl}
+                isAdmin={false}
+                whatsappFooter={whatsappFooter}
+                feedback={null}
+                error={null}
+                isSaving={false}
+                onWhatsappFooterChange={setWhatsappFooter}
+                onSave={() => undefined}
+              />
+            </>
+          ) : null}
+        </div>
       )}
     </>
   );

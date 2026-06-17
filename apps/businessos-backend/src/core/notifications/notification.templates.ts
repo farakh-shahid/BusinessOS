@@ -31,36 +31,45 @@ export function buildWhatsAppMessage(ctx: ReadyNotificationContext): string {
   const balancePart =
     ctx.balanceDue && ctx.balanceDue > 0
       ? ctx.locale === "ur"
-        ? `\nباقی رقم: Rs. ${ctx.balanceDue.toLocaleString()}`
-        : `\nBalance due: Rs. ${ctx.balanceDue.toLocaleString()}`
+        ? `باقی رقم: Rs. ${ctx.balanceDue.toLocaleString()}`
+        : `Balance due: Rs. ${ctx.balanceDue.toLocaleString()}`
       : "";
 
-  const addressPart = ctx.shopAddress
+  const addressPart = ctx.shopAddress?.trim()
     ? ctx.locale === "ur"
-      ? `\nپتہ: ${ctx.shopAddress}`
-      : `\nAddress: ${ctx.shopAddress}`
+      ? `ہماری دکان کا پتہ:\n${ctx.shopAddress.trim()}`
+      : `Shop address:\n${ctx.shopAddress.trim()}`
     : "";
 
-  const phonePart = ctx.shopPhone
-    ? ctx.locale === "ur"
-      ? `\nفون: ${ctx.shopPhone}`
-      : `\nPhone: ${ctx.shopPhone}`
-    : "";
-
-  const pickup =
-    ctx.locale === "ur"
-      ? "براہ کرم وصول کرنے کیلئے دکان پر آئیں۔"
-      : "Please visit our shop to pick up your order.";
-
-  const footer = ctx.whatsappFooter?.trim()
-    ? `\n${ctx.whatsappFooter.trim()}`
-    : "";
+  const footer = ctx.whatsappFooter?.trim();
 
   if (ctx.locale === "ur") {
-    return `السلام علیکم ${ctx.customerName}،\n\nآپ کا ${ctx.garmentLabel} تیار ہے۔ ${pickup}\n\nآرڈر #${ctx.orderNumber}${balancePart}${addressPart}${phonePart}\n\n— ${ctx.shopName}${footer}`;
+    const lines = [
+      `السلام علیکم، ${ctx.customerName}`,
+      "",
+      `خوشخبری! آپ کا ${ctx.garmentLabel} تیار ہے۔`,
+      "براہ کرم وصولی کے لیے ہماری دکان پر آئیں۔",
+    ];
+    if (addressPart) lines.push("", addressPart);
+    lines.push("", `آرڈر #${ctx.orderNumber}`);
+    if (balancePart) lines.push(balancePart);
+    lines.push("", "شکریہ۔", "", "نیک تمنائیں،", ctx.shopName);
+    if (footer) lines.push(footer);
+    return lines.join("\n");
   }
 
-  return `Hello ${ctx.customerName},\n\nYour ${ctx.garmentLabel} is ready. ${pickup}\n\nOrder #${ctx.orderNumber}${balancePart}${addressPart}${phonePart}\n\n— ${ctx.shopName}${footer}`;
+  const lines = [
+    `Assalam o Alaikum, ${ctx.customerName}`,
+    "",
+    `Good news! Your ${ctx.garmentLabel} is ready for pickup.`,
+    "You can collect it from our shop.",
+  ];
+  if (addressPart) lines.push("", addressPart);
+  lines.push("", `Order #${ctx.orderNumber}`);
+  if (balancePart) lines.push(balancePart);
+  lines.push("", "Thank you.", "", "Kind regards,", ctx.shopName);
+  if (footer) lines.push(footer);
+  return lines.join("\n");
 }
 
 export function buildEmailSubject(ctx: ReadyNotificationContext): string {
@@ -81,13 +90,19 @@ export function buildEmailBody(
 
   const main =
     ctx.locale === "ur"
-      ? `آپ کا ${ctx.garmentLabel} تیار ہے۔ براہ کرم دکان پر آ کر وصول کر لیں۔`
-      : `Your ${ctx.garmentLabel} is ready. Please visit our shop to collect it.`;
+      ? `خوشخبری! آپ کا ${ctx.garmentLabel} تیار ہے۔ براہ کرم وصولی کے لیے ہماری دکان پر آئیں۔`
+      : `Good news! Your ${ctx.garmentLabel} is ready for pickup. You can collect it from our shop.`;
+
+  const addressLine = ctx.shopAddress?.trim()
+    ? ctx.locale === "ur"
+      ? `ہماری دکان کا پتہ:\n${ctx.shopAddress.trim()}`
+      : `Shop address:\n${ctx.shopAddress.trim()}`
+    : "";
 
   const orderLine =
     ctx.locale === "ur"
-      ? `آرڈر نمبر: ${ctx.orderNumber}`
-      : `Order number: ${ctx.orderNumber}`;
+      ? `آرڈر #${ctx.orderNumber}`
+      : `Order #${ctx.orderNumber}`;
 
   const balanceLine =
     ctx.balanceDue && ctx.balanceDue > 0
@@ -104,10 +119,10 @@ export function buildEmailBody(
 
   const closing =
     ctx.locale === "ur"
-      ? `\n\nشکریہ،\n${ctx.shopName}`
-      : `\n\nThank you,\n${ctx.shopName}`;
+      ? `\n\nشکریہ۔\n\nنیک تمنائیں،\n${ctx.shopName}`
+      : `\n\nThank you.\n\nKind regards,\n${ctx.shopName}`;
 
-  return [greeting, "", main, orderLine, balanceLine, notesBlock, closing]
+  return [greeting, "", main, addressLine, orderLine, balanceLine, notesBlock, closing]
     .filter(Boolean)
     .join("\n");
 }
@@ -132,30 +147,83 @@ export interface OrderDocumentWhatsAppContext {
   customerName: string;
   orderNumber: string;
   shopName: string;
+  garmentLabel: string;
+  suitCount?: number;
   locale: "en" | "ur";
   documentType: OrderDocumentType;
   documentUrl?: string;
   whatsappFooter?: string;
 }
 
+function orderGarmentPhrase(
+  garmentLabel: string,
+  suitCount: number,
+  locale: "en" | "ur",
+): string {
+  const qty = suitCount > 1 ? ` (×${suitCount})` : "";
+  if (locale === "ur") {
+    return `آپ کا ${garmentLabel}${qty}`;
+  }
+  return `Your ${garmentLabel}${qty}`;
+}
+
+function receiptConfirmationLine(ctx: OrderDocumentWhatsAppContext): string {
+  const suitCount = ctx.suitCount && ctx.suitCount > 0 ? ctx.suitCount : 1;
+  const garment = orderGarmentPhrase(ctx.garmentLabel, suitCount, ctx.locale);
+
+  if (ctx.locale === "ur") {
+    return `${garment} موصول ہو گیا ہے اور سلائی کے لیے رجسٹر کر لیا گیا ہے۔`;
+  }
+  return `${garment} has been received and registered for stitching.`;
+}
+
 export function buildOrderDocumentWhatsAppCaption(
   ctx: OrderDocumentWhatsAppContext,
 ): string {
-  const footer = ctx.whatsappFooter?.trim()
-    ? `\n\n${ctx.whatsappFooter.trim()}`
-    : "";
+  const footer = ctx.whatsappFooter?.trim();
 
   if (ctx.documentType === "receipt") {
     if (ctx.locale === "ur") {
-      return `السلام علیکم ${ctx.customerName}،\n\nآپ کی آرڈر رسید (${ctx.orderNumber}) منسلک ہے۔\n\n— ${ctx.shopName}${footer}`;
+      const lines = [
+        `السلام علیکم، ${ctx.customerName}،`,
+        "",
+        `${ctx.shopName} تشریف لانے اور اپنے ${ctx.garmentLabel} کے لیے ہم پر اعتماد کرنے کا شکریہ۔`,
+        "",
+        receiptConfirmationLine(ctx),
+        "",
+        `📋 آرڈر نمبر: #${ctx.orderNumber}`,
+        "",
+        "براہ کرم اپنی رسید منسلکہ دیکھیں۔ ہم آپ کے لیے بہترین سلائی شدہ لباس فراہم کرنے کے منتظر ہیں۔",
+        "",
+        "نیک تمنائیں،",
+        ctx.shopName,
+      ];
+      if (footer) lines.push(footer);
+      return lines.join("\n");
     }
-    return `Hello ${ctx.customerName},\n\nPlease find your order receipt for #${ctx.orderNumber} attached.\n\n— ${ctx.shopName}${footer}`;
+
+    const lines = [
+      `Asslam o Alaikum ${ctx.customerName},`,
+      "",
+      `Thank you for visiting ${ctx.shopName} and trusting us with your ${ctx.garmentLabel}.`,
+      "",
+      receiptConfirmationLine(ctx),
+      "",
+      `📋 Order Number: #${ctx.orderNumber}`,
+      "",
+      "Please find your receipt attached for your records. We look forward to delivering a perfectly tailored outfit for you.",
+      "",
+      "Warm regards,",
+      ctx.shopName,
+    ];
+    if (footer) lines.push(footer);
+    return lines.join("\n");
   }
 
   if (ctx.locale === "ur") {
-    return `السلام علیکم ${ctx.customerName}،\n\nآپ کی پیمائش (${ctx.orderNumber}) منسلک ہے۔\n\n— ${ctx.shopName}${footer}`;
+    return `السلام علیکم ${ctx.customerName}،\n\nآپ کی پیمائش (${ctx.orderNumber}) منسلک ہے۔\n\n— ${ctx.shopName}${footer ? `\n\n${footer}` : ""}`;
   }
-  return `Hello ${ctx.customerName},\n\nPlease find your measurement card for order #${ctx.orderNumber} attached.\n\n— ${ctx.shopName}${footer}`;
+  return `Hello ${ctx.customerName},\n\nPlease find your measurement card for order #${ctx.orderNumber} attached.\n\n— ${ctx.shopName}${footer ? `\n\n${footer}` : ""}`;
 }
 
 export function buildOrderDocumentWhatsAppFallbackMessage(

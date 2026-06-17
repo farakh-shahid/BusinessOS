@@ -26,6 +26,7 @@ import { fetchCustomerByPhone } from "@/tailor/infrastructure/api/customers.api"
 import {
   useAssignmentsQuery,
   useCreateOrderMutation,
+  useNextOrderNumberQuery,
 } from "@/tailor/infrastructure/api/hooks/use-orders";
 import { buildAssigneeWorkloadMap } from "@/tailor/infrastructure/data/assignee-workload";
 import {
@@ -72,6 +73,7 @@ export function NewOrderForm() {
     }
   }, [user, userLoading, router]);
   const createOrder = useCreateOrderMutation();
+  const { data: nextOrderNumber } = useNextOrderNumberQuery();
   const { data: assignments } = useAssignmentsQuery();
   const assigneeWorkload = useMemo(
     () => buildAssigneeWorkloadMap(assignments),
@@ -82,6 +84,7 @@ export function NewOrderForm() {
   const [fieldErrors, setFieldErrors] = useState<NewOrderFieldErrors>({});
   const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
   const lastHydratedCustomerId = useRef<string | null>(null);
+  const dressCodePrefilled = useRef(false);
 
   const patch = useCallback((update: Partial<NewOrderDraft>) => {
     setDraft((prev) => {
@@ -116,6 +119,24 @@ export function NewOrderForm() {
   }, [searchParams]);
 
   useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    setDraft((prev) =>
+      prev.bookingDate === today ? prev : { ...prev, bookingDate: today },
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!nextOrderNumber?.orderNumber || dressCodePrefilled.current) return;
+    dressCodePrefilled.current = true;
+    setDraft((prev) => ({
+      ...prev,
+      dressCode: prev.dressCode.trim()
+        ? prev.dressCode
+        : nextOrderNumber.orderNumber,
+    }));
+  }, [nextOrderNumber]);
+
+  useEffect(() => {
     if (draft.customerMode !== "existing" || !draft.customerId) {
       lastHydratedCustomerId.current = null;
       return;
@@ -132,11 +153,12 @@ export function NewOrderForm() {
         ...prev,
         garmentType: suitType,
         ...resetDressFieldsForNewOrder(suitType),
+        dressCode: nextOrderNumber?.orderNumber ?? "",
         ...patchFromCustomerDetail(detail, suitType),
       };
     });
     setError(null);
-  }, [draft.customerMode, draft.customerId, customerDetailQuery.data]);
+  }, [draft.customerMode, draft.customerId, customerDetailQuery.data, nextOrderNumber]);
 
   function handleGarmentChange(garmentType: BookingGarmentType) {
     if (garmentType === draft.garmentType) return;
@@ -355,6 +377,7 @@ export function NewOrderForm() {
         orderId={receiptOrderId}
         title={t.receipt.postOrderTitle}
         subtitle={t.receipt.postOrderSubtitle}
+        autoSendPdfs
         onClose={() => {
           const id = receiptOrderId;
           setReceiptOrderId(null);

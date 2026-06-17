@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string | null;
   phone: string | null;
   role: string;
+  specialty?: string | null;
   tenantId: string | null;
   tenantName: string | null;
 }
@@ -25,4 +26,14 @@ export function loginRequest(login: string, password: string) {
 
 export function meRequest() {
   return apiFetch<AuthUser>("/auth/me");
+}
+
+export function updateProfileRequest(payload: {
+  name: string;
+  specialty?: string;
+}) {
+  return apiFetch<AuthUser>("/auth/profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }

@@ -20,6 +20,7 @@ export interface AssignmentSummaryRow {
 
 export interface AssignmentsOverview {
   assignees: string[];
+  staffSpecialties: Record<string, string>;
   unassignedOrderCount: number;
   unassignedSuitCount: number;
   unassignedOrders: AssignmentOrderItem[];

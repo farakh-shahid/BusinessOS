@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { Download } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
 import type { TailorAnalytics } from "@business-os/tailor";
 import { routes } from "@/core/config/routes";
@@ -13,8 +12,11 @@ import {
   formatRsCompact,
   formatTrend,
 } from "./format";
+import { AnalyticsPanel, SectionTitle } from "./analytics-primitives";
 
 type OverviewScope = "year" | "sixMonth" | "month";
+
+export type { OverviewScope };
 
 const AGING_COLORS = {
   current: "#12A36A",
@@ -50,78 +52,21 @@ function seasonTag(month: string, t: Dictionary): string | null {
   return null;
 }
 
-function SectionTitle({ children, isRtl }: { children: React.ReactNode; isRtl: boolean }) {
-  return (
-    <p
-      className={cn(
-        "mb-3 mt-6 text-[10.5px] font-bold uppercase tracking-[0.13em] text-muted-slate",
-        isRtl && "text-right",
-      )}
-    >
-      {children}
-    </p>
-  );
-}
-
-function Panel({
-  title,
-  hint,
-  action,
-  children,
-  isRtl,
-  fill,
-}: {
-  title: string;
-  hint?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  isRtl?: boolean;
-  fill?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-hairline bg-card p-4 sm:p-[18px]",
-        fill && "flex h-full min-h-0 flex-col",
-      )}
-    >
-      <div
-        className={cn(
-          "mb-3 flex items-center justify-between gap-3",
-          isRtl && "flex-row-reverse",
-          fill && "shrink-0",
-        )}
-      >
-        <div className={cn("min-w-0", isRtl && "text-right")}>
-          <h3 className="font-display text-sm font-bold text-foreground">{title}</h3>
-          {hint ? (
-            <p className="mt-0.5 text-[11px] text-muted-slate">{hint}</p>
-          ) : null}
-        </div>
-        {action}
-      </div>
-      {fill ? (
-        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-      ) : (
-        children
-      )}
-    </div>
-  );
-}
-
 function InsightCard({
   variant,
   title,
   value,
   cta,
   href,
+  onClick,
   isRtl,
 }: {
   variant: "good" | "warn" | "info";
   title: string;
   value: string;
   cta: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   isRtl: boolean;
 }) {
   const bg =
@@ -131,20 +76,37 @@ function InsightCard({
         ? "linear-gradient(120deg,#7a1f22,#a83339)"
         : "linear-gradient(120deg,var(--brand-900,#0E1A36),var(--brand-800,#1A2747))";
 
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "block min-w-[220px] flex-1 rounded-2xl p-4 text-white transition hover:brightness-105 sm:p-[17px]",
-        isRtl && "text-right",
-      )}
-      style={{ background: bg }}
-    >
+  const className = cn(
+    "block min-w-[220px] flex-1 rounded-2xl p-4 text-white transition hover:brightness-105 sm:p-[17px]",
+    isRtl && "text-right",
+  );
+
+  const content = (
+    <>
       <p className="text-[11.5px] opacity-80">{title}</p>
       <p className="mt-1 font-display text-lg font-bold leading-snug">{value}</p>
       <p className="mt-2 text-[11.5px] font-semibold underline underline-offset-2 opacity-95">
         {cta}
       </p>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(className, "text-left")}
+        style={{ background: bg }}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href ?? "#"} className={className} style={{ background: bg }}>
+      {content}
     </Link>
   );
 }
@@ -196,14 +158,17 @@ export function AnalyticsOverview({
   data,
   t,
   isRtl,
-  onExport,
+  scope,
+  onScopeChange,
+  onGoToPeriod,
 }: {
   data: TailorAnalytics;
   t: Dictionary;
   isRtl: boolean;
-  onExport: () => void;
+  scope: OverviewScope;
+  onScopeChange: (scope: OverviewScope) => void;
+  onGoToPeriod: () => void;
 }) {
-  const [scope, setScope] = useState<OverviewScope>("year");
 
   const incomePoints = useMemo(() => {
     if (scope === "month") {
@@ -255,34 +220,11 @@ export function AnalyticsOverview({
     <div className="space-y-1">
       <div
         className={cn(
-          "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
-          isRtl && "sm:flex-row-reverse",
+          "flex flex-wrap items-center gap-2",
+          isRtl && "flex-row-reverse",
         )}
       >
-        <div className={cn(isRtl && "text-right")}>
-          <h2 className="font-display text-2xl font-bold text-foreground">
-            {t.analytics.overviewTitle}
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-slate">
-            {t.analytics.overviewSubtitle.replace("{shop}", data.shopName)}
-          </p>
-        </div>
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-2",
-            isRtl && "flex-row-reverse",
-          )}
-        >
-          <ScopeToggle scope={scope} onChange={setScope} t={t} isRtl={isRtl} />
-          <button
-            type="button"
-            onClick={onExport}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent-500 px-3.5 py-2.5 text-xs font-semibold text-white hover:brightness-105"
-          >
-            <Download className="h-4 w-4" />
-            {t.analytics.exportReport}
-          </button>
-        </div>
+          <ScopeToggle scope={scope} onChange={onScopeChange} t={t} isRtl={isRtl} />
       </div>
 
       <div
@@ -298,7 +240,7 @@ export function AnalyticsOverview({
             .replace("{amount}", formatRsCompact(data.currentMonth.revenue))
             .replace("{trend}", incomeTrend)}
           cta={t.analytics.insightIncomeCta}
-          href="#period-drill-down"
+          onClick={onGoToPeriod}
           isRtl={isRtl}
         />
         <InsightCard
@@ -397,7 +339,7 @@ export function AnalyticsOverview({
       </div>
 
       <div className="mt-3.5 grid items-stretch gap-3.5 lg:grid-cols-[1.5fr_1fr]">
-        <Panel
+        <AnalyticsPanel
           fill
           title={t.analytics.incomeByMonth}
           hint={t.analytics.incomeByMonthHint}
@@ -439,9 +381,9 @@ export function AnalyticsOverview({
               );
             })}
           </div>
-        </Panel>
+        </AnalyticsPanel>
 
-        <Panel
+        <AnalyticsPanel
           title={t.analytics.outstandingPanel}
           isRtl={isRtl}
           action={
@@ -527,12 +469,12 @@ export function AnalyticsOverview({
               </div>
             ))
           )}
-        </Panel>
+        </AnalyticsPanel>
       </div>
 
       <SectionTitle isRtl={isRtl}>{t.analytics.sectionEarnsBusy}</SectionTitle>
       <div className="grid items-stretch gap-3.5 lg:grid-cols-2">
-        <Panel
+        <AnalyticsPanel
           title={t.analytics.revenueByGarment}
           hint={t.analytics.revenueByGarmentShare}
           isRtl={isRtl}
@@ -576,9 +518,9 @@ export function AnalyticsOverview({
           <p className="mt-2 rounded-lg bg-background px-3 py-2 text-[11.5px] text-muted-slate">
             {t.analytics.garmentInsight}
           </p>
-        </Panel>
+        </AnalyticsPanel>
 
-        <Panel
+        <AnalyticsPanel
           fill
           title={t.analytics.busiestDays}
           hint={t.analytics.busiestDaysHint}
@@ -614,12 +556,12 @@ export function AnalyticsOverview({
               );
             })}
           </div>
-        </Panel>
+        </AnalyticsPanel>
       </div>
 
       <SectionTitle isRtl={isRtl}>{t.analytics.sectionKarigarsCustomers}</SectionTitle>
       <div className="grid gap-3.5 lg:grid-cols-2">
-        <Panel
+        <AnalyticsPanel
           title={t.analytics.karigarOutput}
           hint={t.analytics.karigarHint}
           isRtl={isRtl}
@@ -660,9 +602,9 @@ export function AnalyticsOverview({
           <p className="mt-2 rounded-lg bg-background px-3 py-2 text-[11.5px] text-muted-slate">
             {t.analytics.karigarNote}
           </p>
-        </Panel>
+        </AnalyticsPanel>
 
-        <Panel
+        <AnalyticsPanel
           title={t.analytics.topCustomers}
           hint={t.analytics.topCustomersHint}
           isRtl={isRtl}
@@ -701,7 +643,7 @@ export function AnalyticsOverview({
               </div>
             ))
           )}
-        </Panel>
+        </AnalyticsPanel>
       </div>
     </div>
   );

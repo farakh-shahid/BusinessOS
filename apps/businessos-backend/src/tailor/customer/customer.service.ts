@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CustomerRepository } from "./customer.repository";
 import type { CreateCustomerDto } from "./dto/create-customer.dto";
+import type { CustomerFilterCountsQueryDto } from "./dto/customer-filter-counts-query.dto";
 import type { ListCustomersQueryDto } from "./dto/list-customers-query.dto";
 import type { UpdateCustomerDto } from "./dto/update-customer.dto";
 
@@ -10,6 +11,10 @@ export class CustomerService {
 
   list(tenantId: string, query?: ListCustomersQueryDto) {
     return this.customers.listByTenant(tenantId, query);
+  }
+
+  filterCounts(tenantId: string, query?: CustomerFilterCountsQueryDto) {
+    return this.customers.getQuickFilterCounts(tenantId, query);
   }
 
   search(tenantId: string, query: string) {

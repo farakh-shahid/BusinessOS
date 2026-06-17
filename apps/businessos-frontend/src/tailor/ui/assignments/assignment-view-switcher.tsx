@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Table2 } from "lucide-react";
+import { LayoutGrid, Table2, Users } from "lucide-react";
 import type { Dictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import type { AssignmentView } from "@/tailor/infrastructure/data/assignment-board-utils";
@@ -14,9 +14,10 @@ interface AssignmentViewSwitcherProps {
 
 const views: {
   value: AssignmentView;
-  labelKey: "viewBoard" | "viewTable";
+  labelKey: "viewGrid" | "viewBoard" | "viewTable";
   icon: typeof LayoutGrid;
 }[] = [
+  { value: "grid", labelKey: "viewGrid", icon: Users },
   { value: "board", labelKey: "viewBoard", icon: LayoutGrid },
   { value: "table", labelKey: "viewTable", icon: Table2 },
 ];

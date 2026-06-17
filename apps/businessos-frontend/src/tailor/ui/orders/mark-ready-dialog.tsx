@@ -18,7 +18,8 @@ import { useSettingsQuery } from "@/tailor/infrastructure/api/hooks/use-settings
 import { useMeQuery } from "@/tailor/infrastructure/api/hooks/use-auth";
 import { buildOrderReceiptHtml } from "./order-receipt-html";
 import { buildOrderDocumentWhatsAppCaption } from "./order-receipt-messages";
-import { sendOrderHtmlAsPdfWhatsAppWithFeedback } from "./order-document-whatsapp-feedback";
+import { htmlToPdfBlob } from "@/core/presentation/lib/capture-document-pdf";
+import { sendOrderDocumentPdfWhatsAppWithFeedback } from "./order-document-whatsapp-feedback";
 
 interface MarkReadyDialogProps {
   orderId: string | null;
@@ -115,17 +116,20 @@ export function MarkReadyDialog({ orderId, onClose, onMarked }: MarkReadyDialogP
       if (sendReceiptPdf) {
         try {
           const receiptHtml = buildOrderReceiptHtml({ order, shop, t });
-          const pdfMessage = await sendOrderHtmlAsPdfWhatsAppWithFeedback({
+          const pdfBlob = await htmlToPdfBlob(receiptHtml);
+          const pdfMessage = await sendOrderDocumentPdfWhatsAppWithFeedback({
             orderId,
             orderNumber: order.orderNumber,
             documentType: "receipt",
-            html: receiptHtml,
+            pdfBlob,
             customerPhone: order.customerPhone,
             caption: buildOrderDocumentWhatsAppCaption(
               {
                 customerName: order.customerName,
                 orderNumber: order.orderNumber,
                 shopName: shop.name,
+                garmentLabel: order.garmentLabel,
+                suitCount: order.suitCount,
                 whatsappFooter: settings?.whatsappFooter,
               },
               "receipt",
