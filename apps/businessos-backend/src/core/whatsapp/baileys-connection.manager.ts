@@ -12,10 +12,10 @@ import type { WASocket } from "@whiskeysockets/baileys";
 import { Prisma } from "../../generated/prisma/client";
 import { PrismaService } from "../database/prisma.service";
 import {
-  clearTenantAuthDir,
-  ensureAuthDir,
+  clearTenantAuthSession,
   hasTenantAuthCreds,
-} from "./baileys-auth-storage";
+  useDatabaseAuthState,
+} from "./baileys-database-auth-storage";
 import type {
   WhatsAppConnectionView,
   WhatsAppRuntimeStatus,
@@ -75,15 +75,17 @@ export class BaileysConnectionManager
 
     await Promise.all(
       tenants.map(async (tenant) => {
-        if (!(await hasTenantAuthCreds(tenant.id))) {
+        if (!(await hasTenantAuthCreds(this.prisma, tenant.id))) {
           await this.markDisconnected(tenant.id);
           return;
         }
-        return this.startConnection(tenant.id).catch((error) => {
+        return this.startConnection(tenant.id).catch(async (error) => {
           this.logger.warn(
             `Failed to restore WhatsApp for tenant ${tenant.id}`,
             error,
           );
+          await clearTenantAuthSession(this.prisma, tenant.id);
+          await this.markDisconnected(tenant.id);
         });
       }),
     );
@@ -139,7 +141,7 @@ export class BaileysConnectionManager
     this.shuttingDown.add(tenantId);
     try {
       await this.stopRuntime(tenantId, { logout: options.logout });
-      await clearTenantAuthDir(tenantId);
+      await clearTenantAuthSession(this.prisma, tenantId);
       await this.markDisconnected(tenantId);
     } finally {
       this.shuttingDown.delete(tenantId);
@@ -338,7 +340,7 @@ export class BaileysConnectionManager
       }
       entry.socket = undefined;
     }
-    await clearTenantAuthDir(tenantId);
+    await clearTenantAuthSession(this.prisma, tenantId);
     await this.markDisconnected(tenantId);
     entry.status = "disconnected";
     entry.qrDataUrl = undefined;
@@ -482,7 +484,7 @@ export class BaileysConnectionManager
     this.runtime.set(tenantId, entry);
 
     if (options.clearAuth) {
-      await clearTenantAuthDir(tenantId);
+      await clearTenantAuthSession(this.prisma, tenantId);
     }
     await this.markDisconnected(tenantId);
   }
@@ -661,8 +663,11 @@ export class BaileysConnectionManager
 
     const baileys = await this.loadBaileys();
     const baileysLogger = await this.loadBaileysLogger();
-    const authDir = await ensureAuthDir(tenantId);
-    const { state, saveCreds } = await baileys.useMultiFileAuthState(authDir);
+    const { state, saveCreds } = await useDatabaseAuthState(
+      this.prisma,
+      tenantId,
+      baileys,
+    );
 
     if (state.creds.me && !state.creds.registered) {
       entry.pairingInProgress = true;

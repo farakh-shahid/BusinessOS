@@ -22,6 +22,9 @@ export class WhatsAppSettingsController {
     if (current.status === "connected") {
       return current;
     }
+    if (current.status === "connecting" || current.status === "qr") {
+      return current;
+    }
     await this.whatsapp.destroySession(tenantId, { logout: false });
     return this.whatsapp.startConnection(tenantId);
   }
