@@ -22,6 +22,7 @@ export {
 export { SettingsFormSkeleton } from "./settings-form-skeleton";
 export {
   AssignmentsSkeleton,
+  AssignmentViewSwitcherSkeleton,
   ReceivablesListSkeleton,
   ReceivablesSummarySkeleton,
   StaffListSkeleton,

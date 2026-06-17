@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getDictionary } from "@business-os/i18n";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
@@ -12,7 +12,10 @@ import {
   type AssignmentView,
   type PersonBoardWorkerKey,
 } from "@/tailor/infrastructure/data/assignment-board-utils";
-import { AssignmentsSkeleton } from "@/tailor/ui/skeletons";
+import {
+  AssignmentsSkeleton,
+  AssignmentViewSwitcherSkeleton,
+} from "@/tailor/ui/skeletons";
 import { BackLink } from "@/tailor/ui/shared/back-link";
 import { PageHeader } from "@/tailor/ui/shared/page-header";
 import { AssignmentKanbanBoard } from "@/tailor/ui/assignments/assignment-kanban-board";
@@ -26,14 +29,10 @@ export function AssignmentsView() {
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const { data, isLoading, isError } = useAssignmentsQuery();
-  const [view, setView] = useState<AssignmentView>("grid");
+  const [view, setView] = useState<AssignmentView>(() => loadAssignmentView());
   const [selectedPerson, setSelectedPerson] = useState<PersonBoardWorkerKey | null>(
     null,
   );
-
-  useEffect(() => {
-    setView(loadAssignmentView());
-  }, []);
 
   function handleViewChange(next: AssignmentView) {
     setView(next);
@@ -72,10 +71,12 @@ export function AssignmentsView() {
             onChange={handleViewChange}
           />
         </div>
+      ) : isLoading ? (
+        <AssignmentViewSwitcherSkeleton isRtl={isRtl} />
       ) : null}
 
       {isLoading ? (
-        <AssignmentsSkeleton />
+        <AssignmentsSkeleton view={view} />
       ) : isError || !data ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-700">
           {t.common.error}
