@@ -1,0 +1,15 @@
+import { AdminGate } from "@/core/auth/admin-gate";
+import { CustomerEditView } from "@/features/ui/customers/customer-edit-view";
+
+interface CustomerEditPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function CustomerEditPage({ params }: CustomerEditPageProps) {
+  const { id } = await params;
+  return (
+    <AdminGate>
+      <CustomerEditView customerId={id} />
+    </AdminGate>
+  );
+}

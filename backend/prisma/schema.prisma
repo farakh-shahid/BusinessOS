@@ -1,0 +1,314 @@
+// BusinessOS — multi-schema PostgreSQL layout
+// business_os         → shared platform (tenants, users)
+// business_os_tailor  → tailor module (customers, measurements, orders)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["business_os", "business_os_tailor"]
+}
+
+// ─── Shared schema: business_os ─────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+  TAILOR
+
+  @@schema("business_os")
+}
+
+enum TenantPlan {
+  STANDARD
+  PREMIUM
+  ENTERPRISE
+
+  @@schema("business_os")
+}
+
+model Tenant {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String
+  phone          String?
+  email          String?
+  address        String?    @db.Text
+  plan           TenantPlan @default(STANDARD)
+  whatsappFooter String?    @map("whatsapp_footer") @db.Text
+  whatsappConnected Boolean @default(false) @map("whatsapp_connected")
+  whatsappPhone     String?  @map("whatsapp_phone")
+  whatsappSession   Json?    @map("whatsapp_session")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  users        User[]
+  customers    Customer[]
+  measurements Measurement[]
+  orders       Order[]
+
+  @@map("tenants")
+  @@schema("business_os")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String?  @map("tenant_id") @db.Uuid
+  name         String
+  email        String?  @unique
+  phone        String?  @unique
+  phone2       String?  @unique @map("phone_2")
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(STAFF)
+  specialty    String?
+  isActive     Boolean  @default(true) @map("is_active")
+  permissions  Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant              Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  measurementsTaken   Measurement[] @relation("MeasurementTakenBy")
+  ordersCreated       Order[]       @relation("OrderCreatedBy")
+
+  @@index([tenantId])
+  @@map("users")
+  @@schema("business_os")
+}
+
+// ─── Tailor schema: business_os_tailor ──────────────────────────────────────
+
+enum LocalePreference {
+  EN
+  UR
+
+  @@schema("business_os_tailor")
+}
+
+enum MeasurementUnit {
+  INCHES
+  CM
+
+  @@schema("business_os_tailor")
+}
+
+enum PocketOption {
+  NONE
+  SINGLE
+  DOUBLE
+
+  @@schema("business_os_tailor")
+}
+
+enum CollarType {
+  REGULAR
+  BAN
+  SPREAD
+  OTHER
+
+  @@schema("business_os_tailor")
+}
+
+enum PlacketType {
+  REGULAR
+  HIDDEN
+  OTHER
+
+  @@schema("business_os_tailor")
+}
+
+enum FabricSource {
+  CUSTOMER
+  SHOP
+
+  @@schema("business_os_tailor")
+}
+
+enum GarmentType {
+  SHALWAR_QAMEEZ
+  WAISTCOAT
+  COAT
+  DRESS_PANT_COAT
+  SHIRT_ONLY
+  DRESS_PANTS_ONLY
+  SHERWANI
+  SUIT
+  FROCK
+  KURTA
+
+  @@schema("business_os_tailor")
+}
+
+enum OrderStatus {
+  PENDING
+  CUTTING
+  STITCHING
+  READY
+  DELIVERED
+  CANCELLED
+
+  @@schema("business_os_tailor")
+}
+
+model Customer {
+  id               String           @id @default(uuid()) @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  name             String
+  phone            String
+  email            String?
+  preferredLocale  LocalePreference @default(EN) @map("preferred_locale")
+  isVip            Boolean          @default(false) @map("is_vip")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  measurements Measurement[]
+  orders       Order[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, name])
+  @@map("customers")
+  @@schema("business_os_tailor")
+}
+
+model Measurement {
+  id             String          @id @default(uuid()) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  customerId     String          @map("customer_id") @db.Uuid
+  takenByUserId  String?         @map("taken_by_user_id") @db.Uuid
+  garmentType    GarmentType?    @map("garment_type")
+  unit           MeasurementUnit @default(INCHES)
+  measurementsData Json          @default("{}") @map("measurements_data")
+  styleData        Json          @default("{}") @map("style_data")
+
+  chest          Decimal? @db.Decimal(5, 2)
+  waist          Decimal? @db.Decimal(5, 2)
+  shoulder       Decimal? @db.Decimal(5, 2)
+  sleeve         Decimal? @db.Decimal(5, 2)
+  neck           Decimal? @db.Decimal(5, 2)
+  shirtLength    Decimal? @map("shirt_length") @db.Decimal(5, 2)
+  trouserLength  Decimal? @map("trouser_length") @db.Decimal(5, 2)
+  hip            Decimal? @db.Decimal(5, 2)
+  thigh          Decimal? @db.Decimal(5, 2)
+
+  chestPocket    PocketOption? @map("chest_pocket")
+  sidePockets    PocketOption? @map("side_pockets")
+  collar         CollarType?
+  placket        PlacketType?
+  gera           String?
+  notes          String?
+
+  emailSentAt    DateTime? @map("email_sent_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  takenBy    User?    @relation("MeasurementTakenBy", fields: [takenByUserId], references: [id], onDelete: SetNull)
+  orders     Order[]
+
+  @@index([tenantId, customerId, createdAt(sort: Desc)])
+  @@map("measurements")
+  @@schema("business_os_tailor")
+}
+
+enum OrderAuditAction {
+  STATUS_CHANGED
+  ORDER_UPDATED
+  PAYMENT_RECORDED
+  REMINDER_SENT
+
+  @@schema("business_os_tailor")
+}
+
+model OrderAuditLog {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  orderId   String           @map("order_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  action    OrderAuditAction
+  details   Json             @default("{}")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId, createdAt(sort: Desc)])
+  @@map("order_audit_logs")
+  @@schema("business_os_tailor")
+}
+
+model OrderPayment {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  orderId          String   @map("order_id") @db.Uuid
+  amount           Decimal  @db.Decimal(12, 2)
+  recordedByUserId String   @map("recorded_by_user_id") @db.Uuid
+  note             String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@map("order_payments")
+  @@schema("business_os_tailor")
+}
+
+model Order {
+  id               String       @id @default(uuid()) @db.Uuid
+  tenantId         String       @map("tenant_id") @db.Uuid
+  customerId       String       @map("customer_id") @db.Uuid
+  createdByUserId  String       @map("created_by_user_id") @db.Uuid
+  measurementId    String?      @map("measurement_id") @db.Uuid
+  orderNumber      String       @map("order_number")
+  status           OrderStatus  @default(PENDING)
+  garmentType      GarmentType  @map("garment_type")
+  dressCode        String?      @map("dress_code")
+  suitCount        Int          @default(1) @map("suit_count")
+  dressImageUrl    String?      @map("dress_image_url") @db.Text
+  dressImagePublicId String?    @map("dress_image_public_id") @db.Text
+  bookingDate      DateTime     @default(now()) @map("booking_date") @db.Date
+  deliveryDate     DateTime     @map("delivery_date") @db.Date
+  measurementsData Json         @default("{}") @map("measurements_data")
+  styleData        Json         @default("{}") @map("style_data")
+  fabricSource     FabricSource @map("fabric_source")
+  fabricNotes      String?      @map("fabric_notes")
+
+  chestPocket      PocketOption? @map("chest_pocket")
+  sidePockets      PocketOption? @map("side_pockets")
+  collar           CollarType?
+  placket          PlacketType?
+  gera             String?
+  styleNotes       String?       @map("style_notes")
+
+  advancePaid      Decimal  @default(0) @map("advance_paid") @db.Decimal(12, 2)
+  totalPrice       Decimal  @map("total_price") @db.Decimal(12, 2)
+  balanceDue       Decimal  @map("balance_due") @db.Decimal(12, 2)
+  isRush           Boolean  @default(false) @map("is_rush")
+  assignedToName   String?  @map("assigned_to_name")
+  cuttingMasterName String? @map("cutting_master_name")
+  stitchingMasterName String? @map("stitching_master_name")
+
+  readyNotifiedAt  DateTime? @map("ready_notified_at")
+  readyEmailSentAt DateTime? @map("ready_email_sent_at")
+
+  receiptDocumentHtml     String? @map("receipt_document_html") @db.Text
+  measurementDocumentHtml String? @map("measurement_document_html") @db.Text
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("OrderCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  measurement  Measurement? @relation(fields: [measurementId], references: [id], onDelete: SetNull)
+  auditLogs    OrderAuditLog[]
+  payments     OrderPayment[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, deliveryDate])
+  @@index([tenantId, assignedToName])
+  @@map("orders")
+  @@schema("business_os_tailor")
+}

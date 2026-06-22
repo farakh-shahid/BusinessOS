@@ -1,0 +1,32 @@
+import { isValidPakistanPhone } from "@shared";
+import {
+  registerDecorator,
+  type ValidationOptions,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
+} from "class-validator";
+
+@ValidatorConstraint({ name: "isPakistanPhone", async: false })
+export class IsPakistanPhoneConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === "string" && value.trim() === "") return true;
+    return typeof value === "string" && isValidPakistanPhone(value);
+  }
+
+  defaultMessage(): string {
+    return "Enter a valid mobile number (e.g. 03001234567)";
+  }
+}
+
+export function IsPakistanPhone(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      constraints: [],
+      validator: IsPakistanPhoneConstraint,
+    });
+  };
+}
