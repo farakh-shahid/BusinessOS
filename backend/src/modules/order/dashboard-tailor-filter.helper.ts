@@ -1,4 +1,4 @@
-import type { DashboardData, Order } from "@shared";
+import type { DashboardData, Order } from "@business-os/shared";
 import { orderAssignedToUser } from "../../common/utils/user-role.util";
 
 function filterOrders(orders: Order[], assigneeName: string): Order[] {

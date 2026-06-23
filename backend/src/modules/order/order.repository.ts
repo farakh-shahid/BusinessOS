@@ -10,8 +10,8 @@ import type {
   OrderListQuickFilterKey,
   PaginatedList,
   ProductionPerformanceData,
-} from "@shared";
-import { DASHBOARD_QUEUE_LIMIT, DEFAULT_PAGE_SIZE } from "@shared";
+} from "@business-os/shared";
+import { DASHBOARD_QUEUE_LIMIT, DEFAULT_PAGE_SIZE } from "@business-os/shared";
 import type { UserRole } from "../../generated/prisma/client";
 import { OrderStatus } from "../../generated/prisma/client";
 import { PrismaService } from "../../core/database/prisma.service";

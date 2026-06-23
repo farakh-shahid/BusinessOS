@@ -1,4 +1,4 @@
-import type { OrderStatus as ApiOrderStatus } from "@shared";
+import type { OrderStatus as ApiOrderStatus } from "@business-os/shared";
 import type {
   CollarType,
   FabricSource,

@@ -4,7 +4,7 @@ import {
   checkRoleChange,
   type TenantMemberCounts,
   type TenantPlan,
-} from "@shared";
+} from "@business-os/shared";
 import type { UserRole } from "../../generated/prisma/client";
 import { PrismaService } from "../database/prisma.service";
 

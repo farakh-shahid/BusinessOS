@@ -9,8 +9,8 @@ import type {
   OrderWorkflowStatus,
   PaginatedList,
   StyleValues,
-} from "@shared";
-import { DEFAULT_PAGE_SIZE } from "@shared";
+} from "@business-os/shared";
+import { DEFAULT_PAGE_SIZE } from "@business-os/shared";
 import { PrismaService } from "../../core/database/prisma.service";
 import {
   formatDueDate,

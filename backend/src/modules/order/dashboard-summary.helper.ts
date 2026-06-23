@@ -7,7 +7,7 @@ import type {
   DashboardWeekDayKey,
   DashboardWorkload,
   DashboardWorkloadStage,
-} from "@shared";
+} from "@business-os/shared";
 import { garmentKey, garmentLabel, toGarmentType } from "../common/tailor.mapper";
 
 const WEEK_DAY_KEYS: DashboardWeekDayKey[] = [

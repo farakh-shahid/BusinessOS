@@ -1,4 +1,4 @@
-import type { DashboardData, OrderFullDetail } from "@shared";
+import type { DashboardData, OrderFullDetail } from "@business-os/shared";
 import type { UserRole } from "../../generated/prisma/client";
 import { shouldHideFinancials } from "../../common/utils/user-role.util";
 

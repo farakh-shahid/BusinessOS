@@ -1,4 +1,4 @@
-import { isValidPakistanPhone } from "@shared";
+import { isValidPakistanPhone } from "@business-os/shared";
 import {
   registerDecorator,
   type ValidationOptions,

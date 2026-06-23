@@ -1,5 +1,5 @@
 import { garmentLabel } from "../common/tailor.mapper";
-import type { NeedsAttentionItem } from "@shared";
+import type { NeedsAttentionItem } from "@business-os/shared";
 
 type OrderPreview = {
   customer: { name: string };

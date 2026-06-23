@@ -1,6 +1,6 @@
 import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from "class-validator";
 import { Type } from "class-transformer";
-import { DEFAULT_PAGE_SIZE } from "@shared";
+import { DEFAULT_PAGE_SIZE } from "@business-os/shared";
 
 export class ListOrdersQueryDto {
   @IsOptional()

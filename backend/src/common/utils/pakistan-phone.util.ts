@@ -1,4 +1,4 @@
-import { normalizePakistanPhone } from "@shared";
+import { normalizePakistanPhone } from "@business-os/shared";
 import { BadRequestException } from "@nestjs/common";
 
 const INVALID_MESSAGE =

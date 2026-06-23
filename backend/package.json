@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsc -p ../shared/tsconfig.json && nest start --watch",
-    "build": "tsc -p ../shared/tsconfig.json && nest build",
+    "dev": "npm run build --workspace=@business-os/shared && nest start --watch",
+    "build": "npm run build --workspace=@business-os/shared && nest build",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "prisma:generate": "prisma generate",
@@ -12,11 +12,12 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
     "db:deploy:seed": "bash scripts/seed-database.sh",
-    "vercel-build": "tsc -p ../shared/tsconfig.json && prisma generate && prisma migrate deploy && prisma db seed && nest build",
+    "vercel-build": "npm run build --workspace=@business-os/shared && prisma generate && prisma migrate deploy && nest build",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset"
   },
   "dependencies": {
+    "@business-os/shared": "*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/jwt": "^11.0.2",

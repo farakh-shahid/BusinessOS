@@ -1,4 +1,4 @@
-import type { TailorMeasurement } from "@shared";
+import type { TailorMeasurement } from "@business-os/shared";
 import type {
   CollarType,
   GarmentType,

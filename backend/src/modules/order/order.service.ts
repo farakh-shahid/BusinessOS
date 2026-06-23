@@ -8,7 +8,7 @@ import type {
   OrderDocumentWhatsAppResult,
   OrderFullDetail,
   ReminderResult,
-} from "@shared";
+} from "@business-os/shared";
 import type { UserRole } from "../../generated/prisma/client";
 import type { AuthUser } from "../../common/types/auth-user.type";
 import {

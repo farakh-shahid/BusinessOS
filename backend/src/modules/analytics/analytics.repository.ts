@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { DailyAnalyticsPoint, TailorAnalytics } from "@shared";
+import type { DailyAnalyticsPoint, TailorAnalytics } from "@business-os/shared";
 import { PrismaService } from "../../core/database/prisma.service";
 import { garmentKey, garmentLabel } from "../common/tailor.mapper";
 import type { AnalyticsQueryDto } from "./dto/analytics-query.dto";

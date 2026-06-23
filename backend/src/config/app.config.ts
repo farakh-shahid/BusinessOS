@@ -11,7 +11,7 @@ function parseCorsOrigins(): string | string[] {
   const fromEnv = process.env.CORS_ORIGIN?.trim();
   const origins = new Set<string>([
     ...PRODUCTION_CORS_ORIGINS,
-    "http://localhost:3000",
+    "http://localhost:3001",
   ]);
 
   if (fromEnv) {

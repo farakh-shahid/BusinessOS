@@ -1,1 +1,1 @@
-export type { Order, OrderStatus, DashboardData } from "@shared";
+export type { Order, OrderStatus, DashboardData } from "@business-os/shared";

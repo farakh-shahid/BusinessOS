@@ -1,4 +1,4 @@
-import type { DashboardData } from "@shared";
+import type { DashboardData } from "@business-os/shared";
 
 export interface OrderRepositoryPort {
   getDashboard(): Promise<DashboardData>;

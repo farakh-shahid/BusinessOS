@@ -5,7 +5,7 @@ import type {
   ProductionPerformanceData,
   ProductionPerformanceOrderRow,
   ProductionPerformanceRow,
-} from "@shared";
+} from "@business-os/shared";
 import type { OrderStatus } from "../../generated/prisma/client";
 import { garmentLabel, orderStatusKey, formatDueDate } from "../common/tailor.mapper";
 
