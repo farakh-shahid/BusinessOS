@@ -802,6 +802,7 @@
     "deliveryInDays": "· in {days} days",
     "deliveryOverdueDays": "· {days} days overdue",
     "measurementsSuitHint": "These body measurements are for the suit type shown above",
+    "editMeasurements": "Edit measurements",
     "editMeasurementsNotice": "Saving will update this order and the customer's saved measurements for {garment}.",
     "editMeasurementsHint": "All values in inches",
     "markDelivered": "Mark as delivered",

@@ -1,4 +1,4 @@
-import type { OrderWorkflowStatus } from "./order";
+import type { OrderStatus, OrderWorkflowStatus } from "./order";
 import type { MeasurementValues, StyleValues } from "./measurement";
 export interface OrderPaymentRecord {
     id: string;
@@ -40,7 +40,7 @@ export interface OrderFullDetail {
     isRush: boolean;
     assignedToName?: string;
     workflowStatus: OrderWorkflowStatus;
-    status: string;
+    status: OrderStatus;
     dueDate: string;
     items: string;
     canMarkReady: boolean;

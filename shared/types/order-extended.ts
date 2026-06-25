@@ -1,4 +1,4 @@
-import type { OrderWorkflowStatus } from "./order";
+import type { OrderStatus, OrderWorkflowStatus } from "./order";
 import type { MeasurementValues, StyleValues } from "./measurement";
 
 export interface OrderPaymentRecord {
@@ -47,7 +47,7 @@ export interface OrderFullDetail {
   stitchingMasterName?: string;
   customerLastStitchingMasterName?: string;
   workflowStatus: OrderWorkflowStatus;
-  status: string;
+  status: OrderStatus;
   dueDate: string;
   items: string;
   canMarkReady: boolean;
