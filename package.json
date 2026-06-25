@@ -27,5 +27,10 @@
     "db:seed": "npm run prisma:seed --workspace=backend",
     "db:deploy:seed": "npm run db:deploy:seed --workspace=backend",
     "db:studio": "npm run prisma:studio --workspace=backend"
+  },
+  "optionalDependencies": {
+    "@next/swc-darwin-arm64": "16.2.9",
+    "@tailwindcss/oxide-darwin-arm64": "4.3.0",
+    "lightningcss-darwin-arm64": "1.32.0"
   }
 }

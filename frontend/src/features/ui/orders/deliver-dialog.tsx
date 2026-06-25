@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { getDictionary } from "@/i18n";
 import { Button } from "@/core/presentation/components/ui/button";
 import { Input } from "@/core/presentation/components/ui/input";
 import { Label } from "@/core/presentation/components/ui/label";
+import { Select } from "@/core/presentation/components/ui/select";
 import { Textarea } from "@/core/presentation/components/ui/textarea";
 import { cn } from "@/core/presentation/lib/utils";
 import { useLocale } from "@/core/i18n/locale-context";
 import { DialogContentSkeleton } from "@/features/ui/skeletons";
+import { useMeQuery } from "@/features/infrastructure/api/hooks/use-auth";
 import {
+  useAssignmentsQuery,
   useOrderDetailQuery,
   useUpdateOrderStatusMutation,
 } from "@/features/infrastructure/api/hooks/use-orders";
@@ -21,6 +24,8 @@ interface DeliverDialogProps {
   onDelivered?: () => void;
 }
 
+type PaymentMode = "collect" | "unpaid";
+
 export function DeliverDialog({
   orderId,
   onClose,
@@ -30,33 +35,56 @@ export function DeliverDialog({
   const t = getDictionary(locale);
   const isRtl = locale === "ur";
   const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
+  const { data: user } = useMeQuery();
+  const { data: assignments } = useAssignmentsQuery();
   const updateStatus = useUpdateOrderStatusMutation();
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("collect");
   const [paymentCollected, setPaymentCollected] = useState("");
+  const [collectedBy, setCollectedBy] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const currentUserName = user?.name?.trim() ?? "";
+
+  const collectorOptions = useMemo(() => {
+    const names = new Set<string>();
+    if (currentUserName) names.add(currentUserName);
+    for (const name of assignments?.assignees ?? []) {
+      if (name?.trim()) names.add(name.trim());
+    }
+    return [...names];
+  }, [assignments?.assignees, currentUserName]);
+
   useEffect(() => {
     if (!order) return;
-    setPaymentCollected(
-      order.balanceDue > 0 ? String(order.balanceDue) : "0",
-    );
+    setPaymentMode("collect");
+    setPaymentCollected(order.balanceDue > 0 ? String(order.balanceDue) : "0");
+    setCollectedBy(currentUserName);
     setPaymentNote("");
     setError(null);
-  }, [order]);
+  }, [order, currentUserName]);
 
   if (!orderId) return null;
+
+  const isUnpaid = paymentMode === "unpaid";
 
   async function handleConfirm() {
     if (!orderId) return;
     setError(null);
+
+    const amount = isUnpaid ? "0" : paymentCollected.trim() || "0";
 
     try {
       await updateStatus.mutateAsync({
         orderId,
         payload: {
           status: "delivered",
-          paymentCollected: paymentCollected.trim() || "0",
+          paymentCollected: amount,
           paymentNote: paymentNote.trim() || undefined,
+          paymentCollectedByName:
+            !isUnpaid && Number(amount) > 0 && collectedBy.trim()
+              ? collectedBy.trim()
+              : undefined,
         },
       });
       onDelivered?.();
@@ -126,19 +154,89 @@ export function DeliverDialog({
               </p>
             </div>
 
-            <div>
-              <Label htmlFor="payment-collected">
-                {t.orderDetail.paymentCollected}
-              </Label>
-              <Input
-                id="payment-collected"
-                type="number"
-                min={0}
-                value={paymentCollected}
-                onChange={(e) => setPaymentCollected(e.target.value)}
-                dir="ltr"
-              />
-            </div>
+            {order.balanceDue > 0 ? (
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="tablist"
+                aria-label={t.orderDetail.paymentCollected}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!isUnpaid}
+                  onClick={() => setPaymentMode("collect")}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-sm font-semibold transition",
+                    !isUnpaid
+                      ? "border-brand-700 bg-brand-50 text-brand-800"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                  )}
+                >
+                  {t.orderDetail.collectPaymentNow}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isUnpaid}
+                  onClick={() => setPaymentMode("unpaid")}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-sm font-semibold transition",
+                    isUnpaid
+                      ? "border-amber-400 bg-amber-50 text-amber-800"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                  )}
+                >
+                  {t.orderDetail.markUnpaid}
+                </button>
+              </div>
+            ) : null}
+
+            {isUnpaid ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {t.orderDetail.unpaidReceivableHint.replace(
+                  "{amount}",
+                  order.balanceDue.toLocaleString(),
+                )}
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="payment-collected">
+                    {t.orderDetail.paymentCollected}
+                  </Label>
+                  <Input
+                    id="payment-collected"
+                    type="number"
+                    min={0}
+                    value={paymentCollected}
+                    onChange={(e) => setPaymentCollected(e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="collected-by">
+                    {t.orderDetail.paymentCollectedBy}
+                  </Label>
+                  <Select
+                    id="collected-by"
+                    value={collectedBy}
+                    onChange={(e) => setCollectedBy(e.target.value)}
+                  >
+                    {collectorOptions.length === 0 ? (
+                      <option value="">{currentUserName}</option>
+                    ) : null}
+                    {collectorOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name === currentUserName
+                          ? t.orderDetail.collectedByYou.replace("{name}", name)
+                          : name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </>
+            )}
 
             <div>
               <Label htmlFor="payment-note">{t.orderDetail.paymentNote}</Label>

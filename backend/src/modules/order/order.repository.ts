@@ -931,6 +931,11 @@ export class OrderRepository {
     if (nextStatus === "DELIVERED" && dto.paymentCollected) {
       const payment = parseDecimal(dto.paymentCollected) ?? 0;
       if (payment > 0) {
+        const recordedByUserId = await this.resolvePaymentRecordedByUserId(
+          tenantId,
+          userId,
+          dto.paymentCollectedByName,
+        );
         advancePaid += payment;
         balanceDue = Math.max(Number(order.totalPrice) - advancePaid, 0);
         await this.prisma.orderPayment.create({
@@ -938,7 +943,7 @@ export class OrderRepository {
             tenantId,
             orderId: order.id,
             amount: payment,
-            recordedByUserId: userId,
+            recordedByUserId,
             note: dto.paymentNote?.trim() || null,
           },
         });
@@ -1423,6 +1428,24 @@ export class OrderRepository {
     const trimmed = value?.trim();
     if (!trimmed) return null;
     return trimmed.slice(0, 120);
+  }
+
+  private async resolvePaymentRecordedByUserId(
+    tenantId: string,
+    actingUserId: string,
+    collectedByName?: string | null,
+  ): Promise<string> {
+    const name = collectedByName?.trim();
+    if (!name) return actingUserId;
+
+    const staff = await this.prisma.user.findFirst({
+      where: { tenantId, isActive: true, name },
+      select: { id: true },
+    });
+    if (!staff) {
+      throw new BadRequestException("That team member is no longer on the team");
+    }
+    return staff.id;
   }
 
   private async assertAssignableStaffNames(

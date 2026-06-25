@@ -20,6 +20,11 @@ export class UpdateOrderStatusDto {
   @IsString()
   paymentNote?: string;
 
+  /** Staff member who collected the payment (defaults to the acting user) */
+  @IsOptional()
+  @IsString()
+  paymentCollectedByName?: string;
+
   @IsOptional()
   @IsString()
   cuttingMasterName?: string;

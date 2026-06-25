@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Phone, Zap } from "lucide-react";
+import { CalendarDays, Phone, Truck, Wallet, Zap } from "lucide-react";
 import type { OrderFullDetail, OrderWorkflowStatus } from "@shared";
 import type { Dictionary } from "@/i18n";
 import { routes } from "@/core/config/routes";
@@ -54,12 +54,14 @@ function formatDetailDate(iso: string, locale: string): string {
 }
 
 function MetaCell({
+  icon: Icon,
   label,
   value,
   sub,
   tone = "default",
   isRtl,
 }: {
+  icon: typeof CalendarDays;
   label: string;
   value: ReactNode;
   sub?: ReactNode;
@@ -73,6 +75,13 @@ function MetaCell({
     muted: "border-slate-200 bg-slate-100/80",
   }[tone];
 
+  const iconToneClass = {
+    default: "text-muted-slate",
+    urgent: "text-rose-500",
+    success: "text-emerald-600",
+    muted: "text-slate-500",
+  }[tone];
+
   return (
     <div
       className={cn(
@@ -81,10 +90,18 @@ function MetaCell({
         isRtl && "text-right",
       )}
     >
-      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-slate">
-        {label}
-      </p>
-      <div className="mt-1 font-display text-sm font-bold leading-snug text-foreground">
+      <div
+        className={cn(
+          "flex items-center gap-1.5",
+          isRtl && "flex-row-reverse",
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", iconToneClass)} aria-hidden />
+        <p className="truncate text-[10px] font-bold uppercase tracking-wide text-muted-slate">
+          {label}
+        </p>
+      </div>
+      <div className="mt-1.5 font-display text-sm font-bold leading-snug text-foreground">
         {value}
       </div>
       {sub ? (
@@ -171,47 +188,39 @@ export function OrderDetailHeader({
             ) : null}
           </div>
 
-          <div className="min-w-0 flex-1 space-y-2">
+          <div className="min-w-0 flex-1 space-y-1.5">
             <div
               className={cn(
-                "flex flex-wrap items-start justify-between gap-2",
+                "flex flex-wrap items-center gap-x-2 gap-y-1",
                 isRtl && "flex-row-reverse",
               )}
             >
-              <div className="min-w-0 space-y-1">
-                <div
+              <Link
+                href={routes.customerDetail(order.customerId)}
+                className="font-display text-xl font-bold leading-tight text-foreground transition hover:text-brand-700 sm:text-[22px]"
+              >
+                <PersonNameText name={order.customerName} />
+              </Link>
+              {order.isRush && !isCancelled ? (
+                <span
                   className={cn(
-                    "flex flex-wrap items-center gap-2",
+                    "inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600",
                     isRtl && "flex-row-reverse",
                   )}
                 >
-                  <Link
-                    href={routes.customerDetail(order.customerId)}
-                    className="font-display text-xl font-bold leading-tight text-foreground transition hover:text-brand-700 sm:text-[22px]"
-                  >
-                    <PersonNameText name={order.customerName} />
-                  </Link>
-                  {order.isRush && !isCancelled ? (
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600",
-                        isRtl && "flex-row-reverse",
-                      )}
-                    >
-                      <Zap className="h-3 w-3" />
-                      {t.orderDetail.rush}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-[13px] font-medium text-muted-slate">
-                  {order.garmentLabel}
-                </p>
-              </div>
+                  <Zap className="h-3 w-3" />
+                  {t.orderDetail.rush}
+                </span>
+              ) : null}
             </div>
+
+            <p className="text-[13px] font-medium text-muted-slate">
+              {order.garmentLabel}
+            </p>
 
             <div
               className={cn(
-                "flex flex-wrap items-center gap-2",
+                "flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-0.5",
                 isRtl && "flex-row-reverse",
               )}
             >
@@ -223,18 +232,17 @@ export function OrderDetailHeader({
                   {t.orderDetail.suitNumber}: {dressCode}
                 </span>
               ) : null}
+              <a
+                href={phoneTelHref(order.customerPhone)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-700 hover:underline",
+                  isRtl && "flex-row-reverse",
+                )}
+              >
+                <Phone className="h-3.5 w-3.5 shrink-0" />
+                <span dir="ltr">{order.customerPhone}</span>
+              </a>
             </div>
-
-            <a
-              href={phoneTelHref(order.customerPhone)}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-700 hover:underline",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              <Phone className="h-3.5 w-3.5 shrink-0" />
-              <span dir="ltr">{order.customerPhone}</span>
-            </a>
           </div>
         </div>
 
@@ -270,6 +278,7 @@ export function OrderDetailHeader({
             )}
           >
             <MetaCell
+              icon={CalendarDays}
               label={t.form.bookingDate}
               value={order.bookingDate || "—"}
               sub={
@@ -286,6 +295,7 @@ export function OrderDetailHeader({
               isRtl={isRtl}
             />
             <MetaCell
+              icon={Truck}
               label={t.form.deliveryDate}
               value={order.dueDate || "—"}
               sub={dueSub}
@@ -294,6 +304,7 @@ export function OrderDetailHeader({
             />
             {isAdmin ? (
               <MetaCell
+                icon={Wallet}
                 label={t.orderDetail.remainingBalance}
                 value={
                   order.balanceDue > 0 ? formatRs(order.balanceDue) : formatRs(0)
@@ -307,10 +318,13 @@ export function OrderDetailHeader({
 
         <div
           className={cn(
-            "border-t border-hairline pt-4",
-            isRtl && "text-right",
+            "flex flex-col gap-2 border-t border-hairline pt-4 sm:flex-row sm:items-center sm:justify-between",
+            isRtl && "text-right sm:flex-row-reverse",
           )}
         >
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-slate">
+            {t.orderDetail.statusLabel}
+          </p>
           <OrderStatusSelect
             orderId={order.id}
             workflowStatus={order.workflowStatus}
@@ -319,7 +333,7 @@ export function OrderDetailHeader({
             disabled={statusUpdating || !canChangeStatus}
             onChange={onStatusChange}
             context="detail"
-            className="w-full shrink-0 sm:ml-auto sm:w-auto sm:min-w-[11rem]"
+            className="w-full shrink-0 sm:w-auto sm:min-w-[11rem]"
           />
         </div>
       </div>

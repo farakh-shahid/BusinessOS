@@ -36,7 +36,10 @@ import {
   buildAssigneeWorkloadMap,
 } from "@/features/infrastructure/data/assignee-workload";
 import { ProductionTeamPanel } from "@/features/ui/orders/production-team-panel";
-import { ProductionMasterPromptDialog } from "@/features/ui/orders/production-master-prompt-dialog";
+import {
+  ProductionMasterPromptDialog,
+  type MasterAssignmentResult,
+} from "@/features/ui/orders/production-master-prompt-dialog";
 import { EditOrderDialog } from "./edit-order-dialog";
 import { DeliverDialog } from "./deliver-dialog";
 import { OrderDetailHeader } from "./order-detail-header";
@@ -205,7 +208,8 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const [measurementOpen, setMeasurementOpen] = useState(false);
   const [masterPrompt, setMasterPrompt] = useState<{
     orderId: string;
-    status: "cutting" | "stitching";
+    status: OrderWorkflowStatus;
+    mode: "cutting" | "stitching" | "finalize";
   } | null>(null);
   const [reopenConfirm, setReopenConfirm] = useState<OrderWorkflowStatus | null>(
     null,
@@ -318,6 +322,49 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       return;
     }
 
+    if (
+      canManageOrder &&
+      (status === "ready" || status === "delivered") &&
+      (!order.cuttingMasterName?.trim() || !order.stitchingMasterName?.trim())
+    ) {
+      setMasterPrompt({ orderId: targetOrderId, status, mode: "finalize" });
+      return;
+    }
+
+    await proceedStatusChange(targetOrderId, status);
+  }
+
+  async function handleFinalizeMasters(
+    targetOrderId: string,
+    status: OrderWorkflowStatus,
+    result: MasterAssignmentResult,
+  ) {
+    const payload: MasterAssignmentResult = {};
+    if (result.cuttingMasterName?.trim()) {
+      payload.cuttingMasterName = result.cuttingMasterName.trim();
+    }
+    if (result.stitchingMasterName?.trim()) {
+      payload.stitchingMasterName = result.stitchingMasterName.trim();
+    }
+
+    if (Object.keys(payload).length > 0) {
+      try {
+        await updateOrder.mutateAsync({ orderId: targetOrderId, payload });
+      } catch (err) {
+        showError(resolveApiErrorMessage(err, t));
+        return;
+      }
+    }
+
+    await proceedStatusChange(targetOrderId, status);
+  }
+
+  async function proceedStatusChange(
+    targetOrderId: string,
+    status: OrderWorkflowStatus,
+  ) {
+    if (!order) return;
+
     if (status === "delivered" && canDeliver) {
       setDeliverOrderId(targetOrderId);
       return;
@@ -328,7 +375,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       status === "cutting" &&
       !order.cuttingMasterName?.trim()
     ) {
-      setMasterPrompt({ orderId: targetOrderId, status: "cutting" });
+      setMasterPrompt({ orderId: targetOrderId, status, mode: "cutting" });
       return;
     }
 
@@ -337,7 +384,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       status === "stitching" &&
       !order.stitchingMasterName?.trim()
     ) {
-      setMasterPrompt({ orderId: targetOrderId, status: "stitching" });
+      setMasterPrompt({ orderId: targetOrderId, status, mode: "stitching" });
       return;
     }
 
@@ -844,29 +891,32 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       />
       <ProductionMasterPromptDialog
         open={masterPrompt !== null}
-        stage={masterPrompt?.status ?? "cutting"}
+        stage={masterPrompt?.mode ?? "cutting"}
         assignees={assignments?.assignees ?? []}
         assigneeWorkload={assigneeWorkload}
         defaultCuttingMaster={order.cuttingMasterName}
+        defaultStitchingMaster={order.stitchingMasterName}
         disabled={statusUpdating}
         onClose={() => setMasterPrompt(null)}
         onSkip={() => {
           if (!masterPrompt) return;
-          const { orderId: targetId, status } = masterPrompt;
+          const { orderId: targetId, status, mode } = masterPrompt;
           setMasterPrompt(null);
-          void commitStatusChange(targetId, status);
+          if (mode === "finalize") {
+            void proceedStatusChange(targetId, status);
+          } else {
+            void commitStatusChange(targetId, status);
+          }
         }}
-        onConfirm={(masterName) => {
+        onConfirm={(result) => {
           if (!masterPrompt) return;
-          const { orderId: targetId, status } = masterPrompt;
+          const { orderId: targetId, status, mode } = masterPrompt;
           setMasterPrompt(null);
-          void commitStatusChange(
-            targetId,
-            status,
-            status === "cutting"
-              ? { cuttingMasterName: masterName }
-              : { stitchingMasterName: masterName },
-          );
+          if (mode === "finalize") {
+            void handleFinalizeMasters(targetId, status, result);
+          } else {
+            void commitStatusChange(targetId, status, result);
+          }
         }}
         t={t}
         isRtl={isRtl}

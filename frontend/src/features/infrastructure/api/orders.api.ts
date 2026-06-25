@@ -63,6 +63,7 @@ export interface UpdateOrderStatusPayload {
   status: string;
   paymentCollected?: string;
   paymentNote?: string;
+  paymentCollectedByName?: string;
   cuttingMasterName?: string;
   stitchingMasterName?: string;
 }

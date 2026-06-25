@@ -7,15 +7,22 @@ import { Button } from "@/core/presentation/components/ui/button";
 import { cn } from "@/core/presentation/lib/utils";
 import { AssignWorkerSelect } from "@/features/ui/orders/assign-worker-select";
 
+export interface MasterAssignmentResult {
+  cuttingMasterName?: string;
+  stitchingMasterName?: string;
+}
+
 interface ProductionMasterPromptDialogProps {
   open: boolean;
-  stage: "cutting" | "stitching";
+  /** "cutting"/"stitching" prompt a single master; "finalize" prompts both missing masters. */
+  stage: "cutting" | "stitching" | "finalize";
   assignees: string[];
   assigneeWorkload?: Record<string, number>;
   defaultCuttingMaster?: string;
+  defaultStitchingMaster?: string;
   disabled?: boolean;
   onClose: () => void;
-  onConfirm: (masterName: string) => void;
+  onConfirm: (result: MasterAssignmentResult) => void;
   onSkip: () => void;
   t: Dictionary;
   isRtl?: boolean;
@@ -27,6 +34,7 @@ export function ProductionMasterPromptDialog({
   assignees,
   assigneeWorkload,
   defaultCuttingMaster,
+  defaultStitchingMaster,
   disabled,
   onClose,
   onConfirm,
@@ -34,27 +42,56 @@ export function ProductionMasterPromptDialog({
   t,
   isRtl,
 }: ProductionMasterPromptDialogProps) {
+  const isFinalize = stage === "finalize";
   const [masterName, setMasterName] = useState("");
+  const [cuttingName, setCuttingName] = useState("");
+  const [stitchingName, setStitchingName] = useState("");
 
   useEffect(() => {
     if (!open) return;
+    setCuttingName(defaultCuttingMaster?.trim() ?? "");
+    setStitchingName(
+      defaultStitchingMaster?.trim() ||
+        (defaultCuttingMaster?.trim() ?? ""),
+    );
     setMasterName(
       stage === "stitching" && defaultCuttingMaster?.trim()
         ? defaultCuttingMaster.trim()
         : "",
     );
-  }, [defaultCuttingMaster, open, stage]);
+  }, [defaultCuttingMaster, defaultStitchingMaster, open, stage]);
 
   if (!open) return null;
 
-  const title =
-    stage === "cutting"
+  const title = isFinalize
+    ? t.orderDetail.assignMastersTitle
+    : stage === "cutting"
       ? t.orderDetail.assignCuttingMaster
       : t.orderDetail.assignStitchingMaster;
-  const hint =
-    stage === "cutting"
+  const hint = isFinalize
+    ? t.orderDetail.assignMastersHint
+    : stage === "cutting"
       ? t.orderDetail.assignCuttingMasterHint
       : t.orderDetail.assignStitchingMasterHint;
+
+  const canConfirm = isFinalize
+    ? Boolean(cuttingName.trim() || stitchingName.trim())
+    : Boolean(masterName.trim());
+
+  function handleConfirm() {
+    if (isFinalize) {
+      onConfirm({
+        cuttingMasterName: cuttingName.trim() || undefined,
+        stitchingMasterName: stitchingName.trim() || undefined,
+      });
+      return;
+    }
+    onConfirm(
+      stage === "cutting"
+        ? { cuttingMasterName: masterName.trim() }
+        : { stitchingMasterName: masterName.trim() },
+    );
+  }
 
   return (
     <div
@@ -93,15 +130,58 @@ export function ProductionMasterPromptDialog({
           </button>
         </div>
 
-        <AssignWorkerSelect
-          value={masterName}
-          assignees={assignees}
-          assigneeWorkload={assigneeWorkload}
-          disabled={disabled}
-          onChange={setMasterName}
-          t={t}
-          isRtl={isRtl}
-        />
+        {isFinalize ? (
+          <div className="space-y-4">
+            <div>
+              <p
+                className={cn(
+                  "mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-slate",
+                  isRtl && "text-right",
+                )}
+              >
+                {t.orderDetail.cuttingMaster}
+              </p>
+              <AssignWorkerSelect
+                value={cuttingName}
+                assignees={assignees}
+                assigneeWorkload={assigneeWorkload}
+                disabled={disabled}
+                onChange={setCuttingName}
+                t={t}
+                isRtl={isRtl}
+              />
+            </div>
+            <div>
+              <p
+                className={cn(
+                  "mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-slate",
+                  isRtl && "text-right",
+                )}
+              >
+                {t.orderDetail.stitchingMaster}
+              </p>
+              <AssignWorkerSelect
+                value={stitchingName}
+                assignees={assignees}
+                assigneeWorkload={assigneeWorkload}
+                disabled={disabled}
+                onChange={setStitchingName}
+                t={t}
+                isRtl={isRtl}
+              />
+            </div>
+          </div>
+        ) : (
+          <AssignWorkerSelect
+            value={masterName}
+            assignees={assignees}
+            assigneeWorkload={assigneeWorkload}
+            disabled={disabled}
+            onChange={setMasterName}
+            t={t}
+            isRtl={isRtl}
+          />
+        )}
 
         <div
           className={cn(
@@ -119,8 +199,8 @@ export function ProductionMasterPromptDialog({
           </Button>
           <Button
             type="button"
-            disabled={disabled || !masterName.trim()}
-            onClick={() => onConfirm(masterName.trim())}
+            disabled={disabled || !canConfirm}
+            onClick={handleConfirm}
           >
             {t.orderDetail.confirmMasterAssign}
           </Button>
