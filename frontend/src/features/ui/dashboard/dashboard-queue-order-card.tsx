@@ -140,7 +140,7 @@ export function DashboardQueueOrderCard({
 
       <div
         className={cn(
-          "pointer-events-none absolute top-[15px] z-[2] max-w-[46%]",
+          "pointer-events-none absolute top-[15px] z-[2] hidden max-w-[46%] md:block",
           isRtl ? "left-[17px]" : "right-[17px]",
         )}
       >
@@ -151,7 +151,7 @@ export function DashboardQueueOrderCard({
         <div
           className={cn(
             "flex min-w-0 items-start gap-3",
-            isRtl ? "flex-row-reverse pl-[5.5rem]" : "flex-row pr-[5.5rem]",
+            isRtl ? "flex-row-reverse md:pl-[5.5rem]" : "flex-row md:pr-[5.5rem]",
           )}
         >
           <UserAvatar
@@ -160,14 +160,14 @@ export function DashboardQueueOrderCard({
             className="h-[42px] w-[42px] shrink-0"
           />
 
-          <div className="min-w-0 flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1.5">
             <div
               className={cn(
                 "flex flex-wrap items-center gap-1.5",
                 isRtl && "flex-row-reverse",
               )}
             >
-              <p className="min-w-0 font-display text-sm font-bold text-foreground">
+              <p className="min-w-0 max-w-full font-display text-sm font-bold leading-snug text-foreground">
                 <PersonNameText name={order.customerName} />
               </p>
               {vipBadge}
@@ -177,11 +177,12 @@ export function DashboardQueueOrderCard({
 
             <div
               className={cn(
-                "md:hidden",
-                isRtl ? "flex justify-end" : "flex justify-start",
+                "flex flex-wrap items-center gap-1.5 md:hidden",
+                isRtl && "flex-row-reverse",
               )}
             >
               {statusChip}
+              {dueDisplay}
             </div>
 
             <p

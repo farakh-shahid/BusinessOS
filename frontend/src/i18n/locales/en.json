@@ -830,6 +830,7 @@
     "delivered": "Delivered",
     "overdue": "Overdue",
     "due_today": "Due today",
+    "due_tomorrow": "Due tomorrow",
     "in_progress": "In progress",
     "priority": "Priority",
     "payment_due": "Payment due",

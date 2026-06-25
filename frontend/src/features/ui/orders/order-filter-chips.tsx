@@ -63,6 +63,14 @@ const filterChipStyles: Record<OrderListFilter, FilterChipStyle> = {
     iconBox: "bg-status-urgent-bg text-status-urgent",
     iconBoxActive: "bg-white/20 text-white",
   },
+  due_tomorrow: {
+    icon: CalendarClock,
+    idle: "border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100",
+    active:
+      "border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-600/25",
+    iconBox: "bg-violet-100 text-violet-700",
+    iconBoxActive: "bg-white/20 text-white",
+  },
   due_this_week: {
     icon: CalendarClock,
     idle: "border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100",

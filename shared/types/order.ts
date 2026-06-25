@@ -77,6 +77,7 @@ export interface DashboardStats {
   totalOrders: number;
   inProgress: number;
   dueToday: number;
+  dueTomorrow: number;
   ready: number;
   rush: number;
   overdue: number;
@@ -195,6 +196,7 @@ export type OrderListQuickFilterKey =
   | "booked_last_week"
   | "overdue"
   | "due_today"
+  | "due_tomorrow"
   | "ready"
   | "delivered";
 

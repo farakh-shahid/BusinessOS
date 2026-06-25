@@ -119,6 +119,13 @@ export function buildOrderListWhere(
       where.status = { in: ["PENDING", "CUTTING", "STITCHING", "READY"] };
       where.deliveryDate = today;
       break;
+    case "due_tomorrow": {
+      const tomorrow = new Date(today);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      where.status = { in: ["PENDING", "CUTTING", "STITCHING", "READY"] };
+      where.deliveryDate = tomorrow;
+      break;
+    }
     case "in_progress":
       where.status = { in: ["PENDING", "CUTTING", "STITCHING"] };
       break;
@@ -177,6 +184,7 @@ export const ORDER_QUICK_FILTER_KEYS = [
   "booked_last_week",
   "overdue",
   "due_today",
+  "due_tomorrow",
   "ready",
   "delivered",
 ] as const;

@@ -31,6 +31,7 @@ const STATUS_FILTERS: OrderListFilter[] = [
 const URGENCY_FILTERS: OrderListFilter[] = [
   "overdue",
   "due_today",
+  "due_tomorrow",
   "due_this_week",
   "priority",
   "payment_due",

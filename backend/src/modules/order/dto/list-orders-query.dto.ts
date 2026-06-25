@@ -14,6 +14,7 @@ export class ListOrdersQueryDto {
     "ready_not_delivered",
     "overdue",
     "due_today",
+    "due_tomorrow",
     "in_progress",
     "priority",
     "due_this_week",

@@ -831,6 +831,7 @@
     "delivered": "ڈیلیور",
     "overdue": "تاخیر",
     "due_today": "آج واجب",
+    "due_tomorrow": "کل واجب",
     "in_progress": "جاری",
     "priority": "ترجیح",
     "payment_due": "ادائیگی باقی",

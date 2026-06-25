@@ -82,6 +82,8 @@ export class OrderRepository {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -130,6 +132,7 @@ export class OrderRepository {
       totalOrders,
       inProgress,
       dueToday,
+      dueTomorrow,
       ready,
       rush,
       overdue,
@@ -161,6 +164,12 @@ export class OrderRepository {
         where: {
           ...activeWhere,
           deliveryDate: { gte: today, lt: tomorrow },
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          ...activeWhere,
+          deliveryDate: { gte: tomorrow, lt: dayAfterTomorrow },
         },
       }),
       this.prisma.order.count({ where: { tenantId, status: OrderStatus.READY } }),
@@ -387,6 +396,7 @@ export class OrderRepository {
         totalOrders,
         inProgress,
         dueToday,
+        dueTomorrow,
         ready,
         rush,
         overdue,

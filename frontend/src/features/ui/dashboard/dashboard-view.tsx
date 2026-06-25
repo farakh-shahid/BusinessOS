@@ -24,6 +24,7 @@ import { DashboardTailorWorkloadPanel } from "@/features/ui/dashboard/dashboard-
 import { DashboardWorkloadPanel } from "@/features/ui/dashboard/dashboard-workload-panel";
 import { NeedsAttentionPanel } from "@/features/ui/dashboard/needs-attention-panel";
 import { DashboardQueueList } from "@/features/ui/dashboard/dashboard-queue-list";
+import { DashboardMobileMetrics } from "@/features/ui/dashboard/dashboard-mobile-metrics";
 import { DashboardSkeleton } from "@/features/ui/skeletons";
 
 export function DashboardView() {
@@ -143,7 +144,15 @@ export function DashboardView() {
         {t.dashboard.todayQueue}
       </DashboardSectionLabel>
 
-      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+      <DashboardMobileMetrics
+        bookedToday={data.workload.bookedToday}
+        dueToday={stats.dueToday}
+        dueTomorrow={stats.dueTomorrow}
+        t={t}
+        isRtl={isRtl}
+      />
+
+      <div className="grid gap-3.5 md:mt-0 mt-3 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
         <div className="min-w-0">
           {queueOrders.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">

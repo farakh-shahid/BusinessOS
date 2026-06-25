@@ -41,6 +41,16 @@ export function filterDashboardForAssignee(
       inProgress: orders.filter((o) => inProgressStatuses.has(o.workflowStatus))
         .length,
       dueToday: orders.filter((o) => o.status === "due_today").length,
+      dueTomorrow: orders.filter((o) => {
+        const parsed = new Date(o.dueDate);
+        if (Number.isNaN(parsed.getTime())) return false;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const due = new Date(parsed);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === tomorrow.getTime();
+      }).length,
       ready: orders.filter((o) => o.workflowStatus === "ready").length,
       rush: orders.filter((o) => o.isRush).length,
       overdue: orders.filter((o) => o.status === "overdue").length,

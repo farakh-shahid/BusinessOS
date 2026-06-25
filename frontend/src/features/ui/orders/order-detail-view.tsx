@@ -39,8 +39,7 @@ import { ProductionTeamPanel } from "@/features/ui/orders/production-team-panel"
 import { ProductionMasterPromptDialog } from "@/features/ui/orders/production-master-prompt-dialog";
 import { EditOrderDialog } from "./edit-order-dialog";
 import { DeliverDialog } from "./deliver-dialog";
-import { OrderDueChip } from "./order-due-chip";
-import { OrderStatusSelect } from "./order-status-select";
+import { OrderDetailHeader } from "./order-detail-header";
 import { ReopenOrderStatusDialog } from "./reopen-order-status-dialog";
 import { needsDeliveredReopenConfirm } from "@/features/infrastructure/data/order-workflow";
 import { OrderReceiptDialog } from "./order-receipt-dialog";
@@ -362,165 +361,21 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
       />
 
       <div className="flex flex-col gap-3.5 pb-24 md:pb-0">
-        <OrderDetailPanel
-          className={
-            cardSurfaceClass !== "border-hairline" ? cardSurfaceClass : undefined
-          }
-        >
-          <div
-            className={cn(
-              "flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between",
-              isRtl && "md:flex-row-reverse",
-            )}
-          >
-          <div
-            className={cn("flex min-w-0 gap-3.5", isRtl && "flex-row-reverse")}
-          >
-            <div className="relative shrink-0">
-              <InitialsAvatar name={order.customerName} />
-              {dressThumb ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={dressThumb}
-                  alt={order.dressCode ?? t.form.dressImage}
-                  title={order.dressCode ?? t.form.dressImage}
-                  className="absolute -bottom-1 -right-1 h-9 w-9 rounded-lg object-cover ring-2 ring-white shadow-sm"
-                />
-              ) : null}
-            </div>
-            <div className={cn("min-w-0", isRtl && "text-right")}>
-              <div
-                className={cn(
-                  "flex flex-wrap items-center gap-2.5",
-                  isRtl && "flex-row-reverse",
-                )}
-              >
-                <h1 className="font-display text-xl font-bold leading-tight text-foreground sm:text-[22px]">
-                  #{order.orderNumber}
-                </h1>
-                {order.dressCode?.trim() ? (
-                  <p className="text-[13px] font-semibold text-brand-700">
-                    {t.orderDetail.suitNumber}: {order.dressCode.trim()}
-                  </p>
-                ) : (
-                  <p className="text-[12px] text-muted-slate">
-                    {t.orderDetail.suitNumber}: {order.orderNumber}
-                  </p>
-                )}
-                {order.isRush && !isCancelled ? (
-                  <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600">
-                    ⚡ {t.orderDetail.rush}
-                  </span>
-                ) : null}
-              </div>
-              {(order.bookedByName?.trim() || order.bookingDate) ? (
-                <p
-                  className={cn(
-                    "mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted-slate",
-                    isRtl && "flex-row-reverse justify-end",
-                  )}
-                >
-                  {order.bookedByName?.trim() ? (
-                    <span>
-                      <span className="font-medium text-slate-500">
-                        {t.orderDetail.bookedBy}:
-                      </span>{" "}
-                      <PersonNameText
-                        name={order.bookedByName}
-                        className="font-semibold text-foreground"
-                      />
-                    </span>
-                  ) : null}
-                  {order.bookingDate ? (
-                    <>
-                      {order.bookedByName?.trim() ? (
-                        <span aria-hidden className="text-slate-300">
-                          ·
-                        </span>
-                      ) : null}
-                      <span>
-                        <span className="font-medium text-slate-500">
-                          {t.form.bookingDate}:
-                        </span>{" "}
-                        <span className="font-semibold text-foreground">
-                          {order.bookingDate}
-                        </span>
-                      </span>
-                    </>
-                  ) : null}
-                </p>
-              ) : null}
-              <p className="mt-1 text-[13px] text-muted-slate">
-                {order.garmentLabel} ·{" "}
-                <PersonNameText name={order.customerName} />
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={cn(
-              "flex w-full flex-wrap items-center justify-between gap-2 md:w-auto md:min-w-[min(100%,20rem)] md:shrink-0",
-              isRtl && "flex-row-reverse",
-            )}
-          >
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-2",
-                isRtl && "flex-row-reverse",
-              )}
-            >
-              {isCancelled ? (
-                <>
-                  <span className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                    <span className="truncate">
-                      {cancelledAt
-                        ? t.orderDetail.cancelledOn.replace(
-                            "{date}",
-                            formatDetailDate(cancelledAt, locale),
-                          )
-                        : t.orderStatus.cancelled}
-                    </span>
-                  </span>
-                  {isAdmin && order.balanceDue > 0 ? (
-                    <span className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                      <span className="truncate">
-                        {t.orderDetail.cancelledBalancePending.replace(
-                          "{amount}",
-                          order.balanceDue.toLocaleString(),
-                        )}
-                      </span>
-                    </span>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <OrderDueChip order={order} t={t} isRtl={isRtl} />
-                  {isAdmin && order.balanceDue > 0 ? (
-                    <span className="inline-flex max-w-full items-center rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600">
-                      <span className="truncate">
-                        {t.orderDetail.balanceDueChip.replace(
-                          "{amount}",
-                          order.balanceDue.toLocaleString(),
-                        )}
-                      </span>
-                    </span>
-                  ) : null}
-                </>
-              )}
-            </div>
-            <OrderStatusSelect
-              orderId={order.id}
-              workflowStatus={order.workflowStatus}
-              displayStatus={order.status}
-              userRole={user?.role}
-              disabled={statusUpdating || !canChangeStatus}
-              onChange={handleStatusChange}
-              context="detail"
-              className="shrink-0"
-            />
-          </div>
-          </div>
-        </OrderDetailPanel>
+        <OrderDetailHeader
+          order={order}
+          t={t}
+          isRtl={isRtl}
+          locale={locale}
+          dressThumb={dressThumb}
+          cardSurfaceClass={cardSurfaceClass}
+          isCancelled={isCancelled}
+          cancelledAt={cancelledAt}
+          isAdmin={isAdmin}
+          canChangeStatus={canChangeStatus}
+          statusUpdating={statusUpdating}
+          userRole={user?.role}
+          onStatusChange={handleStatusChange}
+        />
 
         <OrderDetailPanel title={t.orderDetail.productionProgress} isRtl={isRtl}>
           <ProductionTeamPanel

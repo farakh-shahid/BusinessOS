@@ -149,11 +149,19 @@ export function OrdersView() {
     patchParams({
       filter: next,
       dueFrom:
-        next === "due_this_week" || next === "booked_today" || next === "booked_last_week"
+        next === "due_this_week" ||
+        next === "booked_today" ||
+        next === "booked_last_week" ||
+        next === "due_today" ||
+        next === "due_tomorrow"
           ? ""
           : params.dueFrom,
       dueTo:
-        next === "due_this_week" || next === "booked_today" || next === "booked_last_week"
+        next === "due_this_week" ||
+        next === "booked_today" ||
+        next === "booked_last_week" ||
+        next === "due_today" ||
+        next === "due_tomorrow"
           ? ""
           : params.dueTo,
     });
@@ -166,7 +174,9 @@ export function OrdersView() {
       filter:
         params.filter === "due_this_week" ||
         params.filter === "booked_today" ||
-        params.filter === "booked_last_week"
+        params.filter === "booked_last_week" ||
+        params.filter === "due_today" ||
+        params.filter === "due_tomorrow"
           ? ""
           : params.filter,
     });

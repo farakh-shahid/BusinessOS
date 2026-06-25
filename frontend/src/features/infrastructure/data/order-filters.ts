@@ -8,6 +8,7 @@ export type OrderListFilter =
   | "delivered"
   | "overdue"
   | "due_today"
+  | "due_tomorrow"
   | "in_progress"
   | "priority"
   | "payment_due"
@@ -26,6 +27,7 @@ const validFilters: OrderListFilter[] = [
   "delivered",
   "overdue",
   "due_today",
+  "due_tomorrow",
   "due_this_week",
   "booked_today",
   "booked_last_week",
@@ -47,6 +49,7 @@ export const orderFilterOptions: OrderListFilter[] = [
   "ready_not_delivered",
   "overdue",
   "due_today",
+  "due_tomorrow",
   "due_this_week",
   "priority",
   "payment_due",
