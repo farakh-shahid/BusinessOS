@@ -181,12 +181,21 @@ export function StaffTeamPanel({
           editNewPassword.trim() ? t.staff.passwordUpdated : t.staff.profileSaved,
         );
       } else {
+        if (
+          (editPhone.trim() && !isValidPakistanPhone(editPhone.trim())) ||
+          (editPhone2.trim() && !isValidPakistanPhone(editPhone2.trim())) ||
+          editPhonesMatchError
+        ) {
+          return;
+        }
         await updateStaff.mutateAsync({
           staffId: member.id,
           payload: {
             name: editName.trim(),
             role: editRole,
             specialty: editSpecialty.trim() || undefined,
+            phone: editPhone.trim(),
+            phone2: editPhone2.trim(),
           },
         });
         if (editPassword.trim()) {
@@ -523,20 +532,44 @@ export function StaffTeamPanel({
                         </div>
                       ) : null}
                       {!isSelf ? (
-                        <div>
-                          <Label htmlFor={`edit-password-${member.id}`}>
-                            {t.staff.newPasswordOptional}
-                          </Label>
-                          <PasswordInput
-                            id={`edit-password-${member.id}`}
-                            value={editPassword}
-                            onChange={(e) => setEditPassword(e.target.value)}
-                            dir="ltr"
-                            autoComplete="new-password"
-                            isRtl={isRtl}
-                            className="mt-1.5"
+                        <>
+                          <PakistanPhoneField
+                            id={`edit-phone-${member.id}`}
+                            label={t.form.phone}
+                            value={editPhone}
+                            onChange={setEditPhone}
+                            placeholder={t.form.phonePlaceholder}
+                            hint={t.staff.phoneLoginHint}
+                            invalidMessage={t.validation.phoneInvalid}
+                            forceShowError={editFormSubmitted}
                           />
-                        </div>
+                          <PakistanPhoneField
+                            id={`edit-phone2-${member.id}`}
+                            label={t.staff.phone2}
+                            value={editPhone2}
+                            onChange={setEditPhone2}
+                            placeholder={t.staff.phone2Optional}
+                            invalidMessage={t.validation.phoneInvalid}
+                            externalError={
+                              editFormSubmitted ? editPhonesMatchError : undefined
+                            }
+                            forceShowError={editFormSubmitted}
+                          />
+                          <div>
+                            <Label htmlFor={`edit-password-${member.id}`}>
+                              {t.staff.newPasswordOptional}
+                            </Label>
+                            <PasswordInput
+                              id={`edit-password-${member.id}`}
+                              value={editPassword}
+                              onChange={(e) => setEditPassword(e.target.value)}
+                              dir="ltr"
+                              autoComplete="new-password"
+                              isRtl={isRtl}
+                              className="mt-1.5"
+                            />
+                          </div>
+                        </>
                       ) : (
                         <>
                           <PakistanPhoneField

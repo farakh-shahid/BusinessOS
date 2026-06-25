@@ -15,6 +15,8 @@ export interface UpdateStaffPayload {
   name: string;
   role: "STAFF" | "TAILOR";
   specialty?: string;
+  phone?: string;
+  phone2?: string;
 }
 
 export function fetchStaff() {

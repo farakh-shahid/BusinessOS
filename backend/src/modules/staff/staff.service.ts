@@ -134,12 +134,36 @@ export class StaffService {
       await this.tenantPlans.assertCanChangeRole(tenantId, user.role, dto.role);
     }
 
+    const phoneProvided = dto.phone !== undefined;
+    const phone2Provided = dto.phone2 !== undefined;
+    const phone = dto.phone?.trim()
+      ? normalizeUserPhone(dto.phone.trim())
+      : null;
+    const phone2 = dto.phone2?.trim()
+      ? normalizeUserPhone(dto.phone2.trim())
+      : null;
+
+    if (phone && phone2 && phone === phone2) {
+      throw new BadRequestException(
+        "Second mobile number must be different from the first",
+      );
+    }
+
+    if (phone) {
+      await this.assertPhoneAvailable(phone, userId);
+    }
+    if (phone2) {
+      await this.assertPhoneAvailable(phone2, userId);
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         name: dto.name.trim(),
         specialty: dto.specialty?.trim() || null,
         ...(isAdminUser ? {} : { role: dto.role }),
+        ...(phoneProvided ? { phone } : {}),
+        ...(phone2Provided ? { phone2 } : {}),
       },
     });
     return {

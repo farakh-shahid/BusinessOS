@@ -40,16 +40,33 @@ interface CustomerSectionProps {
   isRtl: boolean;
   fieldErrors?: NewOrderFieldErrors;
   variant?: "default" | "worksheet";
+  /** When true, order is for a pre-selected customer — hide new-customer tab and picker. */
+  lockToExistingCustomer?: boolean;
 }
 
 export const CustomerSection = forwardRef<
   CustomerSectionHandle,
   CustomerSectionProps
 >(function CustomerSection(
-  { t, draft, selectedCustomer = null, onChange, isRtl, fieldErrors = {}, variant = "default" },
+  {
+    t,
+    draft,
+    selectedCustomer = null,
+    onChange,
+    isRtl,
+    fieldErrors = {},
+    variant = "default",
+    lockToExistingCustomer = false,
+  },
   ref,
 ) {
   const isWorksheet = variant === "worksheet";
+
+  useEffect(() => {
+    if (lockToExistingCustomer && draft.customerMode !== "existing") {
+      onChange({ customerMode: "existing" });
+    }
+  }, [lockToExistingCustomer, draft.customerMode, onChange]);
   const schema = createNewCustomerSchema({
     nameRequired: t.validation.nameRequired,
     phoneRequired: t.validation.phoneRequired,
@@ -142,6 +159,39 @@ export const CustomerSection = forwardRef<
     isRtl,
     "aria-label": t.form.selectCustomer,
   } as const;
+
+  const lockedCustomerFields = isWorksheet ? (
+    <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+      <WorksheetField label={t.form.customer}>
+        <Input
+          readOnly
+          value={selectedCustomer?.name ?? ""}
+          className={worksheetFieldClass()}
+          tabIndex={-1}
+        />
+      </WorksheetField>
+      <WorksheetField label={t.form.phone}>
+        <Input
+          readOnly
+          value={selectedCustomer?.phone ?? ""}
+          dir="ltr"
+          className={worksheetFieldClass()}
+          tabIndex={-1}
+        />
+      </WorksheetField>
+    </div>
+  ) : (
+    <div className="mt-4 space-y-3">
+      <div>
+        <Label>{t.form.customer}</Label>
+        <Input readOnly value={selectedCustomer?.name ?? ""} className="mt-1.5" />
+      </div>
+      <div>
+        <Label>{t.form.phone}</Label>
+        <Input readOnly value={selectedCustomer?.phone ?? ""} dir="ltr" className="mt-1.5" />
+      </div>
+    </div>
+  );
 
   const existingCustomerFields = isWorksheet ? (
     <>
@@ -256,6 +306,7 @@ export const CustomerSection = forwardRef<
                 invalidMessage={t.validation.phoneInvalid}
                 required
                 requiredMessage={t.validation.phoneRequired}
+                inputClassName={worksheetInputClass}
                 forceShowError={Boolean(
                   touchedFields.customerPhone || fieldErrors.customerPhone,
                 )}
@@ -414,17 +465,29 @@ export const CustomerSection = forwardRef<
     </div>
   );
 
+  const customerBody = lockToExistingCustomer ? (
+    selectedCustomer ? (
+      lockedCustomerFields
+    ) : (
+      <p className="text-sm text-muted-slate">{t.form.loadingCustomerData}</p>
+    )
+  ) : draft.customerMode === "existing" ? (
+    isWorksheet ? (
+      <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+        {existingCustomerFields}
+      </div>
+    ) : (
+      existingCustomerFields
+    )
+  ) : (
+    newCustomerFields
+  );
+
   if (isWorksheet) {
     return (
       <section>
-        {modeToggle}
-        {draft.customerMode === "existing" ? (
-          <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-            {existingCustomerFields}
-          </div>
-        ) : (
-          newCustomerFields
-        )}
+        {!lockToExistingCustomer ? modeToggle : null}
+        {customerBody}
       </section>
     );
   }
@@ -432,8 +495,8 @@ export const CustomerSection = forwardRef<
   return (
     <Card>
       <CardTitle>{t.form.customer}</CardTitle>
-      {modeToggle}
-      {draft.customerMode === "existing" ? existingCustomerFields : newCustomerFields}
+      {!lockToExistingCustomer ? modeToggle : null}
+      {customerBody}
     </Card>
   );
 });

@@ -56,4 +56,16 @@ export class UpdateStaffDto {
   @IsString()
   @MaxLength(80)
   specialty?: string;
+
+  @IsOptional()
+  @ValidateIf((dto: UpdateStaffDto) => !!dto.phone?.trim())
+  @IsString()
+  @IsPakistanPhone()
+  phone?: string;
+
+  @IsOptional()
+  @ValidateIf((dto: UpdateStaffDto) => !!dto.phone2?.trim())
+  @IsString()
+  @IsPakistanPhone()
+  phone2?: string;
 }

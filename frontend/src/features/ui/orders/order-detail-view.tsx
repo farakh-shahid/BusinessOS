@@ -402,7 +402,7 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
             ) : null}
             <OrderQuickAction
               icon={Ruler}
-              label={t.orderDetail.quickMeasurements}
+              label={t.orderDetail.viewMeasurementCard}
               onClick={() => setMeasurementOpen(true)}
               isRtl={isRtl}
             />

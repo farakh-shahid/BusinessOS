@@ -86,7 +86,11 @@ export function OrderDetailsSection({
   }
 
   const rushOrderField = (
-    <div className={isWorksheet ? undefined : "sm:col-span-2"}>
+    <div
+      className={cn(
+        isWorksheet ? "flex h-full items-end pb-2" : "sm:col-span-2",
+      )}
+    >
       <label
         className={cn(
           "flex items-center gap-2 text-sm font-medium text-slate-700",

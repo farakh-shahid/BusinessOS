@@ -99,7 +99,7 @@ export function worksheetFieldClass(hasError?: boolean) {
 
 /** Dotted orange frame for saved / worksheet measurement charts */
 export const savedMeasurementsChartBorderClass =
-  "rounded-xl border-2 border-dashed border-accent-500 bg-accent-50/15 p-4 sm:p-5";
+  "rounded-xl border-2 border-dashed border-accent-500 bg-white p-4 sm:p-5";
 
 /** Full orange wash panel — edit measurements, saved profile blocks */
 export const editMeasurementsPanelClass =

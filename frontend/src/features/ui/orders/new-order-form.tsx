@@ -100,6 +100,9 @@ export function NewOrderForm() {
     setFieldErrors({});
   }, []);
 
+  const presetCustomerId = searchParams.get("customerId");
+  const lockToExistingCustomer = Boolean(presetCustomerId);
+
   const customerDetailQuery = useCustomerDetailQuery(
     draft.customerMode === "existing" && draft.customerId
       ? draft.customerId
@@ -107,7 +110,7 @@ export function NewOrderForm() {
   );
 
   useEffect(() => {
-    const customerId = searchParams.get("customerId");
+    const customerId = presetCustomerId;
     if (customerId) {
       lastHydratedCustomerId.current = null;
       setDraft((prev) => ({
@@ -281,6 +284,7 @@ export function NewOrderForm() {
           isRtl={isRtl}
           fieldErrors={fieldErrors}
           variant="worksheet"
+          lockToExistingCustomer={lockToExistingCustomer}
         />
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
